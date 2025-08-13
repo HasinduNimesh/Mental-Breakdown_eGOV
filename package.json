@@ -1,0 +1,41 @@
+{
+  "name": "srilanka-citizen-portal",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sri Lankan Government Citizen Portal - eGOV Services",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "^14.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@headlessui/react": "^1.7.17",
+    "@heroicons/react": "^2.0.18",
+    "clsx": "^2.0.0",
+    "date-fns": "^2.30.0",
+    "react-hook-form": "^7.47.0",
+    "react-query": "^3.39.3",
+    "zustand": "^4.4.4",
+    "next-i18next": "^15.0.0",
+    "qrcode": "^1.5.3",
+    "react-calendar": "^4.6.0",
+    "react-dropzone": "^14.2.3",
+    "tailwindcss": "^3.3.5",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.31"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.7",
+    "@types/react": "^18.2.31",
+    "@types/react-dom": "^18.2.14",
+    "@types/qrcode": "^1.5.5",
+    "typescript": "^5.2.2",
+    "eslint": "^8.51.0",
+    "eslint-config-next": "^14.0.0"
+  }
+}
