@@ -17,6 +17,12 @@ import {
   ClipboardDocumentListIcon,
 } from '@heroicons/react/24/outline';
 import { FOOTER_DETAILS, FOOTER_NAV_LEFT, FOOTER_NAV_RIGHT } from '@/lib/footerConfig';
+import { Container } from '@/components/ui/Container';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { Card } from '@/components/ui/Card';
+import { NoticeRail } from '@/components/notice/NoticeRail';
+import { GovAction } from '@/components/ui/GovAction';
 import { useInView } from '@/lib/hooks/useInView';
 
 interface NavigationItem {
@@ -42,112 +48,142 @@ export const WelcomeDashboard: React.FC = () => {
       </a>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-primary-900 text-white">
-        {/* Background and decorative shapes */}
+  <section className="relative overflow-hidden bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 text-white">
+        {/* Background pattern */}
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary-900 via-primary-900/90 to-primary-900/40" />
-          {/* Subtle dotted pattern */}
-          <svg className="absolute left-0 top-0 opacity-10" width="280" height="280" viewBox="0 0 100 100" aria-hidden="true">
+          <div className="absolute inset-0 bg-black/10" />
+          {/* Government-style pattern */}
+          <svg className="absolute right-0 top-0 h-full w-1/2 opacity-10" viewBox="0 0 400 400" aria-hidden="true">
             <defs>
-              <pattern id="dots" x="0" y="0" width="6" height="6" patternUnits="userSpaceOnUse">
-                <circle cx="1" cy="1" r="1" fill="white" />
+              <pattern id="govt-pattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M20 0L30 10L20 20L10 10Z" fill="white" opacity="0.3"/>
               </pattern>
             </defs>
-            <rect width="100%" height="100%" fill="url(#dots)" />
+            <rect width="100%" height="100%" fill="url(#govt-pattern)" />
           </svg>
-
-          {/* Right clipped visual panel with imagery */}
-          <div
-            className="hidden md:block absolute right-0 top-0 h-full w-[56%]"
-            style={{ clipPath: 'polygon(18% 0, 100% 0, 100% 100%, 0 100%)' }}
-          >
-            <div className="absolute inset-0 bg-white/5" />
-            <div className="absolute right-12 top-16 w-60 h-40 rounded-lg bg-white/10 border border-white/20 backdrop-blur-sm rotate-[-8deg] shadow-card overflow-hidden">
-              <div className="w-full h-full bg-gradient-to-br from-blue-100/30 to-white/10" />
-            </div>
-            <div className="absolute right-28 top-44 w-72 h-44 rounded-lg bg-white/10 border border-white/20 backdrop-blur-sm rotate-[6deg] shadow-card overflow-hidden">
-              <div className="w-full h-full bg-gradient-to-br from-white/10 to-blue-100/20" />
-            </div>
-          </div>
         </div>
 
         {/* Hero Content */}
-        <div className="relative max-w-screen-xl mx-auto px-6 py-16 lg:py-24">
-          <div className="max-w-3xl">
-            <p className="text-info-300 text-sm uppercase tracking-wider mb-3">
-              Our mission is <span className="text-accent-500 font-semibold">for you!</span>
-            </p>
-            <h1 className="text-display font-bold leading-tight mb-4">
-              Welcome to Sri Lanka Government Citizen Services
-            </h1>
-            <p className="text-lg md:text-xl text-blue-100 mb-8">
-              Book, manage, and track your public service appointments in minutes.
-            </p>
-            <div className="flex flex-wrap gap-4">
-              <button className="bg-primary-600 text-white px-6 py-3 rounded-md font-semibold hover:bg-primary-700 transition-colors">
-                Explore Services
-              </button>
-              <button className="border-2 border-white text-white px-6 py-3 rounded-md font-semibold hover:bg-white hover:text-primary-900 transition-colors">
-                Contact Directory
-              </button>
+  <Container className="relative py-20 lg:py-28">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <div className="text-blue-200 text-sm uppercase tracking-wider mb-4 font-semibold">
+                OUR MISSION IS <span className="text-orange-400">FOR YOU!</span>
+              </div>
+              <h1 className="text-4xl lg:text-5xl font-bold leading-tight mb-6">
+                WELCOME TO<br />
+                <span className="text-blue-200">GOVERNMENT CITIZEN</span><br />
+                SERVICES
+              </h1>
+              <p className="text-xl text-blue-100 mb-8 max-w-xl">
+                "Public service should be the birthright of every citizen"
+              </p>
+              <p className="text-lg text-blue-200 mb-8 max-w-xl">
+                Book, manage, and track your public service appointments with ease. 
+                Access passport services, driving licenses, registrations, and more.
+              </p>
+              <div className="flex flex-wrap gap-4">
+                <Button size="lg" variant="secondary">Explore Services</Button>
+                <Button size="lg" variant="outline" className="border-white text-white hover:text-blue-900">Contact Directory</Button>
+              </div>
+            </div>
+            
+            {/* Right side with decorative elements */}
+            <div className="relative hidden lg:block">
+              <div className="absolute top-8 right-8 w-72 h-48 rounded-lg bg-white/10 border border-white/20 backdrop-blur-sm transform rotate-6 shadow-2xl">
+                <div className="p-6">
+                  <div className="text-white font-semibold mb-2">Digital Services</div>
+                  <div className="text-blue-200 text-sm">Quick & Efficient</div>
+                </div>
+              </div>
+              <div className="absolute top-32 right-16 w-64 h-40 rounded-lg bg-white/5 border border-white/20 backdrop-blur-sm transform -rotate-3 shadow-xl">
+                <div className="p-6">
+                  <div className="text-white font-semibold mb-2">Citizen First</div>
+                  <div className="text-blue-200 text-sm">Service Excellence</div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+  </Container>
       </section>
 
-      {/* Announcement Rail */}
-      <section className="relative -mt-8 md:-mt-12 z-10">
-        <div className="max-w-screen-xl mx-auto px-6">
-          <div className="rounded-xl bg-white border border-border shadow-card p-3 md:p-4 flex flex-wrap items-center gap-3">
-            {/* Tabs */}
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-2 bg-accent-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                <SpeakerWaveIcon className="w-4 h-4" /> Latest Updates
-              </span>
-              <span className="inline-flex items-center gap-2 bg-bg-200 text-text-700 px-3 py-1 rounded-full text-sm font-medium">
-                <AcademicCapIcon className="w-4 h-4 text-primary-700" /> Immigration
-              </span>
-              <span className="inline-flex items-center gap-2 bg-bg-200 text-text-700 px-3 py-1 rounded-full text-sm font-medium">
-                <ComputerDesktopIcon className="w-4 h-4 text-primary-700" /> Motor Traffic
-              </span>
-            </div>
-            {/* Ticker */}
-            <a
-              href="/news/ict-championship"
-              className="flex-1 min-w-[200px] flex items-center gap-3 px-3 py-2 rounded-md border border-border text-text-700 hover:text-primary-700 hover:border-primary-600 transition-colors"
-            >
-              <span className="w-2 h-2 rounded-full bg-accent-500" />
-              Passport One-Day service slots extended this week
-            </a>
+      {/* Announcement Rail (unique) */}
+      <section className="relative -mt-12 z-10">
+        <Container>
+          <NoticeRail
+            pills={[
+              { label: 'Latest', tone: 'warning' },
+              { label: 'National Level ICT Championship Competition - 2025', tone: 'info' },
+              { label: 'Higher Education Sector', tone: 'success' },
+              { label: 'Vocational Education Sector', tone: 'brand' },
+            ]}
+            items={[
+              {
+                id: 1,
+                title: 'Passport One-Day Service',
+                description: 'Extended service slots available this week for urgent passport applications.',
+                tone: 'info',
+                href: '/news/passport-one-day',
+              },
+              {
+                id: 2,
+                title: 'Digital Services Update',
+                description: 'New online appointment system now available for all major government services.',
+                tone: 'success',
+                href: '/notices/maintenance',
+              },
+            ]}
+          />
+        </Container>
+  </section>
+
+      {/* Government Services Grid */}
+      <section className="bg-white py-16">
+  <Container>
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Quick Access Services</h2>
+            <p className="text-lg text-gray-600">Access essential government services with just a few clicks</p>
           </div>
-        </div>
-      </section>
-
-      {/* Icon Action Grid */}
-      <section className="bg-white py-12">
-        <div className="max-w-screen-xl mx-auto px-6">
+          
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-            {[
-              { icon: CalendarDaysIcon, label: 'Book Appointment', href: '/book' },
-              { icon: ClipboardDocumentListIcon, label: 'My Appointments', href: '/appointments' },
-              { icon: DocumentTextIcon, label: 'Upload Documents', href: '/documents' },
-              { icon: MapPinIcon, label: 'Find Offices', href: '/citizen' },
-              { icon: InformationCircleIcon, label: 'Help / FAQs', href: '/help' },
-              { icon: AcademicCapIcon, label: 'Citizen Portal', href: '/citizen' },
-            ].map((action, index) => (
-              <a
-                key={index}
-                href={action.href}
-                className="flex flex-col items-center p-6 border border-border rounded-md bg-white shadow-card hover:shadow-lg hover:-translate-y-1 transition-all duration-200"
-              >
-                <action.icon className="w-7 h-7 text-primary-600 mb-3" />
-                <span className="text-text-700 text-center text-sm font-medium">
-                  {action.label}
-                </span>
-              </a>
-            ))}
+            <GovAction
+              href="/book"
+              label="Book Appointment"
+              icon={CalendarDaysIcon}
+              colors={{ from: 'from-blue-500', to: 'to-blue-600', ring: 'ring-blue-200' }}
+            />
+            <GovAction
+              href="/appointments"
+              label="My Appointments"
+              icon={ClipboardDocumentListIcon}
+              colors={{ from: 'from-green-500', to: 'to-green-600', ring: 'ring-green-200' }}
+            />
+            <GovAction
+              href="/documents"
+              label="Upload Documents"
+              icon={DocumentTextIcon}
+              colors={{ from: 'from-purple-500', to: 'to-purple-600', ring: 'ring-purple-200' }}
+            />
+            <GovAction
+              href="/citizen"
+              label="Find Offices"
+              icon={MapPinIcon}
+              colors={{ from: 'from-orange-500', to: 'to-orange-600', ring: 'ring-orange-200' }}
+            />
+            <GovAction
+              href="/help"
+              label="Help Center"
+              icon={InformationCircleIcon}
+              colors={{ from: 'from-red-500', to: 'to-red-600', ring: 'ring-red-200' }}
+            />
+            <GovAction
+              href="/citizen"
+              label="Citizen Portal"
+              icon={AcademicCapIcon}
+              colors={{ from: 'from-indigo-500', to: 'to-indigo-600', ring: 'ring-indigo-200' }}
+            />
           </div>
-        </div>
+  </Container>
       </section>
 
       {/* Welcome Section */}
@@ -189,7 +225,7 @@ export const WelcomeDashboard: React.FC = () => {
             })}
           </svg>
         </div>
-        <div className="relative z-10 max-w-screen-xl mx-auto px-6">
+  <Container className="relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Main Content */}
             <div className="lg:col-span-8">
@@ -203,18 +239,14 @@ export const WelcomeDashboard: React.FC = () => {
                     Book appointments for key services like passports, driving licences, consular attestation, and civil registrations. Get reminders, check in on-site, and track your token in real time.
                   </p>
                   <div className="flex flex-wrap gap-4">
-                    <button className="bg-primary-600 text-white px-6 py-3 rounded-md font-semibold hover:bg-primary-700 transition-colors">
-                      Overview
-                    </button>
-                    <button className="border-2 border-primary-700 text-primary-700 px-6 py-3 rounded-md font-semibold hover:bg-primary-700 hover:text-white transition-colors">
-                      Contact Directory
-                    </button>
+                    <Button>Overview</Button>
+                    <Button variant="outline">Contact Directory</Button>
                   </div>
                 </div>
 
                 {/* Feature Card */}
                 <div className="relative">
-                  <div className="bg-white rounded-lg shadow-card overflow-hidden">
+                  <Card className="overflow-hidden">
                     <div className="w-full h-48 bg-gradient-to-br from-blue-100 to-primary-100 flex items-center justify-center">
                       <div className="text-center">
                         <CalendarDaysIcon className="w-16 h-16 text-primary-600 mx-auto mb-2" />
@@ -226,7 +258,7 @@ export const WelcomeDashboard: React.FC = () => {
                         Queue & Check-in
                       </span>
                     </div>
-                  </div>
+                  </Card>
                 </div>
               </div>
             </div>
@@ -250,12 +282,12 @@ export const WelcomeDashboard: React.FC = () => {
               ))}
             </div>
           </div>
-        </div>
+  </Container>
       </section>
 
       {/* News and Notices */}
       <section className="bg-white py-16">
-        <div className="max-w-screen-xl mx-auto px-6">
+  <Container>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Latest News */}
             <div className="bg-white border border-border rounded-lg shadow-card p-6">
@@ -305,7 +337,7 @@ export const WelcomeDashboard: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
+  </Container>
       </section>
 
       {/* Partners and Quick Links */}
@@ -336,11 +368,11 @@ export const WelcomeDashboard: React.FC = () => {
           </svg>
         </div>
 
-        <div className="relative max-w-screen-xl mx-auto px-6">
+  <Container className="relative">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Partners (scrollable) */}
             <div className="lg:col-span-2">
-              <div className="bg-white border border-border rounded-lg shadow-card p-6">
+              <Card className="p-6">
                 <h3 className="text-h3 font-bold text-text-900 mb-6 font-heading">Partner Agencies</h3>
                 <div className="relative">
                   <div id="partners-scroll" className="flex gap-4 overflow-x-auto scroll-smooth no-scrollbar pb-2">
@@ -365,7 +397,7 @@ export const WelcomeDashboard: React.FC = () => {
                     <span className="w-2 h-2 rounded-full bg-border" />
                   </div>
                 </div>
-              </div>
+              </Card>
             </div>
 
             {/* Quick Links */}
@@ -394,7 +426,7 @@ export const WelcomeDashboard: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
+  </Container>
       </section>
 
       {/* Floating Accessibility Button */}

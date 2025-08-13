@@ -2,6 +2,9 @@ import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useUIStore } from '@/stores';
+import { Container } from '@/components/ui/Container';
+import { Button } from '@/components/ui/Button';
+import { LanguageSwitcher } from './LanguageSwitcher';
 import { Bars3Icon, XMarkIcon, PhoneIcon } from '@heroicons/react/24/outline';
 
 export const Header: React.FC = () => {
@@ -20,27 +23,28 @@ export const Header: React.FC = () => {
     <>
       {/* Top Government Banner */}
       <div className="bg-blue-900 text-white text-xs py-1">
-        <div className="max-w-screen-xl mx-auto px-6 flex justify-between items-center">
+        <Container className="flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <span>ගෝව් 91 / වන / 92 / වන / 93 / වන</span>
+            <span>පුරවැසි සේවाएं</span>
             <span>|</span>
-            <span>அரசாங்க சேவைகள்</span>
+            <span>குடிமக்கள் சேவைகள்</span>
             <span>|</span>
-            <span>Government Services</span>
+            <span>Citizen Services</span>
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1">
               <PhoneIcon className="w-3 h-3" />
               <span>1919</span>
             </div>
+            <LanguageSwitcher />
             <Link href="/sitemap" className="hover:underline">Site Map</Link>
           </div>
-        </div>
+        </Container>
       </div>
 
       {/* Main Header */}
       <header className="bg-white shadow-sm border-b border-border">
-        <div className="max-w-screen-xl mx-auto px-6">
+        <Container>
           <div className="flex items-center justify-between h-20">
             {/* Logo and Title */}
             <div className="flex items-center gap-4">
@@ -79,12 +83,7 @@ export const Header: React.FC = () => {
                   )}
                 </Link>
               ))}
-              <Link
-                href="/book"
-                className="bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700 transition-colors"
-              >
-                Book Service
-              </Link>
+              <Button href="/book" size="md">Book Service</Button>
             </nav>
 
             {/* Mobile menu button */}
@@ -121,17 +120,13 @@ export const Header: React.FC = () => {
                     {item.name}
                   </Link>
                 ))}
-                <Link
-                  href="/book"
-                  className="block mx-3 my-2 bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium text-center hover:bg-primary-700 transition-colors"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
+                <Button href="/book" className="mx-3 my-2 w-[calc(100%-1.5rem)] justify-center" onClick={() => setMobileMenuOpen(false)}>
                   Book Service
-                </Link>
+                </Button>
               </div>
             </div>
           )}
-        </div>
+        </Container>
       </header>
     </>
   );

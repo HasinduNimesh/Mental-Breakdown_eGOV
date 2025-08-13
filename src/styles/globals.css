@@ -37,3 +37,12 @@
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* Accessible focus styles */
+:focus-visible {
+  outline: 2px solid theme('colors.primary.700');
+  outline-offset: 2px;
+}
+
+/* Optional large-text helper (toggled via store) */
+.large-text { font-size: 112%; }
