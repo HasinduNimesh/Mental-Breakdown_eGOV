@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom wave line animations */
+.wave-line {
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+}
+
+.wave-animate {
+  animation: wave 8s ease-in-out infinite;
+}
+
+@keyframes wave {
+  0%, 100% {
+    d: path("M-220 90 Q 800 60 1820 108");
+  }
+  50% {
+    d: path("M-220 90 Q 800 30 1820 108");
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .wave-animate {
+    animation: none;
+  }
+}
+
+/* Custom scrollbar styles */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
