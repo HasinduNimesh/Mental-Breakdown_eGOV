@@ -25,7 +25,7 @@ export const Header: React.FC = () => {
       <div className="bg-blue-900 text-white text-xs py-1">
         <Container className="flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <span>පුරවැසි සේවाएं</span>
+            <span>පුරවැසි සේවා</span>
             <span>|</span>
             <span>குடிமக்கள் சேவைகள்</span>
             <span>|</span>
@@ -52,7 +52,7 @@ export const Header: React.FC = () => {
                 <img 
                   src="/logo.svg" 
                   alt="Sri Lanka Coat of Arms" 
-                  className="w-12 h-12"
+                  className="h-16 w-auto"
                 />
                 <div>
                   <div className="text-primary-900 font-bold text-lg leading-tight">
