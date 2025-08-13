@@ -32,7 +32,7 @@ export const WelcomeDashboard: React.FC = () => {
   const mediaCardObs = useInView({ threshold: 0.1 });
 
   return (
-    <div className="min-h-screen bg-bg-100">
+    <div>
       {/* Skip to content */}
       <a 
         href="#main-content" 
