@@ -241,41 +241,74 @@ const ServicesPage: React.FC = () => {
   return (
     <Layout>
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-r from-primary-900 via-primary-800 to-primary-900 text-white py-16 sm:py-20">
+      <section className="relative overflow-hidden bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 text-white">
+        {/* Background pattern */}
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-black/10" />
+          {/* Government-style pattern */}
+          <svg className="absolute right-0 top-0 h-full w-1/2 opacity-10" viewBox="0 0 400 400" aria-hidden="true">
+            <defs>
+              <pattern id="services-govt-pattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M20 0L30 10L20 20L10 10Z" fill="white" opacity="0.3"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#services-govt-pattern)" />
+          </svg>
         </div>
 
-        <Container className="relative">
-          <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6">
-              Government Services
-              <span className="block text-blue-200">Find & Access Public Services</span>
-            </h1>
-            <p className="text-lg sm:text-xl text-blue-100 mb-8 max-w-3xl mx-auto">
-              Browse and book appointments for over 500+ government services across all departments. 
-              Fast, secure, and accessible online.
-            </p>
+        {/* Hero Content */}
+        <Container className="relative py-16 sm:py-20 lg:py-28">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+            <div>
+              <div className="text-blue-200 text-xs sm:text-sm uppercase tracking-wider mb-4 font-semibold">
+                OUR MISSION IS <span className="text-orange-400">FOR YOU!</span>
+              </div>
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-6">
+                Government Services
+                <span className="block text-blue-200">Find & Access Public Services</span>
+              </h1>
+              <p className="text-lg sm:text-xl text-blue-100 mb-6 sm:mb-8 max-w-xl">
+                "Public service should be the birthright of every citizen"
+              </p>
+              <p className="text-base sm:text-lg text-blue-200 mb-6 sm:mb-8 max-w-xl">
+                Browse and book appointments for over 500+ government services across all departments. 
+                Fast, secure, and accessible online.
+              </p>
 
-            {/* Search Bar */}
-            <div className="max-w-2xl mx-auto mb-8">
-              <div className="relative">
-                <MagnifyingGlassIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-blue-200" />
-                <input
-                  type="text"
-                  placeholder="Search services, departments, or documents..."
-                  className="w-full pl-12 pr-4 py-4 rounded-xl text-text-900 placeholder-text-500 border border-white/20 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
+              {/* Search Bar */}
+              <div className="max-w-xl mb-6 sm:mb-8">
+                <div className="relative">
+                  <MagnifyingGlassIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-blue-200" />
+                  <input
+                    type="text"
+                    placeholder="Search services, departments, or documents..."
+                    className="w-full pl-12 pr-4 py-4 rounded-xl text-text-900 placeholder-text-500 border border-white/20 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row flex-wrap gap-4">
+                <Button size="lg" variant="secondary">Book Appointment</Button>
+                <Button size="lg" variant="outline" className="border-white text-white hover:text-blue-900">Service Guide</Button>
               </div>
             </div>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button variant="secondary" size="lg">Book Appointment</Button>
-              <Button variant="outline" size="lg" className="border-white text-white hover:text-primary-900">
-                Service Guide
-              </Button>
+            
+            {/* Right side with decorative elements */}
+            <div className="relative hidden lg:block">
+              <div className="absolute top-8 right-8 w-72 h-48 rounded-lg bg-white/10 border border-white/20 backdrop-blur-sm transform rotate-6 shadow-2xl">
+                <div className="p-6">
+                  <div className="text-white font-semibold mb-2">Digital Services</div>
+                  <div className="text-blue-200 text-sm">Quick & Efficient</div>
+                </div>
+              </div>
+              <div className="absolute top-32 right-16 w-64 h-40 rounded-lg bg-white/5 border border-white/20 backdrop-blur-sm transform -rotate-3 shadow-xl">
+                <div className="p-6">
+                  <div className="text-white font-semibold mb-2">Citizen First</div>
+                  <div className="text-blue-200 text-sm">Service Excellence</div>
+                </div>
+              </div>
             </div>
           </div>
         </Container>

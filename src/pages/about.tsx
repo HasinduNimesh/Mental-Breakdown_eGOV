@@ -13,9 +13,6 @@ import {
   ClockIcon,
   DocumentTextIcon,
   BuildingOfficeIcon,
-  PhoneIcon,
-  EnvelopeIcon,
-  MapPinIcon,
   CheckCircleIcon,
 } from '@heroicons/react/24/outline';
 
@@ -66,34 +63,59 @@ const AboutPage: React.FC = () => {
   return (
     <Layout>
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-r from-primary-900 via-primary-800 to-primary-900 text-white py-20">
+      <section className="relative overflow-hidden bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 text-white">
+        {/* Background pattern */}
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-black/10" />
+          {/* Government-style pattern */}
           <svg className="absolute right-0 top-0 h-full w-1/2 opacity-10" viewBox="0 0 400 400" aria-hidden="true">
             <defs>
-              <pattern id="about-pattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+              <pattern id="about-govt-pattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
                 <path d="M20 0L30 10L20 20L10 10Z" fill="white" opacity="0.3"/>
               </pattern>
             </defs>
-            <rect width="100%" height="100%" fill="url(#about-pattern)" />
+            <rect width="100%" height="100%" fill="url(#about-govt-pattern)" />
           </svg>
         </div>
 
-        <Container className="relative">
-          <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-4xl lg:text-5xl font-bold mb-6">
-              About the Government of Sri Lanka
-              <span className="block text-blue-200">Citizen Services Portal</span>
-            </h1>
-            <p className="text-xl text-blue-100 mb-8 max-w-3xl mx-auto">
-              Empowering citizens through digital transformation and accessible government services. 
-              Building a more connected, efficient, and transparent Sri Lanka.
-            </p>
-            <div className="flex flex-wrap gap-4 justify-center">
-              <Button variant="secondary" size="lg">Our Services</Button>
-              <Button variant="outline" size="lg" className="border-white text-white hover:text-primary-900">
-                Contact Us
-              </Button>
+        {/* Hero Content */}
+        <Container className="relative py-16 sm:py-20 lg:py-28">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+            <div>
+              <div className="text-blue-200 text-xs sm:text-sm uppercase tracking-wider mb-4 font-semibold">
+                OUR MISSION IS <span className="text-orange-400">FOR YOU!</span>
+              </div>
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-6">
+                About the Government of Sri Lanka
+                <span className="block text-blue-200">Citizen Services Portal</span>
+              </h1>
+              <p className="text-lg sm:text-xl text-blue-100 mb-6 sm:mb-8 max-w-xl">
+                "Public service should be the birthright of every citizen"
+              </p>
+              <p className="text-base sm:text-lg text-blue-200 mb-6 sm:mb-8 max-w-xl">
+                Empowering citizens through digital transformation and accessible government services. 
+                Building a more connected, efficient, and transparent Sri Lanka.
+              </p>
+              <div className="flex flex-col sm:flex-row flex-wrap gap-4">
+                <Button size="lg" variant="secondary">Our Services</Button>
+                <Button size="lg" variant="outline" className="border-white text-white hover:text-blue-900">Contact Us</Button>
+              </div>
+            </div>
+            
+            {/* Right side with decorative elements */}
+            <div className="relative hidden lg:block">
+              <div className="absolute top-8 right-8 w-72 h-48 rounded-lg bg-white/10 border border-white/20 backdrop-blur-sm transform rotate-6 shadow-2xl">
+                <div className="p-6">
+                  <div className="text-white font-semibold mb-2">Digital Services</div>
+                  <div className="text-blue-200 text-sm">Quick & Efficient</div>
+                </div>
+              </div>
+              <div className="absolute top-32 right-16 w-64 h-40 rounded-lg bg-white/5 border border-white/20 backdrop-blur-sm transform -rotate-3 shadow-xl">
+                <div className="p-6">
+                  <div className="text-white font-semibold mb-2">Citizen First</div>
+                  <div className="text-blue-200 text-sm">Service Excellence</div>
+                </div>
+              </div>
             </div>
           </div>
         </Container>
@@ -213,52 +235,7 @@ const AboutPage: React.FC = () => {
         </Container>
       </section>
 
-      {/* Contact Information */}
-      <section className="py-16 bg-primary-900 text-white">
-        <Container>
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Get in Touch</h2>
-            <p className="text-blue-100 text-lg">
-              We're here to help and answer any questions you might have
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 rounded-full mb-4">
-                <PhoneIcon className="w-8 h-8" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Call Center</h3>
-              <p className="text-blue-100 mb-2">24/7 Support Available</p>
-              <p className="text-white font-medium">1919 (Toll Free)</p>
-            </div>
-
-            <div className="text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 rounded-full mb-4">
-                <EnvelopeIcon className="w-8 h-8" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Email Support</h3>
-              <p className="text-blue-100 mb-2">Get help via email</p>
-              <p className="text-white font-medium">support@gov.lk</p>
-            </div>
-
-            <div className="text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 rounded-full mb-4">
-                <MapPinIcon className="w-8 h-8" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Visit Us</h3>
-              <p className="text-blue-100 mb-2">Government Information Center</p>
-              <p className="text-white font-medium">Colombo 07, Sri Lanka</p>
-            </div>
-          </div>
-
-          <div className="text-center mt-12">
-            <Button variant="secondary" size="lg" href="/contact">
-              Contact Support
-            </Button>
-          </div>
-        </Container>
-      </section>
+  {/* Contact Information section removed per request */}
     </Layout>
   );
 };

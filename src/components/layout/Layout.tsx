@@ -3,6 +3,7 @@ import { useUIStore } from '@/stores';
 import { Header } from './Header';
 import { useRouter } from 'next/router';
 import { BackToTop } from '@/components/ui/BackToTop';
+import { Footer } from './Footer';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -20,6 +21,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         {children}
       </main>
   {!hideHeader && <BackToTop />}
+  {!hideHeader && <Footer />}
     </div>
   );
 };
