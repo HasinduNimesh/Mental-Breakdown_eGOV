@@ -24,6 +24,7 @@ import { Card } from '@/components/ui/Card';
 import { NoticeRail } from '@/components/notice/NoticeRail';
 import { GovAction } from '@/components/ui/GovAction';
 import { useInView } from '@/lib/hooks/useInView';
+import { AccessibilityPanel } from '@/components/ui/AccessibilityPanel';
 
 interface NavigationItem {
   label: string;
@@ -429,17 +430,8 @@ export const WelcomeDashboard: React.FC = () => {
   </Container>
       </section>
 
-      {/* Floating Accessibility Button */}
-      <div className="fixed bottom-6 right-6 z-40">
-        <button
-          type="button"
-          aria-label="Accessibility options"
-          className="inline-flex items-center gap-2 px-4 py-3 rounded-full shadow-lg bg-accent-500 text-white hover:bg-accent-600 focus:outline-none focus:ring-2 focus:ring-white"
-        >
-          <InformationCircleIcon className="w-5 h-5" />
-          <span className="hidden sm:inline">Accessibility</span>
-        </button>
-      </div>
+  {/* Floating Accessibility Button (moves up only when BackToTop is visible) */}
+  <AccessibilityButton />
 
       {/* Footer */}
       <footer className="relative bg-primary-900 text-white">
@@ -579,6 +571,30 @@ export const WelcomeDashboard: React.FC = () => {
           </div>
         </div>
       </footer>
+    </div>
+  );
+};
+
+// Internal component to keep file cohesive without exporting globally
+const AccessibilityButton: React.FC = () => {
+  const [open, setOpen] = React.useState(false);
+
+  return (
+    <div className="fixed bottom-6 right-6 z-40 offset-for-btt">
+      <button
+        type="button"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-controls="a11y-panel"
+        aria-label="Accessibility options"
+        className="inline-flex items-center gap-2 px-4 py-3 rounded-full shadow-lg bg-accent-500 text-white hover:bg-accent-600 focus:outline-none focus:ring-2 focus:ring-white"
+        onClick={() => setOpen(true)}
+      >
+        <InformationCircleIcon className="w-5 h-5" />
+        <span className="hidden sm:inline">Accessibility</span>
+      </button>
+
+      <AccessibilityPanel open={open} onClose={() => setOpen(false)} />
     </div>
   );
 };
