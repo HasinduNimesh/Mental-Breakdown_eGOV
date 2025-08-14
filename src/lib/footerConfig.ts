@@ -1,4 +1,4 @@
-interface NavigationItem {
+export interface NavigationItem {
   label: string;
   href: string;
 }
@@ -14,20 +14,29 @@ export const FOOTER_DETAILS = {
   copyrightOwner: 'Government of Sri Lanka',
 };
 
-export const FOOTER_NAV_LEFT: NavigationItem[] = [
-  { label: 'About Us', href: '/about' },
-  { label: 'Organization Chart', href: '/organization' },
-  { label: 'Service Directory', href: '/citizen' },
-  { label: 'News & Events', href: '/news' },
-  { label: 'Publications', href: '/publications' },
-  { label: 'Contact Us', href: '/contact' },
-];
-
-export const FOOTER_NAV_RIGHT: NavigationItem[] = [
-  { label: 'Press Releases', href: '/press' },
-  { label: 'Photo Gallery', href: '/gallery' },
-  { label: 'Video Gallery', href: '/videos' },
-  { label: 'Downloads', href: '/downloads' },
-  { label: 'Special Notices', href: '/notices' },
-  { label: 'Feedback', href: '/feedback' },
+export const FOOTER_COLUMNS: { title: string; items: NavigationItem[] }[] = [
+  {
+    title: 'About',
+    items: [
+      { label: 'About', href: '/about' },
+      { label: 'Organization', href: '/organization' },
+      { label: 'Contact', href: '/contact' },
+    ],
+  },
+  {
+    title: 'Help',
+    items: [
+      { label: 'Service Guide', href: '/help' },
+      { label: 'Find Offices', href: '/help#offices' },
+      { label: 'FAQs', href: '/help#faq' },
+    ],
+  },
+  {
+    title: 'Resources',
+    items: [
+      { label: 'Services', href: '/services' },
+      { label: 'News & Notices', href: '/news' },
+      { label: 'Downloads', href: '/downloads' },
+    ],
+  },
 ];

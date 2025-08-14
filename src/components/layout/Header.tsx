@@ -6,6 +6,7 @@ import { Container } from '@/components/ui/Container';
 import { Button } from '@/components/ui/Button';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { Bars3Icon, XMarkIcon, PhoneIcon } from '@heroicons/react/24/outline';
+import HeaderSearch from './HeaderSearch';
 
 export const Header: React.FC = () => {
   const router = useRouter();
@@ -13,9 +14,9 @@ export const Header: React.FC = () => {
 
   const navigation = [
     { name: 'Home', href: '/' },
-    { name: 'About Us', href: '/about' },
+    { name: 'About', href: '/about' },
     { name: 'Services', href: '/services' },
-    { name: 'News', href: '/news' },
+    { name: 'News & Notices', href: '/news' },
     { name: 'Contact', href: '/contact' },
   ];
 
@@ -43,7 +44,7 @@ export const Header: React.FC = () => {
       </div>
 
       {/* Main Header */}
-      <header className="bg-white shadow-sm border-b border-border">
+  <header className="bg-white shadow-sm border-b border-border sticky top-0 z-40">
         <Container>
           <div className="flex items-center justify-between h-16 sm:h-20">
             {/* Logo and Title */}
@@ -66,7 +67,7 @@ export const Header: React.FC = () => {
             </div>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center space-x-8">
+            <nav className="hidden md:flex items-center gap-6">
               {navigation.map((item) => (
                 <Link
                   key={item.name}
@@ -83,7 +84,9 @@ export const Header: React.FC = () => {
                   )}
                 </Link>
               ))}
-              <Button href="/book" size="md">Book Service</Button>
+              <div className="w-px h-6 bg-border" aria-hidden />
+              <HeaderSearch />
+              <Button href="/book" size="md">Book Appointment</Button>
             </nav>
 
             {/* Mobile menu button */}
@@ -120,13 +123,33 @@ export const Header: React.FC = () => {
                     {item.name}
                   </Link>
                 ))}
+                <div className="px-3 py-2">
+                  {/* Simple search input for mobile */}
+                  <div className="relative">
+                    <input
+                      type="search"
+                      placeholder="Search services..."
+                      className="w-full border border-border rounded-md px-3 py-2 text-sm"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          const term = (e.target as HTMLInputElement).value.trim();
+                          if (term) {
+                            setMobileMenuOpen(false);
+                            router.push(`/services?query=${encodeURIComponent(term)}`);
+                          }
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
                 <Button href="/book" className="mx-3 my-2 w-[calc(100%-1.5rem)] justify-center" onClick={() => setMobileMenuOpen(false)}>
-                  Book Service
+                  Book Appointment
                 </Button>
               </div>
             </div>
           )}
         </Container>
+
       </header>
     </>
   );

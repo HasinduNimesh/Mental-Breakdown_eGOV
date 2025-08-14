@@ -16,7 +16,7 @@ import {
   SpeakerWaveIcon,
   ClipboardDocumentListIcon,
 } from '@heroicons/react/24/outline';
-import { FOOTER_DETAILS, FOOTER_NAV_LEFT, FOOTER_NAV_RIGHT } from '@/lib/footerConfig';
+import { FOOTER_DETAILS, FOOTER_COLUMNS } from '@/lib/footerConfig';
 import { Container } from '@/components/ui/Container';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';

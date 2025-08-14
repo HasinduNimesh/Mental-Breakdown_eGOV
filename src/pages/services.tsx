@@ -2,11 +2,13 @@ import React from 'react';
 import { GetStaticProps } from 'next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useTranslation } from 'next-i18next';
+import { useRouter } from 'next/router';
 import { Layout } from '@/components/layout/Layout';
 import { Container } from '@/components/ui/Container';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import {
   DocumentTextIcon,
   UserIcon,
@@ -43,8 +45,15 @@ interface Service {
 
 const ServicesPage: React.FC = () => {
   const { t } = useTranslation('common');
+  const router = useRouter();
   const [selectedCategory, setSelectedCategory] = React.useState('all');
   const [searchQuery, setSearchQuery] = React.useState('');
+
+  // Sync incoming ?query from header search deep links
+  React.useEffect(() => {
+    const q = (router.query.query as string) || '';
+    if (q) setSearchQuery(q);
+  }, [router.query.query]);
 
   const categories = [
     { id: 'all', name: 'All Services', count: 24, icon: GlobeAltIcon },
@@ -315,6 +324,11 @@ const ServicesPage: React.FC = () => {
       </section>
 
       {/* Popular Services Quick Access */}
+      <div className="bg-white">
+        <Container className="pt-4">
+          <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'Services' }]} />
+        </Container>
+      </div>
       <section className="relative -mt-12 z-10">
         <Container>
           <Card className="p-4 sm:p-6">
@@ -443,7 +457,7 @@ const ServicesPage: React.FC = () => {
                         <div className="flex items-center justify-between">
                           <Button href={service.href} size="sm" className="flex items-center gap-2">
                             <CalendarDaysIcon className="w-4 h-4" />
-                            Book Now
+                            Book Appointment
                           </Button>
                           <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">
                             View Details

@@ -46,7 +46,7 @@ const ContactPage: React.FC = () => {
                 We're here to help. Reach out via phone, email, or visit our offices.
               </p>
               <div className="flex flex-col sm:flex-row flex-wrap gap-4">
-                <Button size="lg" variant="secondary">Call Now</Button>
+                <Button size="lg" variant="secondary" href="/book">Book Appointment</Button>
                 <Button size="lg" variant="outline" className="border-white text-white hover:text-blue-900">Send Message</Button>
               </div>
             </div>

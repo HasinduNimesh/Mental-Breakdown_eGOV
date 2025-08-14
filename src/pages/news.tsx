@@ -6,6 +6,7 @@ import { Layout } from '@/components/layout/Layout';
 import { Container } from '@/components/ui/Container';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import Badge from '@/components/ui/Badge';
 import {
   NewspaperIcon,
@@ -167,7 +168,7 @@ const NewsPage: React.FC = () => {
               </div>
 
               <div className="flex flex-col sm:flex-row flex-wrap gap-4">
-                <Button size="lg" variant="secondary">Latest Updates</Button>
+                <Button size="lg" variant="secondary" href="/book">Book Appointment</Button>
                 <Button size="lg" variant="outline" className="border-white text-white hover:text-blue-900">Subscribe to News</Button>
               </div>
             </div>
@@ -190,6 +191,12 @@ const NewsPage: React.FC = () => {
           </div>
         </Container>
       </section>
+
+      <div className="bg-white">
+        <Container className="pt-4">
+          <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'News & Notices' }]} />
+        </Container>
+      </div>
 
       {/* Featured */}
       <section className="relative -mt-10 z-10">

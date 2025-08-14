@@ -97,8 +97,8 @@ const AboutPage: React.FC = () => {
                 Building a more connected, efficient, and transparent Sri Lanka.
               </p>
               <div className="flex flex-col sm:flex-row flex-wrap gap-4">
-                <Button size="lg" variant="secondary">Our Services</Button>
-                <Button size="lg" variant="outline" className="border-white text-white hover:text-blue-900">Contact Us</Button>
+                <Button size="lg" variant="secondary" href="/book">Book Appointment</Button>
+                <Button size="lg" variant="outline" href="/contact" className="border-white text-white hover:text-blue-900">Contact Us</Button>
               </div>
             </div>
             
