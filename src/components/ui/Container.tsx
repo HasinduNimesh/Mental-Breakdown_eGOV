@@ -12,7 +12,7 @@ const sizes = {
 };
 
 export const Container: React.FC<ContainerProps> = ({ size = 'xl', className = '', children, ...rest }) => (
-  <div className={`${sizes[size]} mx-auto px-6 ${className}`} {...rest}>
+  <div className={`${sizes[size]} mx-auto px-4 sm:px-6 ${className}`} {...rest}>
     {children}
   </div>
 );

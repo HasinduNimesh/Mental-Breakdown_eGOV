@@ -14,7 +14,7 @@ export const Header: React.FC = () => {
   const navigation = [
     { name: 'Home', href: '/' },
     { name: 'About Us', href: '/about' },
-    { name: 'Services', href: '/citizen' },
+    { name: 'Services', href: '/services' },
     { name: 'News', href: '/news' },
     { name: 'Contact', href: '/contact' },
   ];
@@ -24,20 +24,20 @@ export const Header: React.FC = () => {
       {/* Top Government Banner */}
       <div className="bg-blue-900 text-white text-xs py-1">
         <Container className="flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <span>පුරවැසි සේවා</span>
-            <span>|</span>
-            <span>குடிமக்கள் சேவைகள்</span>
-            <span>|</span>
+          <div className="flex items-center gap-2 md:gap-4">
+            <span className="hidden sm:inline">පුරවැසි සේවා</span>
+            <span className="hidden sm:inline">|</span>
+            <span className="hidden sm:inline">குடிமக்கள் சேவைகள்</span>
+            <span className="hidden sm:inline">|</span>
             <span>Citizen Services</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
             <div className="flex items-center gap-1">
               <PhoneIcon className="w-3 h-3" />
               <span>1919</span>
             </div>
             <LanguageSwitcher />
-            <Link href="/sitemap" className="hover:underline">Site Map</Link>
+            <Link href="/sitemap" className="hover:underline hidden sm:inline">Site Map</Link>
           </div>
         </Container>
       </div>
@@ -45,20 +45,20 @@ export const Header: React.FC = () => {
       {/* Main Header */}
       <header className="bg-white shadow-sm border-b border-border">
         <Container>
-          <div className="flex items-center justify-between h-20">
+          <div className="flex items-center justify-between h-16 sm:h-20">
             {/* Logo and Title */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <img 
                   src="/logo.svg" 
                   alt="Sri Lanka Coat of Arms" 
-                  className="h-16 w-auto"
+                  className="h-12 sm:h-16 w-auto"
                 />
                 <div>
-                  <div className="text-primary-900 font-bold text-lg leading-tight">
+                  <div className="text-primary-900 font-bold text-sm sm:text-lg leading-tight">
                     Government of Sri Lanka
                   </div>
-                  <div className="text-primary-700 text-sm">
+                  <div className="text-primary-700 text-xs sm:text-sm">
                     Citizen Services Portal
                   </div>
                 </div>

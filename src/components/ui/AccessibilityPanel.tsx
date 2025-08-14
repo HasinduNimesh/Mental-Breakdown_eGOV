@@ -52,7 +52,7 @@ export const AccessibilityPanel: React.FC<AccessibilityPanelProps> = ({ open, on
         role="dialog"
         aria-modal="true"
         aria-labelledby={`${panelId}-title`}
-        className="fixed bottom-24 right-6 z-50 w-[22rem] max-w-[90vw] rounded-lg bg-white border border-border shadow-card focus:outline-none"
+        className="fixed bottom-16 right-4 sm:bottom-24 sm:right-6 z-50 w-[20rem] sm:w-[22rem] max-w-[90vw] rounded-lg bg-white border border-border shadow-card focus:outline-none"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-4 py-3 border-b border-border flex items-center justify-between">

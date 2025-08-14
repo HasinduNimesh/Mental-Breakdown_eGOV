@@ -65,25 +65,25 @@ export const WelcomeDashboard: React.FC = () => {
         </div>
 
         {/* Hero Content */}
-  <Container className="relative py-20 lg:py-28">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+  <Container className="relative py-16 sm:py-20 lg:py-28">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             <div>
-              <div className="text-blue-200 text-sm uppercase tracking-wider mb-4 font-semibold">
+              <div className="text-blue-200 text-xs sm:text-sm uppercase tracking-wider mb-4 font-semibold">
                 OUR MISSION IS <span className="text-orange-400">FOR YOU!</span>
               </div>
-              <h1 className="text-4xl lg:text-5xl font-bold leading-tight mb-6">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-6">
                 WELCOME TO<br />
                 <span className="text-blue-200">GOVERNMENT CITIZEN</span><br />
                 SERVICES
               </h1>
-              <p className="text-xl text-blue-100 mb-8 max-w-xl">
+              <p className="text-lg sm:text-xl text-blue-100 mb-6 sm:mb-8 max-w-xl">
                 "Public service should be the birthright of every citizen"
               </p>
-              <p className="text-lg text-blue-200 mb-8 max-w-xl">
+              <p className="text-base sm:text-lg text-blue-200 mb-6 sm:mb-8 max-w-xl">
                 Book, manage, and track your public service appointments with ease. 
                 Access passport services, driving licenses, registrations, and more.
               </p>
-              <div className="flex flex-wrap gap-4">
+              <div className="flex flex-col sm:flex-row flex-wrap gap-4">
                 <Button size="lg" variant="secondary">Explore Services</Button>
                 <Button size="lg" variant="outline" className="border-white text-white hover:text-blue-900">Contact Directory</Button>
               </div>
@@ -139,14 +139,14 @@ export const WelcomeDashboard: React.FC = () => {
   </section>
 
       {/* Government Services Grid */}
-      <section className="bg-white py-16">
+      <section className="bg-white py-12 sm:py-16">
   <Container>
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Quick Access Services</h2>
-            <p className="text-lg text-gray-600">Access essential government services with just a few clicks</p>
+          <div className="text-center mb-8 sm:mb-12">
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">Quick Access Services</h2>
+            <p className="text-base sm:text-lg text-gray-600">Access essential government services with just a few clicks</p>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6">
             <GovAction
               href="/book"
               label="Book Appointment"
@@ -580,14 +580,14 @@ const AccessibilityButton: React.FC = () => {
   const [open, setOpen] = React.useState(false);
 
   return (
-    <div className="fixed bottom-6 right-6 z-40 offset-for-btt">
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 offset-for-btt">
       <button
         type="button"
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls="a11y-panel"
         aria-label="Accessibility options"
-        className="inline-flex items-center gap-2 px-4 py-3 rounded-full shadow-lg bg-accent-500 text-white hover:bg-accent-600 focus:outline-none focus:ring-2 focus:ring-white"
+        className="inline-flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-3 rounded-full shadow-lg bg-accent-500 text-white hover:bg-accent-600 focus:outline-none focus:ring-2 focus:ring-white"
         onClick={() => setOpen(true)}
       >
         <InformationCircleIcon className="w-5 h-5" />

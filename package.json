@@ -11,7 +11,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "next": "^14.0.0",
+  "next": "~15.3.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "@headlessui/react": "^1.7.17",
@@ -35,7 +35,7 @@
     "@types/react-dom": "^18.2.14",
     "@types/qrcode": "^1.5.5",
     "typescript": "^5.2.2",
-    "eslint": "^8.51.0",
-    "eslint-config-next": "^14.0.0"
+  "eslint": "^8.57.0",
+  "eslint-config-next": "~15.3.0"
   }
 }

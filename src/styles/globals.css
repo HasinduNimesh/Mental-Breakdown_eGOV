@@ -101,6 +101,11 @@
 /* Hide decorative wave lines for clarity */
 .high-contrast .wave-line { display: none !important; }
 
+/* High-contrast adjustments for GovAction decorative shapes */
+.high-contrast .dec-bubble,
+.high-contrast .dec-wedge { display: none !important; }
+.high-contrast .ring-primary-200 { box-shadow: inset 0 0 0 1px #000 !important; }
+
 /* Back to top animated button */
 .back-to-top {
   width: 140px;
@@ -116,7 +121,13 @@
 
 /* When BackToTop is visible, allow other floating controls to offset if they reference this class */
 body.btt-visible .offset-for-btt {
-  bottom: 6rem !important; /* equals bottom-24 */
+  bottom: 5rem !important; /* equals bottom-20 on mobile */
+}
+
+@media (min-width: 640px) {
+  body.btt-visible .offset-for-btt {
+    bottom: 6rem !important; /* equals bottom-24 on desktop */
+  }
 }
 
 .back-to-top > div,
