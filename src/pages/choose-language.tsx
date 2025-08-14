@@ -6,36 +6,38 @@ import { Container } from '@/components/ui/Container';
 import { Card } from '@/components/ui/Card';
 
 const languages = [
-  { code: 'si', title: 'සිංහල', subtitle: 'Sri Lanka – සිංහල', ring: 'ring-blue-200', grad: 'from-blue-500 to-blue-600' },
-  { code: 'ta', title: 'தமிழ்', subtitle: 'இலங்கை – தமிழ்', ring: 'ring-purple-200', grad: 'from-purple-500 to-purple-600' },
-  { code: 'en', title: 'English', subtitle: 'Sri Lanka – English', ring: 'ring-green-200', grad: 'from-green-500 to-green-600' },
+  { code: 'si', title: 'සිංහල', subtitle: 'Sri Lanka – සිංහල', ring: 'ring-blue-200', bg: 'bg-blue-600' },
+  { code: 'ta', title: 'தமிழ்', subtitle: 'இலங்கை – தமிழ்', ring: 'ring-purple-200', bg: 'bg-purple-600' },
+  { code: 'en', title: 'English', subtitle: 'Sri Lanka – English', ring: 'ring-green-200', bg: 'bg-green-600' },
 ] as const;
 
 export default function ChooseLanguage() {
   const router = useRouter();
 
   const select = async (locale: string) => {
-    await router.push('/', '/', { locale });
+    try {
+      // Persist the choice so middleware and SSR know immediately
+      document.cookie = `NEXT_LOCALE=${locale}; path=/; max-age=31536000`;
+    } catch {}
+    // Navigate to home in the selected locale
+    await router.replace('/', undefined, { locale });
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-900 via-blue-800 to-blue-900 text-white">
-      {/* Background pattern */}
-      <div className="absolute inset-0 pointer-events-none opacity-10">
-        <svg className="absolute right-0 top-0 h-full w-1/2" viewBox="0 0 400 400" aria-hidden="true">
-          <defs>
-            <pattern id="lang-pattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M20 0L30 10L20 20L10 10Z" fill="white" opacity="0.3" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#lang-pattern)" />
-        </svg>
-      </div>
-
-      <Container className="relative py-16">
+    <div className="min-h-screen bg-blue-900 text-white relative overflow-hidden">
+      {/* Decorative background image (watermark) */}
+      <img
+        src="/images/Sri_Lanka_Flag_Lion.png"
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none select-none absolute right-[-4rem] bottom-[-2rem] lg:right-[-6rem] lg:bottom-[-3rem] w-[420px] md:w-[520px] lg:w-[640px] opacity-10 lg:opacity-20"
+      />
+      <Container className="relative z-10 py-16">
         <div className="max-w-3xl mx-auto text-center">
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Select Your Language</h1>
-          <p className="mt-3 text-blue-100">Choose the language you are most comfortable with to continue.</p>
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">Select Your Language</h1>
+          <p className="mt-3 text-base text-blue-100">
+            Choose the language you are most comfortable with to continue.
+          </p>
         </div>
 
         <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -44,20 +46,26 @@ export default function ChooseLanguage() {
               key={l.code}
               type="button"
               onClick={() => select(l.code)}
-              className={`group relative text-left focus:outline-none`}
+              className={`group relative text-left focus:outline-none transition-transform duration-200 hover:-translate-y-1`}
               aria-label={`Switch to ${l.title}`}
             >
-              <Card className="overflow-hidden p-6 bg-white text-text-900">
-                {/* inset ring */}
-                <div className={`absolute inset-0 rounded-xl ring-1 ${l.ring} pointer-events-none`} />
-                {/* icon capsule */}
-                <div className={`relative h-16 w-16 rounded-full bg-gradient-to-br ${l.grad} text-white flex items-center justify-center shadow-lg`}>
-                  <span className="font-extrabold text-lg drop-shadow">{l.code.toUpperCase()}</span>
-                  <div className="absolute -inset-1 rounded-full bg-white/10 opacity-0 blur-sm group-hover:opacity-100 transition-opacity" />
-                </div>
-                <div className="mt-4">
-                  <div className="text-xl font-semibold">{l.title}</div>
-                  <div className="text-sm text-text-500">{l.subtitle}</div>
+              <Card className="overflow-hidden p-6 bg-white text-gray-900 border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
+                <div className="relative z-10">
+                  {/* Icon capsule */}
+                  <div className={`relative h-16 w-16 rounded-full ${l.bg} text-white flex items-center justify-center shadow-md mx-auto`}>
+                    <span className="font-extrabold text-lg">{l.code.toUpperCase()}</span>
+                    <div className={`absolute -inset-1 rounded-full ${l.ring} opacity-0 group-hover:opacity-60 transition-opacity`} />
+                  </div>
+
+                  <div className="mt-4 text-center">
+                    <div className="text-xl font-semibold text-gray-900">{l.title}</div>
+                    <div className="text-sm text-gray-500 mt-1">{l.subtitle}</div>
+                  </div>
+
+                  {/* Selection indicator */}
+                  <div className="mt-5 flex justify-center">
+                    <div className={`h-0.5 w-10 bg-gray-200 rounded-full group-hover:bg-gray-300 transition-colors`} />
+                  </div>
                 </div>
               </Card>
             </button>
@@ -65,8 +73,13 @@ export default function ChooseLanguage() {
         </div>
 
         {/* Optional help */}
-        <div className="mt-8 text-center text-blue-100 text-sm">
-          You can change language anytime from the header.
+        <div className="mt-8 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-blue-100 text-sm border border-white/20">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            You can change language anytime from the header.
+          </div>
         </div>
       </Container>
     </div>
