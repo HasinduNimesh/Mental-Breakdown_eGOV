@@ -9,16 +9,32 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { getAllServiceIds, getServiceById, ServiceDetail } from '@/lib/servicesData';
-import { BuildingOfficeIcon, ClockIcon, CurrencyDollarIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
+import { BuildingOfficeIcon, ClockIcon, CurrencyDollarIcon, DocumentTextIcon, TruckIcon, ShieldCheckIcon, GlobeAltIcon, AcademicCapIcon, HeartIcon, MapPinIcon } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleIcon20 } from '@heroicons/react/20/solid';
 
-type Props = { service: ServiceDetail };
+type Props = { service: Omit<ServiceDetail, 'icon'> };
 
 const tabs = ['Overview', 'Requirements', 'Fees & Timelines', 'Locations', 'FAQs'] as const;
+
+const iconMap: Record<string, React.ElementType> = {
+  'passport-application': DocumentTextIcon,
+  'driving-license': TruckIcon,
+  'birth-certificate': DocumentTextIcon,
+  'marriage-certificate': DocumentTextIcon,
+  'police-clearance': ShieldCheckIcon,
+  'vehicle-registration': TruckIcon,
+  'business-registration': BuildingOfficeIcon,
+  'consular-services': GlobeAltIcon,
+  'education-certificates': AcademicCapIcon,
+  'health-services': HeartIcon,
+  'tax-services': CurrencyDollarIcon,
+  'land-registration': MapPinIcon,
+};
 
 const ServiceDetailPage: React.FC<Props> = ({ service }) => {
   const { t } = useTranslation('common');
   const [activeTab, setActiveTab] = React.useState<(typeof tabs)[number]>('Overview');
+  const Icon = iconMap[service.id] || DocumentTextIcon;
 
   return (
     <Layout>
@@ -30,7 +46,7 @@ const ServiceDetailPage: React.FC<Props> = ({ service }) => {
             <div className="lg:col-span-2">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 bg-white/10 border border-white/20 rounded-lg flex items-center justify-center">
-                  <service.icon className="w-6 h-6 text-white" />
+                  <Icon className="w-6 h-6 text-white" />
                 </div>
                 <div>
                   <h1 className="text-2xl sm:text-3xl font-bold">{service.title}</h1>
@@ -176,10 +192,15 @@ export const getStaticPaths: GetStaticPaths = async () => {
 export const getStaticProps: GetStaticProps = async ({ params, locale }) => {
   const id = params?.id as string;
   const service = getServiceById(id);
+  if (!service) {
+    return { notFound: true };
+  }
+  // Remove non-serializable fields (like React components) before returning props
+  const { icon, ...plainService } = service as ServiceDetail & { icon?: unknown };
   return {
     props: {
       ...(await serverSideTranslations(locale ?? 'en', ['common'])),
-      service,
+      service: plainService,
     },
   };
 };
