@@ -5,6 +5,8 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { getBookings, BookingDraft, SERVICES, OFFICES } from '@/lib/booking';
+import { useAuth } from '@/contexts/AuthContext';
+import SignInModal from '@/components/auth/SignInModal';
 
 function timeUntil(dateISO: string, time: string) {
   const dt = new Date(`${dateISO}T${time}:00+05:30`);
@@ -16,13 +18,20 @@ function timeUntil(dateISO: string, time: string) {
 }
 
 const AppointmentsPage: React.FC = () => {
+  const { user } = useAuth();
+  const [showSignIn, setShowSignIn] = React.useState(false);
   const [list, setList] = React.useState<BookingDraft[]>([]);
 
   React.useEffect(() => {
-    setList(getBookings());
+    if (user) setList(getBookings());
   }, []);
 
+  React.useEffect(() => {
+    if (!user) setShowSignIn(true); else setShowSignIn(false);
+  }, [user]);
+
   return (
+    <>
     <Layout>
       <section className="bg-white">
         <Container className="py-4">
@@ -57,7 +66,9 @@ const AppointmentsPage: React.FC = () => {
           </div>
         </Container>
       </section>
-    </Layout>
+  </Layout>
+  <SignInModal open={showSignIn && !user} onClose={() => setShowSignIn(false)} context="appointments" />
+  </>
   );
 };
 

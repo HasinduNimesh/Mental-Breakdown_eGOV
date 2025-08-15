@@ -8,11 +8,15 @@ import { LanguageSwitcher } from './LanguageSwitcher';
 import { Bars3Icon, XMarkIcon, PhoneIcon } from '@heroicons/react/24/outline';
 import HeaderSearch from './HeaderSearch';
 import { useTranslation } from 'next-i18next';
+import { useAuth } from '@/contexts/AuthContext';
+import SignInModal from '@/components/auth/SignInModal';
 
 export const Header: React.FC = () => {
   const router = useRouter();
   const { isMobileMenuOpen, setMobileMenuOpen } = useUIStore();
   const { t } = useTranslation('common');
+  const { user, signOut } = useAuth();
+  const [showSignIn, setShowSignIn] = React.useState(false);
 
   const navigation = [
     { name: 'Home', href: '/' },
@@ -89,6 +93,20 @@ export const Header: React.FC = () => {
               <div className="w-px h-6 bg-border" aria-hidden />
               <HeaderSearch />
               <Button href="/book" size="md">Book Appointment</Button>
+              {user ? (
+                <div className="relative group">
+                  <button className="ml-2 px-3 py-2 text-sm font-medium text-text-700 hover:text-primary-700 border border-border rounded-md">
+                    {user.email ?? 'Account'}
+                  </button>
+                  <div className="absolute right-0 mt-2 w-48 bg-white border border-border rounded-md shadow-md hidden group-hover:block">
+                    <Link href="/appointments" className="block px-3 py-2 text-sm hover:bg-bg-100">My Appointments</Link>
+                    <Link href="/profile" className="block px-3 py-2 text-sm hover:bg-bg-100">Profile</Link>
+                    <button className="w-full text-left px-3 py-2 text-sm hover:bg-bg-100" onClick={() => signOut()}>Sign out</button>
+                  </div>
+                </div>
+              ) : (
+                <Button variant="outline" size="md" onClick={() => setShowSignIn(true)}>Sign in</Button>
+              )}
             </nav>
 
             {/* Mobile menu button */}
@@ -148,12 +166,18 @@ export const Header: React.FC = () => {
                 <Button href="/book" className="mx-3 my-2 w-[calc(100%-1.5rem)] justify-center" onClick={() => setMobileMenuOpen(false)}>
                   Book Appointment
                 </Button>
+                {!user && (
+                  <Button variant="outline" className="mx-3 mb-3 w-[calc(100%-1.5rem)] justify-center" onClick={() => { setMobileMenuOpen(false); setShowSignIn(true); }}>
+                    Sign in
+                  </Button>
+                )}
               </div>
             </div>
           )}
         </Container>
 
       </header>
+      <SignInModal open={showSignIn} onClose={() => setShowSignIn(false)} context="generic" />
     </>
   );
 };

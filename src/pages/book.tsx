@@ -8,10 +8,13 @@ import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { OFFICES, SERVICES, getNextAvailableDate, generateSlots, formatDateISO, BookingDraft, saveBooking, generateBookingCode, buildICS } from '@/lib/booking';
 import { track } from '@/lib/analytics';
 import { CloudArrowUpIcon, MapPinIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
+import { useAuth } from '@/contexts/AuthContext';
+import SignInModal from '@/components/auth/SignInModal';
 
 type Step = 1 | 2 | 3 | 4 | 5;
 
 const BookPage: React.FC = () => {
+  const { user } = useAuth();
   const [step, setStep] = React.useState<Step>(1);
   const [serviceId, setServiceId] = React.useState(SERVICES[0].id);
   const [officeId, setOfficeId] = React.useState(OFFICES[0].id);
@@ -24,6 +27,7 @@ const BookPage: React.FC = () => {
   const [docs, setDocs] = React.useState<Array<{ file: File; status: 'Pending review' | 'Needs fix' | 'Pre-checked' }>>([]);
   const [confirmed, setConfirmed] = React.useState<BookingDraft | null>(null);
   const [uploadError, setUploadError] = React.useState<string | null>(null);
+  const [showSignIn, setShowSignIn] = React.useState(false);
 
   const service = SERVICES.find(s => s.id === serviceId)!;
   const office = OFFICES.find(o => o.id === officeId)!;
@@ -76,7 +80,16 @@ const BookPage: React.FC = () => {
     setStep(5);
   }
 
+  function proceedToReview() {
+    if (!user) {
+      setShowSignIn(true);
+      return;
+    }
+    setStep(5);
+  }
+
   return (
+    <>
     <Layout>
       <section className="bg-white">
         <Container className="py-4">
@@ -245,7 +258,7 @@ const BookPage: React.FC = () => {
                 </ul>
                 <div className="mt-4 flex items-center gap-3">
                   <Button onClick={() => setStep(3)} variant="outline">Back</Button>
-                  <Button onClick={() => setStep(5)} disabled={docs.length === 0}>Review & confirm</Button>
+                  <Button onClick={proceedToReview} disabled={docs.length === 0}>Review & confirm</Button>
                 </div>
               </div>
             )}
@@ -306,7 +319,9 @@ const BookPage: React.FC = () => {
           </Card>
         </Container>
       </section>
-    </Layout>
+  </Layout>
+  <SignInModal open={showSignIn} onClose={() => setShowSignIn(false)} context="review" emailPrefill={email} afterSignIn={() => setStep(5)} />
+  </>
   );
 };
 
