@@ -25,8 +25,10 @@ export const BackToTop: React.FC = () => {
   }, [visible]);
 
   const scrollToTop = () => {
+    const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const behavior: ScrollBehavior | undefined = prefersReducedMotion ? 'auto' : 'smooth';
     try {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior });
     } catch {
       window.scrollTo(0, 0);
     }

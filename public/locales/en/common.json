@@ -1,1 +1,7 @@
-{"hello":"world"}
+{
+	"hello": "world",
+	"logo_alt": "Sri Lanka Coat of Arms",
+	"open_menu": "Open menu",
+	"close_menu": "Close menu",
+	"skip_to_content": "Skip to main content"
+}

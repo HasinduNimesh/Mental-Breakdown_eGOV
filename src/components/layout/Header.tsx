@@ -7,10 +7,12 @@ import { Button } from '@/components/ui/Button';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { Bars3Icon, XMarkIcon, PhoneIcon } from '@heroicons/react/24/outline';
 import HeaderSearch from './HeaderSearch';
+import { useTranslation } from 'next-i18next';
 
 export const Header: React.FC = () => {
   const router = useRouter();
   const { isMobileMenuOpen, setMobileMenuOpen } = useUIStore();
+  const { t } = useTranslation('common');
 
   const navigation = [
     { name: 'Home', href: '/' },
@@ -52,7 +54,7 @@ export const Header: React.FC = () => {
               <div className="flex items-center gap-2 sm:gap-3">
                 <img 
                   src="/logo.svg" 
-                  alt="Sri Lanka Coat of Arms" 
+                  alt={t('logo_alt', 'Sri Lanka Coat of Arms')} 
                   className="h-12 sm:h-16 w-auto"
                 />
                 <div>
@@ -95,6 +97,7 @@ export const Header: React.FC = () => {
                 type="button"
                 className="p-2 rounded-md text-text-700 hover:text-primary-700"
                 onClick={() => setMobileMenuOpen(!isMobileMenuOpen)}
+                aria-label={isMobileMenuOpen ? t('close_menu', 'Close menu') : t('open_menu', 'Open menu')}
               >
                 {isMobileMenuOpen ? (
                   <XMarkIcon className="w-6 h-6" />

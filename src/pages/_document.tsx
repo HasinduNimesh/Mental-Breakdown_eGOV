@@ -1,4 +1,5 @@
 import { Html, Head, Main, NextScript } from 'next/document';
+import { i18n } from 'next-i18next';
 
 export default function Document() {
   return (
@@ -16,6 +17,8 @@ export default function Document() {
         />
       </Head>
       <body>
+        {/* Skip to content for keyboard and screen readers */}
+        <a href="#main-content" className="skip-link">{i18n?.t?.('skip_to_content') ?? 'Skip to main content'}</a>
         <Main />
         <NextScript />
       </body>

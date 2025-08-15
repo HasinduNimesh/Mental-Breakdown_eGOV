@@ -26,6 +26,8 @@
   .wave-animate {
     animation: none;
   }
+  html:focus-within { scroll-behavior: auto; }
+  * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
 
 /* Custom scrollbar styles */
@@ -43,6 +45,25 @@
   outline: 2px solid theme('colors.primary.700');
   outline-offset: 2px;
 }
+
+/* Skip link (visually hidden until focus) */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #ffffff;
+  color: #111827;
+  padding: 8px 12px;
+  z-index: 1000;
+  border: 2px solid #1D4ED8;
+  border-radius: 4px;
+}
+.skip-link:focus { top: 8px; }
+
+/* Readable type scale and paragraph width */
+html { font-size: 16px; }
+body { line-height: 1.65; }
+p, .prose p { max-width: 75ch; }
 
 /* Optional large-text helper (toggled via store) */
 .large-text { font-size: 112%; }
@@ -197,6 +218,14 @@ body.btt-visible .offset-for-btt {
 .back-to-top:hover svg {
   transform: translateY(-50%) rotate(-90deg);
   stroke-width: 3px;
+}
+
+/* Respect reduced motion for back-to-top */
+@media (prefers-reduced-motion: reduce) {
+  .back-to-top:hover .clone > *,
+  .back-to-top:hover .text > *,
+  .back-to-top:hover svg,
+  .back-to-top:before { transition: none !important; }
 }
 
 /* Hero diamond pattern overlay (for gradient hero sections) */

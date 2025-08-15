@@ -17,7 +17,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <div className={`min-h-screen bg-bg-100 ${accessibility.highContrast ? 'high-contrast' : ''} ${accessibility.largeText ? 'large-text' : ''}`}>
       {!hideHeader && <Header />}
-      <main>
+  <main id="main-content" tabIndex={-1}>
         {children}
       </main>
   {!hideHeader && <BackToTop />}

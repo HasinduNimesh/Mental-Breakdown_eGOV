@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { MagnifyingGlassIcon, ClockIcon } from '@heroicons/react/24/outline';
 import { SEARCH_ITEMS, expandQuery } from '@/lib/searchIndex';
+import { track } from '@/lib/analytics';
 
 export const HeaderSearch: React.FC = () => {
   const router = useRouter();
@@ -39,6 +40,7 @@ export const HeaderSearch: React.FC = () => {
     const term = q.trim();
     if (!term) return;
     setRecent((r) => [term, ...r.filter((x) => x !== term)].slice(0, 6));
+  track('search_submit', { term });
     router.push(`/services?query=${encodeURIComponent(term)}`);
     setOpen(false);
   };
@@ -54,11 +56,14 @@ export const HeaderSearch: React.FC = () => {
       setActiveIdx((i) => Math.max(i - 1, 0));
     } else if (e.key === 'Enter') {
       if (q && results.length > 0) {
-        router.push(results[activeIdx]?.href ?? results[0].href);
+  const target = results[activeIdx]?.href ?? results[0].href;
+  track('search_suggestion_click', { term: q, href: target });
+  router.push(target);
         setOpen(false);
       } else if (!q && recent.length > 0) {
         const term = recent[activeIdx] ?? recent[0];
         setQ(term);
+  track('search_recent_click', { term });
         router.push(`/services?query=${encodeURIComponent(term)}`);
         setOpen(false);
       }
@@ -92,7 +97,7 @@ export const HeaderSearch: React.FC = () => {
                     href={r.href}
                     className={`flex items-center gap-2 px-3 py-2 text-sm hover:bg-bg-100 ${i === activeIdx ? 'bg-bg-100' : ''}`}
                     onMouseEnter={() => setActiveIdx(i)}
-                    onClick={() => setOpen(false)}
+                    onClick={() => { setOpen(false); track('search_suggestion_click', { term: q, href: r.href }); }}
                   >
                     <MagnifyingGlassIcon className="w-4 h-4 text-text-500" />
                     <span className="truncate">{r.label}</span>
@@ -111,6 +116,7 @@ export const HeaderSearch: React.FC = () => {
                       onMouseEnter={() => setActiveIdx(i)}
                       onClick={() => {
                         setQ(term);
+                        track('search_recent_click', { term });
                         router.push(`/services?query=${encodeURIComponent(term)}`);
                         setOpen(false);
                       }}

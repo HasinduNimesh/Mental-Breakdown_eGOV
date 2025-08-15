@@ -15,6 +15,8 @@ import {
   CalendarDaysIcon,
   SpeakerWaveIcon,
   ClipboardDocumentListIcon,
+  ExclamationTriangleIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { FOOTER_DETAILS, FOOTER_COLUMNS } from '@/lib/footerConfig';
 import { Container } from '@/components/ui/Container';
@@ -71,20 +73,17 @@ export const WelcomeDashboard: React.FC = () => {
               <div className="text-blue-200 text-xs sm:text-sm uppercase tracking-wider mb-4 font-semibold">
                 OUR MISSION IS <span className="text-orange-400">FOR YOU!</span>
               </div>
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-6">
-                WELCOME TO<br />
-                <span className="text-blue-200">GOVERNMENT CITIZEN</span><br />
-                SERVICES
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-3">
+                Government Citizen Services Portal
               </h1>
-              <p className="text-lg sm:text-xl text-blue-100 mb-6 sm:mb-8 max-w-xl">
+              <p className="text-base sm:text-lg text-blue-200 mb-4 max-w-2xl">
+                Book, manage, and track your public service appointments online.
+              </p>
+              <p className="text-sm sm:text-base text-blue-100 mb-6 sm:mb-8 max-w-xl italic">
                 "Public service should be the birthright of every citizen"
               </p>
-              <p className="text-base sm:text-lg text-blue-200 mb-6 sm:mb-8 max-w-xl">
-                Book, manage, and track your public service appointments with ease. 
-                Access passport services, driving licenses, registrations, and more.
-              </p>
               <div className="flex flex-col sm:flex-row flex-wrap gap-4">
-                <Button size="lg" variant="secondary">Explore Services</Button>
+                <Button size="lg" variant="secondary" href="/services">Explore Services</Button>
                 <Button size="lg" variant="outline" className="border-white text-white hover:text-blue-900">Contact Directory</Button>
               </div>
             </div>
@@ -178,13 +177,45 @@ export const WelcomeDashboard: React.FC = () => {
               colors={{ from: 'from-red-500', to: 'to-red-600', ring: 'ring-red-200' }}
             />
             <GovAction
-              href="/citizen"
-              label="Citizen Portal"
-              icon={AcademicCapIcon}
+              href="/checkin"
+              label="Track Token / Check-in"
+              icon={SpeakerWaveIcon}
               colors={{ from: 'from-indigo-500', to: 'to-indigo-600', ring: 'ring-indigo-200' }}
             />
           </div>
   </Container>
+      </section>
+
+      {/* Top Services Highlights */}
+      <section className="bg-bg-100 py-12 sm:py-16">
+        <Container>
+          <div className="mb-8 sm:mb-10 flex items-end justify-between">
+            <div>
+              <h3 className="text-2xl sm:text-3xl font-bold text-text-900">Top Services</h3>
+              <p className="text-text-600">Most requested services—book directly or read the guide.</p>
+            </div>
+            <a href="/services" className="text-primary-700 hover:text-primary-800 font-medium">View all services</a>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              { id: 'passport', title: 'Passport Application', desc: 'New/renewal and one-day service', book: '/book?service=passport', guide: '/help#passport' },
+              { id: 'dl', title: 'Driving Licence Renewal', desc: 'Appointments for renewals & tests', book: '/book?service=license', guide: '/help#license' },
+              { id: 'birth', title: 'Birth Certificate', desc: 'Certified copies and searches', book: '/book?service=birth-cert', guide: '/help#birth-cert' },
+              { id: 'pcc', title: 'Police Clearance', desc: 'For employment, visas, immigration', book: '/book?service=police-clearance', guide: '/help#pcc' },
+              { id: 'consular', title: 'Consular Attestation', desc: 'Document attestation services', book: '/book?service=consular', guide: '/help#consular' },
+              { id: 'business', title: 'Business Registration', desc: 'Register a business or company', book: '/book?service=business-reg', guide: '/help#business' },
+            ].slice(0,6).map((s) => (
+              <Card key={s.id} className="p-6">
+                <div className="mb-2 text-text-900 font-semibold">{s.title}</div>
+                <div className="text-sm text-text-600 mb-4">{s.desc}</div>
+                <div className="flex gap-3">
+                  <Button href={s.book} size="sm">Book</Button>
+                  <Button href={s.guide} variant="outline" size="sm">Guide</Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </Container>
       </section>
 
       {/* Welcome Section */}
@@ -286,58 +317,10 @@ export const WelcomeDashboard: React.FC = () => {
   </Container>
       </section>
 
-      {/* News and Notices */}
-      <section className="bg-white py-16">
+    {/* Notices and News */}
+    <section className="bg-white py-16">
   <Container>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Latest News */}
-            <div className="bg-white border border-border rounded-lg shadow-card p-6">
-              <h3 className="text-h3 font-bold text-text-900 mb-6">Latest News</h3>
-              <div className="space-y-4">
-                {[
-                  { title: 'Passport One-Day service extended in Colombo', date: '2025-07-21', category: 'Immigration', href: '/news/passport-one-day' },
-                  { title: 'Driving Licence renewals now by appointment', date: '2025-07-18', category: 'Motor Traffic', href: '/news/licence-renewal' },
-                  { title: 'Consular Mobile Service announced for Kandy', date: '2025-07-12', category: 'Foreign Affairs', href: '/news/consular-mobile' },
-                ].map((item, index) => (
-                  <a key={index} href={item.href} className="block group">
-                    <div className="grid grid-cols-1 gap-2">
-                      <h4 className="text-text-900 font-medium group-hover:text-primary-700 transition-colors">
-                        {item.title}
-                      </h4>
-                      <div className="flex items-center justify-between text-sm">
-                        <time className="text-text-500">{new Date(item.date).toLocaleDateString()}</time>
-                        <span className="text-primary-600 text-xs font-medium">{item.category}</span>
-                      </div>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            </div>
-
-            {/* Special Notices */}
-            <div className="bg-white border border-border rounded-lg shadow-card p-6">
-              <h3 className="text-h3 font-bold text-text-900 mb-6">Special Notices</h3>
-              <div className="space-y-4">
-                {[
-                  { title: 'Registrar General: Online copies for Birth/Marriage available', date: '2025-08-01', category: 'Registrations', href: '/notices/rg-online-copies' },
-                  { title: 'e-Services maintenance window on Sunday 1–3 AM', date: '2025-07-25', category: 'System', href: '/notices/maintenance' },
-                  { title: 'Public Grievance hotline available 24x7', date: '2025-07-05', category: 'Citizen', href: '/notices/grievance' },
-                ].map((item, index) => (
-                  <a key={index} href={item.href} className="block group">
-                    <div className="grid grid-cols-1 gap-2">
-                      <h4 className="text-text-900 font-medium group-hover:text-primary-700 transition-colors">
-                        {item.title}
-                      </h4>
-                      <div className="flex items-center justify-between text-sm">
-                        <time className="text-text-500">{new Date(item.date).toLocaleDateString()}</time>
-                        <span className="text-primary-600 text-xs font-medium">{item.category}</span>
-                      </div>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            </div>
-          </div>
+      <NoticesAndNews />
   </Container>
       </section>
 
@@ -376,26 +359,22 @@ export const WelcomeDashboard: React.FC = () => {
               <Card className="p-6">
                 <h3 className="text-h3 font-bold text-text-900 mb-6 font-heading">Partner Agencies</h3>
                 <div className="relative">
-                  <div id="partners-scroll" className="flex gap-4 overflow-x-auto scroll-smooth no-scrollbar pb-2">
+                  <PartnerTabs />
+                  <div id="partners-scroll" className="mt-3 flex gap-4 overflow-x-auto scroll-smooth no-scrollbar pb-2">
                     {[
-                      { name: 'Department of Immigration & Emigration' },
-                      { name: 'Department of Motor Traffic' },
-                      { name: 'Ministry of Foreign Affairs' },
-                      { name: 'Registrar General Department' },
-                      { name: 'Government Information Center (1919)' },
-                      { name: 'Gov.lk' },
+                      { name: 'Department of Immigration & Emigration', key: 'Immigration' },
+                      { name: 'Department of Motor Traffic', key: 'Motor Traffic' },
+                      { name: 'Ministry of Foreign Affairs', key: 'Foreign Affairs' },
+                      { name: 'Registrar General Department', key: 'Registrar' },
+                      { name: 'Government Information Center (1919)', key: 'GIC 1919' },
+                      { name: 'Gov.lk', key: 'Gov.lk' },
                     ].map((partner, index) => (
-                      <a key={index} href="#" className="flex-none w-56 flex items-center justify-center p-4 border border-border rounded-md hover:bg-bg-100 transition-colors">
+                      <a key={partner.key} id={`partner-${partner.key}`} href="#" className="flex-none w-56 flex items-center justify-center p-4 border border-border rounded-md hover:bg-bg-100 transition-colors">
                         <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center text-xs text-center">
                           {partner.name.split(' ').map(word => word[0]).join('')}
                         </div>
                       </a>
                     ))}
-                  </div>
-                  <div className="mt-3 flex justify-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-primary-600/60" />
-                    <span className="w-2 h-2 rounded-full bg-border" />
-                    <span className="w-2 h-2 rounded-full bg-border" />
                   </div>
                 </div>
               </Card>
@@ -458,6 +437,109 @@ const AccessibilityButton: React.FC = () => {
       </button>
 
       <AccessibilityPanel open={open} onClose={() => setOpen(false)} />
+    </div>
+  );
+};
+
+// Stronger Notices and News section
+const NoticesAndNews: React.FC = () => {
+  const [dismissed, setDismissed] = React.useState<Record<string, boolean>>({});
+  const [pinnedIds, setPinnedIds] = React.useState<string[]>(['urgent-maint']);
+
+  const notices = [
+    { id: 'urgent-maint', title: 'e-Services maintenance window on Sunday 1–3 AM', date: '2025-07-25', category: 'System', href: '/notices/maintenance', urgent: true },
+    { id: 'rg-online', title: 'Registrar General: Online copies for Birth/Marriage available', date: '2025-08-01', category: 'Registrations', href: '/notices/rg-online-copies', urgent: false },
+    { id: 'grievance', title: 'Public Grievance hotline available 24x7', date: '2025-07-05', category: 'Citizen', href: '/notices/grievance', urgent: false },
+  ];
+
+  const news = [
+    { id: 'news1', title: 'Passport One-Day service extended in Colombo', date: '2025-07-21', category: 'Immigration', href: '/news/passport-one-day' },
+    { id: 'news2', title: 'Driving Licence renewals now by appointment', date: '2025-07-18', category: 'Motor Traffic', href: '/news/licence-renewal' },
+    { id: 'news3', title: 'Consular Mobile Service announced for Kandy', date: '2025-07-12', category: 'Foreign Affairs', href: '/news/consular-mobile' },
+  ];
+
+  const sortedNotices = notices
+    .filter(n => !dismissed[n.id])
+    .sort((a, b) => (Number(!!pinnedIds.includes(b.id)) - Number(!!pinnedIds.includes(a.id))));
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      {/* Special Notices (stronger visual) */}
+      <div className="bg-red-50 border border-red-200 rounded-lg shadow-card p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <ExclamationTriangleIcon className="w-5 h-5 text-red-600" />
+            <h3 className="text-h3 font-bold text-red-800">Special Notices</h3>
+          </div>
+          <a href="/notices" className="text-red-700 hover:text-red-800 text-sm font-medium">View all</a>
+        </div>
+        <div className="space-y-4">
+          {sortedNotices.map((item) => (
+            <div key={item.id} className={`group relative rounded-md p-4 ${item.urgent ? 'bg-red-100' : 'bg-white'} border ${item.urgent ? 'border-red-200' : 'border-border'}`}>
+              <a href={item.href} className="block">
+                <div className="grid grid-cols-1 gap-2">
+                  <h4 className="text-text-900 font-medium group-hover:text-primary-700 transition-colors">
+                    {item.title}
+                  </h4>
+                  <div className="flex items-center justify-between text-sm">
+                    <time className="text-text-500">{new Date(item.date).toLocaleDateString()}</time>
+                    <span className={`text-xs font-medium ${item.urgent ? 'text-red-700' : 'text-primary-600'}`}>{item.category}</span>
+                  </div>
+                </div>
+              </a>
+              <button aria-label="Dismiss" className="absolute top-2 right-2 text-text-500 hover:text-text-700" onClick={() => setDismissed((d) => ({ ...d, [item.id]: true }))}>
+                <XMarkIcon className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Latest News */}
+      <div className="bg-white border border-border rounded-lg shadow-card p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-h3 font-bold text-text-900">Latest News</h3>
+          <a href="/news" className="text-primary-700 hover:text-primary-800 text-sm font-medium">View all</a>
+        </div>
+        <div className="space-y-4">
+          {news.map((item) => (
+            <a key={item.id} href={item.href} className="block group">
+              <div className="grid grid-cols-1 gap-2">
+                <h4 className="text-text-900 font-medium group-hover:text-primary-700 transition-colors">
+                  {item.title}
+                </h4>
+                <div className="flex items-center justify-between text-sm">
+                  <time className="text-text-500">{new Date(item.date).toLocaleDateString()}</time>
+                  <span className="text-primary-600 text-xs font-medium">{item.category}</span>
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Partner agencies labeled tabs
+const PartnerTabs: React.FC = () => {
+  const tabs = ['Immigration', 'Motor Traffic', 'Foreign Affairs', 'Registrar', 'GIC 1919', 'Gov.lk'];
+  const [active, setActive] = React.useState(tabs[0]);
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {tabs.map((t) => (
+        <button
+          key={t}
+          onClick={() => {
+            setActive(t);
+            const el = document.querySelector(`#partner-${t}`);
+            el?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+          }}
+          className={`px-3 py-1.5 text-sm rounded-full border ${active === t ? 'bg-primary-700 text-white border-primary-700' : 'bg-white text-text-700 border-border hover:bg-bg-100'}`}
+        >
+          {t}
+        </button>
+      ))}
     </div>
   );
 };

@@ -10,6 +10,10 @@ import { EnvelopeIcon, MapPinIcon, PhoneIcon, ClockIcon } from '@heroicons/react
 
 const ContactPage: React.FC = () => {
   const { orgName, address, phones, email } = FOOTER_DETAILS;
+  const hotlineNumber = phones?.[0] ?? '1919';
+  const hotlineHref = `tel:${hotlineNumber.replace(/\s+/g, '')}`;
+  const mailtoHref = `mailto:${email}?subject=${encodeURIComponent('Support request via Citizen Portal')}`;
+  const mapHref = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 
   return (
     <Layout>
@@ -46,9 +50,20 @@ const ContactPage: React.FC = () => {
                 We're here to help. Reach out via phone, email, or visit our offices.
               </p>
               <div className="flex flex-col sm:flex-row flex-wrap gap-4">
-                <Button size="lg" variant="secondary" href="/book">Book Appointment</Button>
-                <Button size="lg" variant="outline" className="border-white text-white hover:text-blue-900">Send Message</Button>
+                <Button size="lg" variant="secondary" href={hotlineHref}>
+                  <span className="inline-flex items-center gap-2">
+                    <PhoneIcon className="w-5 h-5" />
+                    Call Hotline
+                  </span>
+                </Button>
+                <Button size="lg" variant="outline" className="border-white text-white hover:text-blue-900" href={mailtoHref}>
+                  <span className="inline-flex items-center gap-2">
+                    <EnvelopeIcon className="w-5 h-5" />
+                    Send Message
+                  </span>
+                </Button>
               </div>
+              <p className="mt-3 text-blue-100 text-sm">We reply within 1 business day.</p>
             </div>
             
             {/* Right side with decorative elements */}
@@ -70,56 +85,10 @@ const ContactPage: React.FC = () => {
         </Container>
       </section>
 
-      {/* Contact options */}
+      {/* Action-supporting cards */}
       <section className="py-12 sm:py-16 bg-white">
         <Container>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Card className="p-6">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
-                  <PhoneIcon className="w-6 h-6 text-primary-700" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-text-900">Hotline</h3>
-                  <p className="text-text-600 mb-3">Government Information Center</p>
-                  <div className="space-y-1">
-                    {phones.map((p) => (
-                      <div key={p} className="font-medium text-text-900">{p}</div>
-                    ))}
-                    <div className="text-sm text-text-600">Short code: 1919</div>
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            <Card className="p-6">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-full bg-accent-100 flex items-center justify-center">
-                  <EnvelopeIcon className="w-6 h-6 text-accent-600" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-text-900">Email Support</h3>
-                  <p className="text-text-600 mb-3">We'll get back within one business day.</p>
-                  <div className="font-medium text-text-900">{email}</div>
-                </div>
-              </div>
-            </Card>
-
-            <Card className="p-6">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
-                  <MapPinIcon className="w-6 h-6 text-primary-700" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-text-900">Office</h3>
-                  <p className="text-text-600 mb-3">{orgName}</p>
-                  <div className="text-text-900">{address}</div>
-                </div>
-              </div>
-            </Card>
-          </div>
-
-          <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card className="p-6">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
@@ -132,15 +101,46 @@ const ContactPage: React.FC = () => {
               </div>
             </Card>
 
-            <Card className="p-6 md:col-span-2">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-lg font-semibold text-text-900">Need guidance?</h3>
-                  <p className="text-text-600">Browse the Service Guide or share feedback so we can help you faster.</p>
+            <Card className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
+                  <MapPinIcon className="w-6 h-6 text-primary-700" />
                 </div>
-                <div className="flex gap-3">
-                  <Button href="/help">Service Guide</Button>
-                  <Button href="/feedback" variant="outline">Give Feedback</Button>
+                <div>
+                  <h3 className="text-lg font-semibold text-text-900">Office Address</h3>
+                  <p className="text-text-600 mb-2">{orgName}</p>
+                  <div className="text-text-900 mb-3">{address}</div>
+                  <Button href={mapHref} variant="ghost">View on map</Button>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-6">
+              <div className="flex h-full items-start gap-4">
+                <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
+                  <EnvelopeIcon className="w-6 h-6 text-primary-700" />
+                </div>
+                <div className="flex-1 flex flex-col">
+                  <h3 className="text-lg font-semibold text-text-900">Service Guide</h3>
+                  <p className="text-text-600 mb-3">Find steps and required documents for common services.</p>
+                  <div className="mt-auto">
+                    <Button href="/help">Open Guide</Button>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-6">
+              <div className="flex h-full items-start gap-4">
+                <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
+                  <EnvelopeIcon className="w-6 h-6 text-primary-700" />
+                </div>
+                <div className="flex-1 flex flex-col">
+                  <h3 className="text-lg font-semibold text-text-900">Give Feedback</h3>
+                  <p className="text-text-600 mb-3">Tell us what worked and what could be improved.</p>
+                  <div className="mt-auto">
+                    <Button href="/feedback" variant="outline">Share Feedback</Button>
+                  </div>
                 </div>
               </div>
             </Card>

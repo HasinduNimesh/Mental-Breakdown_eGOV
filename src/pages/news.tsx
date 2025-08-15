@@ -105,15 +105,30 @@ const NewsPage: React.FC = () => {
   const { t } = useTranslation('common');
   const [selectedCategory, setSelectedCategory] = React.useState<CategoryId>('all');
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [selectedDepartment, setSelectedDepartment] = React.useState<'all' | string>('all');
+
+  const departments = React.useMemo(() => {
+    const set = new Set(allNews.map((n) => n.department));
+    return Array.from(set).sort();
+  }, []);
+
+  const departmentCounts = React.useMemo(() => {
+    const map = new Map<string, number>();
+    for (const n of allNews) {
+      map.set(n.department, (map.get(n.department) ?? 0) + 1);
+    }
+    return map;
+  }, []);
 
   const filtered = allNews.filter((n) => {
     const catOk = selectedCategory === 'all' || n.category === selectedCategory;
+    const deptOk = selectedDepartment === 'all' || n.department === selectedDepartment;
     const q = searchQuery.trim().toLowerCase();
     const queryOk = !q ||
       n.title.toLowerCase().includes(q) ||
       n.excerpt.toLowerCase().includes(q) ||
       n.department.toLowerCase().includes(q);
-    return catOk && queryOk;
+    return catOk && deptOk && queryOk;
   });
 
   const featured = allNews[0];
@@ -156,7 +171,7 @@ const NewsPage: React.FC = () => {
               {/* Search */}
               <div className="max-w-xl mb-6 sm:mb-8">
                 <div className="relative">
-                  <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-200" />
+                  <MagnifyingGlassIcon aria-hidden className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-200" />
                   <input
                     type="text"
                     placeholder="Search news, departments, or topics..."
@@ -245,7 +260,7 @@ const NewsPage: React.FC = () => {
               <div className="sticky top-6 space-y-6">
                 <Card className="p-4">
                   <div className="flex items-center gap-2 mb-3">
-                    <FunnelIcon className="w-5 h-5 text-text-600" />
+                    <FunnelIcon aria-hidden className="w-5 h-5 text-text-600" />
                     <h3 className="font-semibold text-text-900">Filter by category</h3>
                   </div>
                   <div className="space-y-2">
@@ -253,8 +268,8 @@ const NewsPage: React.FC = () => {
                       <button
                         key={c.id}
                         onClick={() => setSelectedCategory(c.id)}
-                        className={`w-full flex items-center justify-between p-3 rounded-lg text-left transition-colors ${
-                          selectedCategory === c.id ? 'bg-primary-100 text-primary-700' : 'hover:bg-bg-100 text-text-700'
+                        className={`w-full flex items-center justify-between p-3 rounded-lg text-left border transition-colors ${
+                          selectedCategory === c.id ? 'bg-primary-50 border-primary-200 text-primary-700' : 'border-border hover:bg-bg-100 text-text-700'
                         }`}
                         aria-pressed={selectedCategory === c.id}
                       >
@@ -268,6 +283,26 @@ const NewsPage: React.FC = () => {
                       </button>
                     ))}
                   </div>
+                </Card>
+
+                <Card className="p-4">
+                  <div className="mb-2">
+                    <h3 className="font-semibold text-text-900">Department</h3>
+                  </div>
+                  <label className="sr-only" htmlFor="dept-select">Department</label>
+                  <select
+                    id="dept-select"
+                    value={selectedDepartment}
+                    onChange={(e) => setSelectedDepartment(e.target.value)}
+                    className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm text-text-900 focus:outline-none focus:ring-2 focus:ring-primary-600"
+                  >
+                    <option value="all">All departments ({allNews.length})</option>
+                    {departments.map((d) => (
+                      <option key={d} value={d}>
+                        {d} ({departmentCounts.get(d) ?? 0})
+                      </option>
+                    ))}
+                  </select>
                 </Card>
 
                 <Card className="p-4">
@@ -293,10 +328,14 @@ const NewsPage: React.FC = () => {
                   <Card key={n.id} className="p-5 hover:shadow-lg transition-shadow">
                     <div className="flex flex-col h-full">
                       <div className="flex items-start justify-between gap-3 mb-2">
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <Badge tone="info">{n.category}</Badge>
+                          <Badge tone="neutral" className="text-xs inline-flex items-center gap-1">
+                            <BuildingOfficeIcon className="w-3.5 h-3.5" /> {n.department}
+                          </Badge>
                           <span className="text-xs text-text-500 inline-flex items-center gap-1">
-                            <ClockIcon className="w-4 h-4" /> {new Date(n.publishedAt).toLocaleDateString()}
+                            <ClockIcon className="w-4 h-4" />
+                            {new Date(n.publishedAt).toLocaleString(undefined, { year: 'numeric', month: 'short', day: '2-digit', hour: 'numeric', minute: '2-digit' })}
                           </span>
                         </div>
                         <Badge tone="neutral" className="text-xs">{n.readTime}</Badge>
@@ -305,10 +344,7 @@ const NewsPage: React.FC = () => {
                       <h3 className="font-semibold text-text-900 text-base sm:text-lg mb-1 line-clamp-2">{n.title}</h3>
                       <p className="text-sm text-text-600 line-clamp-3 mb-3">{n.excerpt}</p>
 
-                      <div className="mt-auto flex items-center justify-between pt-2">
-                        <span className="text-xs text-text-500 inline-flex items-center gap-1">
-                          <BuildingOfficeIcon className="w-4 h-4" /> {n.department}
-                        </span>
+                      <div className="mt-auto flex items-center justify-end pt-2">
                         <Button href={n.href} variant="ghost" size="sm" trailingIcon={<ChevronRightIcon className="w-4 h-4" />}>Read</Button>
                       </div>
                     </div>
@@ -336,14 +372,30 @@ const NewsPage: React.FC = () => {
         <Container>
           <div className="text-center max-w-3xl mx-auto">
             <h2 className="text-2xl sm:text-3xl font-bold text-text-900 mb-3">Stay informed</h2>
-            <p className="text-text-600 mb-6">Subscribe to receive official updates and advisories from government departments.</p>
+            <p className="text-text-600 mb-6">Choose how you’d like to receive official updates and advisories.</p>
             <div className="max-w-xl mx-auto">
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="grid grid-cols-1 gap-3">
+                <div className="flex items-center justify-center gap-4">
+                  <label className="inline-flex items-center gap-2 text-sm text-text-700">
+                    <input type="radio" name="sub-type" defaultChecked className="accent-primary-600" />
+                    Weekly digest (every Friday)
+                  </label>
+                  <label className="inline-flex items-center gap-2 text-sm text-text-700">
+                    <input type="radio" name="sub-type" className="accent-primary-600" />
+                    Instant alerts (critical notices)
+                  </label>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3">
                 <input type="email" placeholder="Enter your email"
                   className="flex-1 px-4 py-3 rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-primary-600" />
                 <Button>Subscribe</Button>
+                </div>
               </div>
-              <p className="text-xs text-text-500 mt-2">We respect your privacy. Unsubscribe anytime.</p>
+              <p className="mt-3 text-xs sm:text-sm text-text-600 flex items-start justify-center gap-2">
+                <InformationCircleIcon className="w-4 h-4 text-primary-600 mt-0.5" />
+                We respect your privacy. You’ll receive either a weekly summary or immediate alerts based on your choice. Unsubscribe anytime. See our
+                <a href="/privacy" className="ml-1 underline text-primary-700 hover:text-primary-800">Privacy Policy</a>.
+              </p>
             </div>
           </div>
         </Container>
