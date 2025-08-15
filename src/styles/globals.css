@@ -1,0 +1,248 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom wave line animations */
+.wave-line {
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+}
+
+.wave-animate {
+  animation: wave 8s ease-in-out infinite;
+}
+
+@keyframes wave {
+  0%, 100% {
+    d: path("M-220 90 Q 800 60 1820 108");
+  }
+  50% {
+    d: path("M-220 90 Q 800 30 1820 108");
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .wave-animate {
+    animation: none;
+  }
+  html:focus-within { scroll-behavior: auto; }
+  * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
+
+/* Custom scrollbar styles */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Accessible focus styles */
+:focus-visible {
+  outline: 2px solid theme('colors.primary.700');
+  outline-offset: 2px;
+}
+
+/* Skip link (visually hidden until focus) */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #ffffff;
+  color: #111827;
+  padding: 8px 12px;
+  z-index: 1000;
+  border: 2px solid #1D4ED8;
+  border-radius: 4px;
+}
+.skip-link:focus { top: 8px; }
+
+/* Readable type scale and paragraph width */
+html { font-size: 16px; }
+body { line-height: 1.65; }
+p, .prose p { max-width: 75ch; }
+
+/* Optional large-text helper (toggled via store) */
+.large-text { font-size: 112%; }
+
+/* High contrast mode helper (toggled via store) */
+.high-contrast { 
+  color: #000 !important; 
+  background-color: #fff !important; 
+}
+.high-contrast a { text-decoration: underline; }
+.high-contrast .shadow-card { box-shadow: none !important; }
+.high-contrast .border, .high-contrast [class*='border-'] { border-color: #000 !important; }
+
+/* Neutralize dark/gradient backgrounds for consistent black-on-white contrast */
+.high-contrast .bg-primary-900,
+.high-contrast .bg-gradient-to-r,
+.high-contrast .from-blue-900,
+.high-contrast .via-blue-800,
+.high-contrast .to-blue-900,
+.high-contrast .bg-white\/10,
+.high-contrast .bg-white\/5,
+.high-contrast .backdrop-blur-sm {
+  background: #fff !important;
+  background-image: none !important;
+  color: #000 !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Ensure text utilities don't force white on white bg */
+.high-contrast .text-white { color: #000 !important; }
+.high-contrast .text-primary-600,
+.high-contrast .text-primary-700,
+.high-contrast .text-blue-100,
+.high-contrast .text-blue-200 { color: #000 !important; }
+
+/* Buttons become solid black with white text */
+.high-contrast .bg-primary-700,
+.high-contrast .hover\:bg-primary-800:hover,
+.high-contrast .bg-accent-500,
+.high-contrast .hover\:bg-accent-600:hover {
+  background-color: #000 !important;
+  color: #fff !important;
+  border-color: #000 !important;
+}
+
+/* Outline/ghost variants use black text and border on white */
+.high-contrast .border-primary-700,
+.high-contrast .text-primary-700,
+.high-contrast .hover\:bg-bg-100:hover {
+  border-color: #000 !important;
+  color: #000 !important;
+  background-color: #fff !important;
+}
+
+/* Hide decorative wave lines for clarity */
+.high-contrast .wave-line { display: none !important; }
+
+/* High-contrast adjustments for GovAction decorative shapes */
+.high-contrast .dec-bubble,
+.high-contrast .dec-wedge { display: none !important; }
+.high-contrast .ring-primary-200 { box-shadow: inset 0 0 0 1px #000 !important; }
+
+/* Back to top animated button */
+.back-to-top {
+  width: 140px;
+  height: 56px;
+  overflow: hidden;
+  border: none;
+  color: #000;
+  background: none;
+  position: relative;
+  padding-bottom: 2em;
+  cursor: pointer;
+}
+
+/* When BackToTop is visible, allow other floating controls to offset if they reference this class */
+body.btt-visible .offset-for-btt {
+  bottom: 5rem !important; /* equals bottom-20 on mobile */
+}
+
+@media (min-width: 640px) {
+  body.btt-visible .offset-for-btt {
+    bottom: 6rem !important; /* equals bottom-24 on desktop */
+  }
+}
+
+.back-to-top > div,
+.back-to-top > svg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+}
+
+.back-to-top:before {
+  content: "";
+  position: absolute;
+  height: 2px;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: bottom right;
+  background: currentColor;
+  transition: transform 0.25s ease-out;
+}
+
+.back-to-top:hover:before {
+  transform: scaleX(1);
+  transform-origin: bottom left;
+}
+
+.back-to-top .clone > *,
+.back-to-top .text > * {
+  opacity: 1;
+  font-size: 1.1rem;
+  transition: 0.2s;
+  margin-left: 4px;
+}
+
+.back-to-top .clone > * {
+  transform: translateY(60px);
+}
+
+.back-to-top:hover .clone > * {
+  opacity: 1;
+  transform: translateY(0px);
+  transition: all 0.2s cubic-bezier(0.215, 0.61, 0.355, 1) 0s;
+}
+
+.back-to-top:hover .text > * {
+  opacity: 1;
+  transform: translateY(-60px);
+  transition: all 0.2s cubic-bezier(0.215, 0.61, 0.355, 1) 0s;
+  font-weight: 700;
+}
+
+.back-to-top:hover .clone > :nth-child(1) { transition-delay: 0.15s; }
+.back-to-top:hover .clone > :nth-child(2) { transition-delay: 0.2s; }
+.back-to-top:hover .clone > :nth-child(3) { transition-delay: 0.25s; }
+.back-to-top:hover .clone > :nth-child(4) { transition-delay: 0.3s; }
+
+.back-to-top svg {
+  width: 20px;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%) rotate(-50deg);
+  transition: 0.2s ease-out;
+}
+
+.back-to-top:hover svg {
+  transform: translateY(-50%) rotate(-90deg);
+  stroke-width: 3px;
+}
+
+/* Respect reduced motion for back-to-top */
+@media (prefers-reduced-motion: reduce) {
+  .back-to-top:hover .clone > *,
+  .back-to-top:hover .text > *,
+  .back-to-top:hover svg,
+  .back-to-top:before { transition: none !important; }
+}
+
+/* Hero diamond pattern overlay (for gradient hero sections) */
+.hero-pattern {
+  position: relative;
+}
+
+.hero-pattern::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* Subtle diamond pattern via inline SVG */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Crect x='12' y='2' width='4' height='4' rx='0.8' transform='rotate(45 14 14)' fill='%23ffffff' fill-opacity='0.12'/%3E%3C/svg%3E");
+  background-size: 28px 28px;
+  background-repeat: repeat;
+}
+
+/* Tame pattern in high-contrast mode for readability */
+.high-contrast .hero-pattern::before { display: none !important; }
