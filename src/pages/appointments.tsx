@@ -8,13 +8,22 @@ import { getBookings, BookingDraft, SERVICES, OFFICES } from '@/lib/booking';
 import { useAuth } from '@/contexts/AuthContext';
 import SignInModal from '@/components/auth/SignInModal';
 
-function timeUntil(dateISO: string, time: string) {
-  const dt = new Date(`${dateISO}T${time}:00+05:30`);
-  const ms = dt.getTime() - Date.now();
-  if (ms <= 0) return 'Now';
-  const h = Math.floor(ms / 3600000);
-  const m = Math.floor((ms % 3600000) / 60000);
-  return `${h}h ${m}m`;
+function useTimeUntil(dateISO: string, time: string) {
+  const [value, setValue] = React.useState<string>('');
+  React.useEffect(() => {
+    const calc = () => {
+      const dt = new Date(`${dateISO}T${time}:00+05:30`);
+      const ms = dt.getTime() - Date.now();
+      if (ms <= 0) return 'Now';
+      const h = Math.floor(ms / 3600000);
+      const m = Math.floor((ms % 3600000) / 60000);
+      return `${h}h ${m}m`;
+    };
+    setValue(calc());
+    const id = window.setInterval(() => setValue(calc()), 30000);
+    return () => window.clearInterval(id);
+  }, [dateISO, time]);
+  return value;
 }
 
 const AppointmentsPage: React.FC = () => {
@@ -45,7 +54,8 @@ const AppointmentsPage: React.FC = () => {
             {list.map((b) => {
               const svc = SERVICES.find(s => s.id === b.serviceId)!;
               const off = OFFICES.find(o => o.id === b.officeId)!;
-              return (
+      const countdown = useTimeUntil(b.dateISO, b.time);
+      return (
                 <Card key={b.id} className="p-4 flex items-center justify-between gap-4">
                   <div>
                     <div className="font-semibold text-text-900">{svc.title}</div>
@@ -54,7 +64,7 @@ const AppointmentsPage: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-3">
                     <Badge tone={b.status === 'Scheduled' ? 'warning' : 'neutral'}>{b.status}</Badge>
-                    <Badge tone="neutral">Starts in {timeUntil(b.dateISO, b.time)}</Badge>
+        <Badge tone="neutral">Starts in {countdown || '—'}</Badge>
                     <div className="w-16 h-16 bg-[repeating-linear-gradient(45deg,_#e5e7eb,_#e5e7eb_8px,_#fff_8px,_#fff_16px)] rounded" aria-label="QR code" />
                   </div>
                 </Card>

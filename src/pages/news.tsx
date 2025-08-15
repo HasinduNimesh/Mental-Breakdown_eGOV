@@ -4,6 +4,7 @@ import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useTranslation } from 'next-i18next';
 import { Layout } from '@/components/layout/Layout';
 import { Container } from '@/components/ui/Container';
+import { formatDate } from '@/lib/date';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
@@ -236,7 +237,7 @@ const NewsPage: React.FC = () => {
                     <BuildingOfficeIcon className="w-4 h-4" /> {featured.department}
                   </span>
                   <span className="inline-flex items-center gap-1">
-                    <ClockIcon className="w-4 h-4" /> {new Date(featured.publishedAt).toLocaleDateString()}
+                    <ClockIcon className="w-4 h-4" /> {formatDate(featured.publishedAt)}
                   </span>
                   <span className="inline-flex items-center gap-1">
                     <CalendarDaysIcon className="w-4 h-4" /> {featured.readTime}

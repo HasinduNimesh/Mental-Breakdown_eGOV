@@ -27,6 +27,7 @@ import { NoticeRail } from '@/components/notice/NoticeRail';
 import { GovAction } from '@/components/ui/GovAction';
 import { useInView } from '@/lib/hooks/useInView';
 import { AccessibilityPanel } from '@/components/ui/AccessibilityPanel';
+import { formatDate } from '@/lib/date';
 
 interface NavigationItem {
   label: string;
@@ -42,13 +43,7 @@ export const WelcomeDashboard: React.FC = () => {
 
   return (
     <div>
-      {/* Skip to content */}
-      <a 
-        href="#main-content" 
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-accent-500 text-white px-4 py-2 rounded-md z-50 focus:outline-none focus:ring-2 focus:ring-white"
-      >
-        Skip to content
-      </a>
+  {/* Skip link removed per design */}
 
       {/* Hero Section */}
   <section className="relative overflow-hidden bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 text-white">
@@ -482,7 +477,7 @@ const NoticesAndNews: React.FC = () => {
                     {item.title}
                   </h4>
                   <div className="flex items-center justify-between text-sm">
-                    <time className="text-text-500">{new Date(item.date).toLocaleDateString()}</time>
+                    <time className="text-text-500">{formatDate(item.date)}</time>
                     <span className={`text-xs font-medium ${item.urgent ? 'text-red-700' : 'text-primary-600'}`}>{item.category}</span>
                   </div>
                 </div>
@@ -509,7 +504,7 @@ const NoticesAndNews: React.FC = () => {
                   {item.title}
                 </h4>
                 <div className="flex items-center justify-between text-sm">
-                  <time className="text-text-500">{new Date(item.date).toLocaleDateString()}</time>
+                  <time className="text-text-500">{formatDate(item.date)}</time>
                   <span className="text-primary-600 text-xs font-medium">{item.category}</span>
                 </div>
               </div>

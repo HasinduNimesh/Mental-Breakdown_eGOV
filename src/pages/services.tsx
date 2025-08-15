@@ -437,11 +437,11 @@ const ServicesPage: React.FC = () => {
               <div className="flex flex-col sm:flex-row flex-wrap gap-4">
                 {/* Experiment: single vs dual CTA */}
                 {getExperimentVariant('services_hero_cta', ['single','dual']) === 'single' ? (
-                  <Button size="lg" variant="secondary">Book Appointment</Button>
+                  <Button href="/book" size="lg" variant="secondary">Book Appointment</Button>
                 ) : (
                   <>
-                    <Button size="lg" variant="secondary">Book Appointment</Button>
-                    <Button size="lg" variant="outline" className="border-white text-white hover:text-blue-900">Service Guide</Button>
+                    <Button href="/book" size="lg" variant="secondary">Book Appointment</Button>
+                    <Button href="/help" size="lg" variant="outline" className="border-white text-white hover:text-blue-900">Service Guide</Button>
                   </>
                 )}
               </div>
