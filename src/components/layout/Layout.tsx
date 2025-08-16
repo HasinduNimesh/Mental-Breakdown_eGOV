@@ -8,31 +8,33 @@ interface LayoutProps {
 
 export function Layout({ children, title }: LayoutProps) {
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      {/* Header */}
-      <header className="border-b bg-white shadow-sm">
-        <div className="mx-auto max-w-6xl px-4 py-3 flex justify-between items-center">
-          <h1 className="text-lg font-bold">{title || "Admin Dashboard"}</h1>
-          <nav className="flex gap-6">
-            <Link href="/dashboard" className="hover:underline">
-              Super Admin
-            </Link>
-            <Link href="/health_ministry" className="hover:underline">
-              Health Ministry
-            </Link>
-          </nav>
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 text-slate-900 dark:text-slate-100">
+      {/* Sticky header only (no sidebar) */}
+      <header className="sticky top-0 z-20 border-b border-slate-200/60 dark:border-slate-800/60 bg-white/70 dark:bg-slate-900/40 backdrop-blur supports-[backdrop-filter]:backdrop-blur-md">
+        <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
+          <h1 className="text-base font-semibold bg-clip-text text-transparent bg-gradient-to-r from-sky-500 to-violet-500">
+            {title || "Admin Dashboard"}
+          </h1>
+          <Clock />
         </div>
       </header>
 
-      {/* Main content */}
-      <main className="flex-1 mx-auto w-full max-w-6xl px-4 py-6">
+      <main className="mx-auto w-full max-w-6xl px-4 py-6">
         {children}
       </main>
+    </div>
+  );
+}
 
-      {/* Footer */}
-      <footer className="border-t bg-white py-3 text-center text-sm text-gray-500">
-        © {new Date().getFullYear()} eGov System
-      </footer>
+function Clock() {
+  const [now, setNow] = React.useState<string>(() => new Date().toLocaleString());
+  React.useEffect(() => {
+    const t = setInterval(() => setNow(new Date().toLocaleString()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <div className="text-slate-600 dark:text-slate-400 tabular-nums" aria-label="Current date and time">
+      {now}
     </div>
   );
 }
