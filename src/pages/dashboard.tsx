@@ -48,7 +48,15 @@ function today(): string {
   const d = new Date();
   return d.toISOString().slice(0, 10);
 }
-type Dept = "health" | "immigration" | "motor_traffic" | "general";
+type Dept =
+  | "police"
+  | "health"
+  | "education"
+  | "immigration"
+  | "registration"
+  | "motor_traffic"
+  | "general";
+
 
 export default function Dashboard() {
   const { user } = useUser();
@@ -61,27 +69,30 @@ export default function Dashboard() {
 
   // --- Mock rows per department (swap with API later) ---
   const rowsByDept: Record<Dept, AppointmentRow[]> = React.useMemo(() => ({
+    police: [
+      { id: "P-101", department: "Sri Lanka Police", date: today(), time: "09:00", status: "Scheduled", patientName: "Complaint Filing", room: "Counter 3" },
+      { id: "P-102", department: "Sri Lanka Police", date: today(), time: "09:30", status: "In progress", patientName: "License Verification", room: "Counter 5" },
+    ],
     health: [
-      { id: "H-001", department: "Health", date: today(), time: "09:00", status: "Scheduled", doctorName: "Dr. Perera", patientName: "N. Silva", room: "OPD-3" },
-      { id: "H-002", department: "Health", date: today(), time: "10:30", status: "Delayed",   doctorName: "Dr. Fernando", patientName: "K. Jayasuriya", room: "Clinic-2", notes: "Priority: elderly" },
-      { id: "H-003", department: "Health", date: today(), time: "11:15", status: "In progress", doctorName: "Dr. Samarasinghe", patientName: "M. Peris", room: "OPD-1" },
-      { id: "H-004", department: "Health", date: today(), time: "12:00", status: "On hold", patientName: "Procedure", room: "OPD-2" },
-      { id: "H-005", department: "Health", date: today(), time: "12:30", status: "Completed", patientName: "Checkup", room: "OPD-5" },
+      { id: "H-001", department: "Ministry of Health", date: today(), time: "10:00", status: "Scheduled", patientName: "General Checkup", room: "OPD-1" },
+    ],
+    education: [
+      { id: "E-201", department: "Ministry of Education, Higher Education and Vocational Education", date: today(), time: "11:00", status: "Scheduled", patientName: "Scholarship Inquiry", room: "Desk A" },
     ],
     immigration: [
-      { id: "I-1201", department: "Immigration", date: today(), time: "08:45", status: "Scheduled", patientName: "Passport Renewal", room: "Counter 5" },
-      { id: "I-1202", department: "Immigration", date: today(), time: "09:30", status: "In progress", patientName: "New Passport", room: "Counter 2" },
-      { id: "I-1203", department: "Immigration", date: today(), time: "10:15", status: "Completed", patientName: "Collection", room: "Counter 1" },
+      { id: "I-301", department: "Department of Immigration & Emigration", date: today(), time: "08:45", status: "In progress", patientName: "Passport Renewal", room: "Counter 1" },
+    ],
+    registration: [
+      { id: "R-401", department: "Department for Registration of Persons", date: today(), time: "10:15", status: "Completed", patientName: "NIC Application", room: "Counter 2" },
     ],
     motor_traffic: [
-      { id: "M-501", department: "Motor Traffic", date: today(), time: "10:00", status: "Scheduled", patientName: "DL Renewal", room: "Desk A" },
-      { id: "M-502", department: "Motor Traffic", date: today(), time: "10:20", status: "No-show",   patientName: "Vehicle Transfer", room: "Desk C" },
-      { id: "M-503", department: "Motor Traffic", date: today(), time: "11:10", status: "In progress", patientName: "New DL", room: "Desk B" },
+      { id: "M-501", department: "Department of Motor Traffic", date: today(), time: "09:45", status: "Delayed", patientName: "DL Renewal", room: "Counter 4" },
     ],
     general: [
-      { id: "G-9001", department: "General", date: today(), time: "09:15", status: "Completed", patientName: "Counter Services", room: "Front Desk" },
+      { id: "G-9001", department: "General", date: today(), time: "09:15", status: "Completed", patientName: "Citizen Services", room: "Front Desk" },
     ],
   }), []);
+
 
   const rows = rowsByDept[dept];
 
@@ -253,9 +264,13 @@ function capitalize(s: string) {
 }
 function labelForDept(d: Dept) {
   switch (d) {
-    case "health": return "Health";
-    case "immigration": return "Immigration";
-    case "motor_traffic": return "Motor Traffic";
+    case "police": return "Sri Lanka Police";
+    case "health": return "Ministry of Health";
+    case "education": return "Ministry of Education, Higher Education and Vocational Education";
+    case "immigration": return "Department of Immigration & Emigration";
+    case "registration": return "Department for Registration of Persons";
+    case "motor_traffic": return "Department of Motor Traffic";
     default: return "General";
   }
 }
+

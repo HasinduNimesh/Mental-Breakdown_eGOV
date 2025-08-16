@@ -1,7 +1,7 @@
 import React from "react";
 import { useUser, type DepartmentId, type Role } from "../../context/UserContext";
 
-const departments: DepartmentId[] = ["health", "immigration", "motor_traffic", "general"];
+const departments: DepartmentId[] = ["police", "health","education","immigration","registration","motor_traffic","general"];
 const roles: Role[] = ["superadmin", "admin", "officer"];
 
 export function UserSwitcher() {

@@ -1,5 +1,7 @@
 import Link from "next/link";
 import React from "react";
+import dynamic from "next/dynamic";
+const Clock = dynamic(() => import("../clock"), { ssr: false });
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -26,15 +28,3 @@ export function Layout({ children, title }: LayoutProps) {
   );
 }
 
-function Clock() {
-  const [now, setNow] = React.useState<string>(() => new Date().toLocaleString());
-  React.useEffect(() => {
-    const t = setInterval(() => setNow(new Date().toLocaleString()), 1000);
-    return () => clearInterval(t);
-  }, []);
-  return (
-    <div className="text-slate-600 dark:text-slate-400 tabular-nums" aria-label="Current date and time">
-      {now}
-    </div>
-  );
-}

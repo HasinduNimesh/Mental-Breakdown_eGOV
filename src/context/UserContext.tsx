@@ -1,7 +1,14 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 export type Role = "admin" | "officer" | "superadmin";
-export type DepartmentId = "health" | "immigration" | "motor_traffic" | "general";
+export type DepartmentId = 
+    "police"
+  | "health"
+  | "education"
+  | "immigration"
+  | "registration"
+  | "motor_traffic"
+  | "general";
 
 export interface User {
   id: string;
