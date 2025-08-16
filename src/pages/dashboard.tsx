@@ -11,6 +11,8 @@ import { Container } from '../components/ui/Container';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { UserSwitcher } from "../components/debug/UserSwitcher";
+import { AppointmentTable, type AppointmentRow } from "../components/health/AppointmentTable";
+
 
 export default function Dashboard() {
   const { user } = useUser();
@@ -19,6 +21,41 @@ export default function Dashboard() {
   const title = user
     ? `${capitalize(user.departmentId.replace("_", " "))} – ${capitalize(user.role)}`
     : "Dashboard";
+
+  const healthRows: AppointmentRow[] = [
+    {
+      id: "APT-2025-001",
+      department: "Health",
+      date: "2025-08-16",
+      time: "10:30",
+      status: "Scheduled",
+      doctorName: "Dr. Ravi Perera",
+      patientName: "N. Silva",
+      room: "OPD-3",
+      notes: "Bring previous lab results.",
+    },
+    {
+      id: "APT-2025-002",
+      department: "Health",
+      date: "2025-08-16",
+      time: "09:00",
+      status: "Delayed",
+      doctorName: "Dr. S. Fernando",
+      patientName: "K. Jayasuriya",
+      room: "Clinic-2",
+      notes: "Priority: elderly",
+    },
+    {
+      id: "APT-2025-003",
+      department: "Health",
+      date: "2025-08-16",
+      time: "11:15",
+      status: "In progress",
+      doctorName: "Dr. S. Samarasinghe",
+      patientName: "M. Peris",
+      room: "OPD-1",
+    },
+  ];
 
   return (
     <Layout title={title}>
@@ -52,8 +89,15 @@ export default function Dashboard() {
             </Card>
           ))}
         </div>
-      </Container>
-    </Layout>
+        {/* 👇 HEALTH SECTION ONLY */}
+          {user?.departmentId === "health" && (
+            <section className="space-y-4">
+              <h2 className="text-xl font-semibold">Health Appointments</h2>
+              <AppointmentTable rows={healthRows} />
+            </section>
+          )}
+        </Container>
+      </Layout>
   );
 }
 
