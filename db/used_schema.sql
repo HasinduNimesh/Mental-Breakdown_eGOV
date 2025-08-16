@@ -120,23 +120,12 @@ create table if not exists public.appointment_documents (
 );
 create index if not exists appt_docs_by_booking on public.appointment_documents(booking_code);
 
--- Daily availability view used by month view
 create or replace view public.daily_availability as
 select service_id, office_id, slot_date,
        sum(remaining) as remaining,
        sum(capacity) as capacity
 from public.slots
 group by service_id, office_id, slot_date;
-
--- Attempt to mark the view as security invoker (supported on newer Postgres)
-DO $$
-BEGIN
-  BEGIN
-    EXECUTE 'ALTER VIEW public.daily_availability SET (security_invoker = on)';
-  EXCEPTION WHEN others THEN
-    RAISE NOTICE 'security_invoker is not supported on this Postgres version; skipping';
-  END;
-END $$;
 
 -- Atomic booking RPC
 create or replace function public.book_appointment(
@@ -153,7 +142,6 @@ create or replace function public.book_appointment(
 ) returns jsonb
 language plpgsql
 security definer
- set search_path = public, pg_temp
 as $$
 DECLARE
   v_remaining integer;
@@ -278,7 +266,6 @@ alter table public.bookings enable row level security;
 alter table public.appointment_documents enable row level security;
 alter table public.services enable row level security;
 alter table public.departments enable row level security;
-alter table public.offices enable row level security;
 alter table public.profiles enable row level security;
 alter table public.profile_documents enable row level security;
 alter table public.profile_photos enable row level security;
@@ -286,30 +273,16 @@ alter table public.session_locks enable row level security;
 alter table public.department_admins enable row level security;
 -- saved forms table added below also has RLS enabled later
 
--- Slots read (public), inserts/updates (admin placeholder - permissive)
 DROP POLICY IF EXISTS select_slots_for_all ON public.slots;
 DROP POLICY IF EXISTS insert_slots_for_admin ON public.slots;
 DROP POLICY IF EXISTS update_slots_for_admin ON public.slots;
 CREATE POLICY select_slots_for_all ON public.slots FOR SELECT USING (true);
--- Offices: allow read access for all (public catalog), with RLS enabled
+ALTER TABLE public.offices ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS select_offices_all ON public.offices;
 CREATE POLICY select_offices_all ON public.offices FOR SELECT USING (true);
 
--- Add email format validation to profiles (guarded)
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint
-    WHERE conname = 'profiles_valid_email_chk'
-      AND conrelid = 'public.profiles'::regclass
-  ) THEN
-    ALTER TABLE public.profiles
-      ADD CONSTRAINT profiles_valid_email_chk
-      CHECK (
-        email IS NULL OR email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$'
-      );
-  END IF;
-END $$;
+ALTER TABLE public.profiles
+  DROP CONSTRAINT IF EXISTS profiles_valid_email_chk;
 -- Allow admins of the owning department to manage capacity for their department's services
 CREATE POLICY insert_slots_for_admin ON public.slots FOR INSERT TO authenticated
   WITH CHECK (exists (

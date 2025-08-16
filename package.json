@@ -17,6 +17,7 @@
   "type-check": "tsc --noEmit",
   "clean": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true}); require('fs').rmSync('.turbo',{recursive:true,force:true})\"",
   "repo:dev": "turbo run dev --parallel",
+  "dev:analytics": "turbo run dev --filter=analytics_dashboard --parallel",
   "repo:build": "turbo run build",
   "repo:lint": "turbo run lint --parallel",
   "repo:type-check": "turbo run type-check --parallel",
