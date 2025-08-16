@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import { Container } from '@/components/ui/Container';
 import { Button } from '@/components/ui/Button';
 import { LanguageSwitcher } from './LanguageSwitcher';
-import { Bars3Icon, XMarkIcon, PhoneIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { Bars3Icon, XMarkIcon, PhoneIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from 'next-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -12,9 +12,11 @@ const navigation = [
   { name: 'Home', href: '/' },
   { name: 'About', href: '/about' },
   { name: 'Services', href: '/services' },
-  { name: 'News & Notices', href: '/news' },
+  { name: 'News', href: '/news' },
+  { name: 'About us', href: '/about' },
   { name: 'Contact', href: '/contact' },
-  { name: 'Feedback', href: '/feedback' }, // ✅ Added feedback link
+  { name: 'Service Guide', href: '/help' },
+  { name: 'Feedback', href: '/feedback' },
 ];
 
 export const Header: React.FC = () => {
@@ -23,11 +25,8 @@ export const Header: React.FC = () => {
   const { user, loading, signOut } = useAuth();
 
   const [isMobileMenuOpen, setMobileMenuOpen] = React.useState(false);
-  const [showSearch, setShowSearch] = React.useState(false);
-  const searchRef = React.useRef<HTMLInputElement>(null);
-  React.useEffect(() => { if (showSearch) searchRef.current?.focus(); }, [showSearch]);
-
   const [scrolled, setScrolled] = React.useState(false);
+
   React.useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 4);
     onScroll();
@@ -37,6 +36,7 @@ export const Header: React.FC = () => {
 
   const [profileOpen, setProfileOpen] = React.useState(false);
   const profileRef = React.useRef<HTMLDivElement>(null);
+
   React.useEffect(() => {
     if (!profileOpen) return;
     const onDocClick = (e: MouseEvent) => {
@@ -105,34 +105,6 @@ export const Header: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-4 ml-6">
-                <div className="relative">
-                  <button className="p-2 rounded-md hover:bg-bg-100 focus:outline-none focus:ring-2 focus:ring-[#93B4FF]" aria-label="Open search" aria-expanded={showSearch} onClick={() => setShowSearch((v) => !v)}>
-                    <MagnifyingGlassIcon className="w-5 h-5" />
-                  </button>
-                  {showSearch && (
-                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[280px] bg-white border border-border rounded-md shadow-lg p-2 z-50">
-                      <div className="flex items-center gap-2">
-                        <MagnifyingGlassIcon className="w-5 h-5 text-text-500" />
-                        <input
-                          ref={searchRef}
-                          type="search"
-                          placeholder="Search services, departments…"
-                          className="flex-1 outline-none text-sm"
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              const term = (e.target as HTMLInputElement).value.trim();
-                              if (term) router.push(`/services?query=${encodeURIComponent(term)}`);
-                              setShowSearch(false);
-                            } else if (e.key === 'Escape') {
-                              setShowSearch(false);
-                            }
-                          }}
-                          onBlur={() => setShowSearch(false)}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
                 {user && (
                   <Button href="/services" size="md" className="h-10 px-4 rounded-lg bg-[#2D5BFF] text-white hover:bg-[#224BE6] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">
                     Book appointment
@@ -184,19 +156,22 @@ export const Header: React.FC = () => {
                   Book
                 </Link>
               )}
-              <button
-                type="button"
-                className="p-2 rounded-md text-text-700 hover:bg-bg-100 focus:outline-none focus:ring-2 focus:ring-[#93B4FF]"
-                aria-label="Open search"
-                aria-expanded={showSearch}
-                onClick={() => { setShowSearch((v) => !v); if (isMobileMenuOpen) setMobileMenuOpen(false); }}
-              >
-                <MagnifyingGlassIcon className="w-6 h-6" />
-              </button>
+              {user && (
+                <button
+                  className="w-7 h-7 rounded-full bg-text-200 text-text-800 text-xs font-semibold flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-[#93B4FF]"
+                  title={user.email || 'Account'}
+                  onClick={() => setProfileOpen((v) => !v)}
+                  aria-haspopup="menu"
+                  aria-expanded={profileOpen}
+                  aria-controls="profile-menu"
+                >
+                  {initialsFromEmail(user.email)}
+                </button>
+              )}
               <button
                 type="button"
                 className="p-2 rounded-md text-text-700 hover:text-primary-700"
-                onClick={() => { setMobileMenuOpen(!isMobileMenuOpen); if (showSearch) setShowSearch(false); }}
+                onClick={() => { setMobileMenuOpen(!isMobileMenuOpen); }}
                 aria-label={isMobileMenuOpen ? t('close_menu', 'Close menu') : t('open_menu', 'Open menu')}
               >
                 {isMobileMenuOpen ? <XMarkIcon className="w-6 h-6" /> : <Bars3Icon className="w-6 h-6" />}
@@ -204,66 +179,55 @@ export const Header: React.FC = () => {
             </div>
           </div>
 
-          {showSearch && (
-            <div className="md:hidden absolute right-4 top-full mt-2 w-[min(90vw,320px)] bg-white border border-border rounded-md shadow-lg p-2 z-50">
-              <div className="flex items-center gap-2">
-                <MagnifyingGlassIcon className="w-5 h-5 text-text-500" />
-                <input
-                  ref={searchRef}
-                  type="search"
-                  placeholder="Search services, departments…"
-                  className="flex-1 outline-none text-sm"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      const term = (e.target as HTMLInputElement).value.trim();
-                      if (term) router.push(`/services?query=${encodeURIComponent(term)}`);
-                      setShowSearch(false);
-                    } else if (e.key === 'Escape') {
-                      setShowSearch(false);
-                    }
-                  }}
-                  onBlur={() => setShowSearch(false)}
-                />
-              </div>
+          {/* Mobile inline nav bar (keep items in the nav bar, not in the drawer) */}
+          <div className="md:hidden border-t border-border">
+            <div className="flex items-center gap-5 px-2 py-2 overflow-x-auto no-scrollbar">
+              {navigation.map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  aria-current={router.pathname === item.href ? 'page' : undefined}
+                  className={`whitespace-nowrap px-1 py-1.5 text-[15px] font-medium transition-colors relative ${router.pathname === item.href ? 'text-primary-700' : 'text-text-700 hover:text-primary-700'}`}
+                >
+                  {item.name}
+                  {router.pathname === item.href && (
+                    <span className="absolute -bottom-0.5 left-0 right-0 h-0.5 bg-[#2D5BFF]" aria-hidden />
+                  )}
+                </Link>
+              ))}
             </div>
-          )}
+          </div>
 
           {isMobileMenuOpen && (
             <div className="md:hidden border-t border-border">
               <div className="py-3 space-y-1">
-                {navigation.map((item) => (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={`block px-3 py-2 text-base font-medium transition-colors ${router.pathname === item.href ? 'text-primary-700 bg-primary-50' : 'text-text-700 hover:text-primary-700 hover:bg-bg-100'}`}
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    {item.name}
-                  </Link>
-                ))}
+                {/* Mobile requirement: no nav list items in the drawer */}
                 <div className="px-3 py-2 flex items-center justify-between">
                   <LanguageSwitcher />
                   <span className="flex items-center gap-1 text-text-600"><PhoneIcon className="w-4 h-4" />1919</span>
                 </div>
+                <Button
+                  href="/services"
+                  className="mx-3 my-2 w-[calc(100%-1.5rem)] justify-center"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Book appointment
+                </Button>
+                <Button
+                  href={user ? "/appointments" : "/signin?next=/appointments"}
+                  variant="outline"
+                  className="mx-3 mb-2 w-[calc(100%-1.5rem)] justify-center"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  My appointments
+                </Button>
                 {user && (
-                  <Button href="/services" className="mx-3 my-2 w-[calc(100%-1.5rem)] justify-center" onClick={() => setMobileMenuOpen(false)}>
-                    Book appointment
-                  </Button>
-                )}
-                {user && (
-                  <Button href="/appointments" variant="outline" className="mx-3 mb-2 w-[calc(100%-1.5rem)] justify-center" onClick={() => setMobileMenuOpen(false)}>
-                    My appointments
-                  </Button>
-                )}
-                {!user && (
-                  loading ? (
-                    <div className="mx-3 mb-3 w-[calc(100%-1.5rem)] h-10 rounded-lg bg-bg-100 border border-border animate-pulse" aria-hidden />
-                  ) : (
-                    <div className="mx-3 mb-3 flex gap-2">
-                      <Link href="/signin" className="flex-1 inline-flex items-center justify-center h-10 px-3 rounded-lg bg-white border border-[#1A4DCC] text-[#1A4DCC] text-sm font-semibold hover:bg-[#F5F8FF] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">Sign in</Link>
-                      <Link href="/signup" className="inline-flex items-center justify-center h-10 px-3 rounded-lg bg-[#1A4DCC] text-white text-sm font-semibold hover:bg-[#153FA6] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">Sign up</Link>
-                    </div>
-                  )
+                  <button
+                    className="mx-3 mb-3 w-[calc(100%-1.5rem)] h-10 rounded-lg border border-border text-[13px] font-medium hover:bg-bg-100"
+                    onClick={() => { setMobileMenuOpen(false); signOut(); }}
+                  >
+                    Sign out
+                  </button>
                 )}
               </div>
             </div>
