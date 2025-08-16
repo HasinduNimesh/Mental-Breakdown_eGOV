@@ -9,6 +9,8 @@ import { Button } from '../components/ui/Button';
 import { UserSwitcher } from "../components/debug/UserSwitcher";
 import { AppointmentTable, type AppointmentRow } from "../components/health/AppointmentTable";
 import { AppointmentDonutCard } from "../components/charts/AppointmentDonut";
+import { CalendarMonthCard, type DayCounts } from "../components/calendar/CalendarMonthCard";
+
 
 // ---------- date helpers ----------
 function toYMD(d: Date) {
@@ -24,34 +26,23 @@ function parseYMD(s: string) {
 function addDays(d: Date, n: number) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
 function addMonths(d: Date, n: number) { const x = new Date(d); x.setMonth(x.getMonth() + n); return x; }
 
-function startOfWeek(d: Date) { // Monday as start
-  const day = d.getDay(); // 0 Sun..6 Sat
-  const diff = (day + 6) % 7; // 0 for Mon
-  return addDays(new Date(d.getFullYear(), d.getMonth(), d.getDate()), -diff);
-}
+function startOfWeek(d: Date) { const day = d.getDay(); const diff = (day + 6) % 7; const x = new Date(d); x.setDate(d.getDate() - diff); x.setHours(0,0,0,0); return x; }
 function endOfWeek(d: Date) { return addDays(startOfWeek(d), 6); }
 function startOfMonth(d: Date) { return new Date(d.getFullYear(), d.getMonth(), 1); }
 function endOfMonth(d: Date) { return new Date(d.getFullYear(), d.getMonth() + 1, 0); }
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const MONTHS_LONG = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-function ordinal(n: number) {
-  const s = ["th","st","nd","rd"], v = n % 100;
-  return n + (s[(v - 20) % 10] || s[v] || s[0]);
-}
-function formatDayLabel(d: Date) {
-  return `${ordinal(d.getDate())} ${MONTHS_LONG[d.getMonth()]} ${d.getFullYear()}`;
-}
+function ordinal(n: number) { const s = ["th","st","nd","rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+function formatDayLabel(d: Date) { return `${ordinal(d.getDate())} ${MONTHS_LONG[d.getMonth()]} ${d.getFullYear()}`; }
 function formatWeekLabel(d: Date) {
   const a = startOfWeek(d), b = endOfWeek(d);
   const sameMonth = a.getMonth() === b.getMonth();
-  const left = `${a.getDate()} ${MONTHS[a.getMonth()]}`;
-  const right = `${b.getDate()} ${MONTHS[b.getMonth()]} ${b.getFullYear()}`;
-  return sameMonth ? `${a.getDate()}–${b.getDate()} ${MONTHS[a.getMonth()]} ${b.getFullYear()}` : `${left} – ${right}`;
+  return sameMonth
+    ? `${a.getDate()}–${b.getDate()} ${MONTHS[a.getMonth()]} ${b.getFullYear()}`
+    : `${a.getDate()} ${MONTHS[a.getMonth()]} – ${b.getDate()} ${MONTHS[b.getMonth()]} ${b.getFullYear()}`;
 }
-function formatMonthLabel(d: Date) {
-  return `${MONTHS_LONG[d.getMonth()]} ${d.getFullYear()}`;
-}
+function formatMonthLabel(d: Date) { return `${MONTHS_LONG[d.getMonth()]} ${d.getFullYear()}`; }
 // ----------------------------------
 
 function today(): string {
@@ -100,7 +91,7 @@ export default function Dashboard() {
   const [frame, setFrame] = React.useState<Frame>("day");
 
   const [dayDate, setDayDate] = React.useState<Date>(new Date());
-  const [weekDate, setWeekDate] = React.useState<Date>(new Date());           // any day in the week
+  const [weekDate, setWeekDate] = React.useState<Date>(new Date());                 // any day in the week
   const [monthDate, setMonthDate] = React.useState<Date>(startOfMonth(new Date())); // first of month
 
   function handlePrev() {
@@ -141,6 +132,7 @@ export default function Dashboard() {
     });
   }, [rows, frame, dayDate, weekDate, monthDate]);
 
+  // ---- counts for donut from frameRows ----
   const counts = React.useMemo(() => {
     const eq = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
     return {
@@ -158,6 +150,30 @@ export default function Dashboard() {
     { label: "Completed" as const,   value: counts.completed,  className: "text-green-600" },
   ];
 
+  // ---- daily counts map for calendar ----
+  const countsByDate = React.useMemo(() => {
+    const map = new Map<string, DayCounts>();
+    const inc = (key: string, field: keyof DayCounts) => {
+      const prev = map.get(key) || { delayed:0,onhold:0,inprogress:0,completed:0,total:0 };
+      const next = { ...prev, [field]: (prev[field] as number) + 1, total: prev.total + 1 };
+      map.set(key, next);
+    };
+    rows.forEach(r => {
+      const key = r.date;
+      switch (r.status) {
+        case "Delayed":    inc(key, "delayed");    break;
+        case "On hold":    inc(key, "onhold");     break;
+        case "In progress":inc(key, "inprogress"); break;
+        case "Completed":  inc(key, "completed");  break;
+        default: /* ignore others for calendar dots */ break;
+      }
+    });
+    return map;
+  }, [rows]);
+
+  const getCountsForDate = (d: Date): DayCounts =>
+    countsByDate.get(toYMD(d)) || { delayed:0,onhold:0,inprogress:0,completed:0,total:0 };
+
   return (
     <Layout title={title}>
       <Container className="py-8 space-y-8">
@@ -174,7 +190,7 @@ export default function Dashboard() {
           <UserSwitcher />
         </div>
 
-        {/* Main grid: left content + right donut card */}
+        {/* Main grid: left content + right insight column */}
         <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
           {/* LEFT: KPIs + Shortcuts + Table */}
           <div className="space-y-6">
@@ -201,11 +217,12 @@ export default function Dashboard() {
             {/* Table */}
             <section className="space-y-4">
               <h2 className="text-xl font-semibold">{labelForDept(dept)} Appointments</h2>
-              <AppointmentTable rows={rows} />
+              {/* ✅ table follows the selected period */}
+              <AppointmentTable rows={frameRows} />
             </section>
           </div>
 
-          {/* RIGHT: Donut card (sticky) */}
+          {/* RIGHT: Donut + Calendar (sticky) */}
           <div className="lg:sticky lg:top-20 h-fit">
             <AppointmentDonutCard
               segments={donutSegments}
@@ -214,6 +231,16 @@ export default function Dashboard() {
               periodLabel={periodLabel}
               onPrev={handlePrev}
               onNext={handleNext}
+            />
+
+            <CalendarMonthCard
+              className="mt-6"
+              monthDate={monthDate}
+              selectedDate={frame === "day" ? dayDate : null}
+              getCountsForDate={getCountsForDate}
+              onPrevMonth={() => setMonthDate(addMonths(monthDate, -1))}
+              onNextMonth={() => setMonthDate(addMonths(monthDate, +1))}
+              onSelectDate={(d) => { setFrame("day"); setDayDate(d); }}
             />
           </div>
         </div>
