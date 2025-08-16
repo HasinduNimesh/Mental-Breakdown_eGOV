@@ -1,1 +1,23 @@
 @import "tailwindcss";
+/* ===== Utilities for the futuristic look ===== */
+@layer utilities {
+  /* Subtle square grid (uses currentColor) */
+  .bg-grid-slate-100\/60 {
+    background-image:
+      linear-gradient(to right, rgba(100,116,139,0.15) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(100,116,139,0.15) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  .dark .bg-grid-slate-800\/30 {
+    background-image:
+      linear-gradient(to right, rgba(30,41,59,0.35) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(30,41,59,0.35) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  /* Better focus ring for keyboard users */
+  :where(button, a, input, select, textarea):focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(56,189,248,0.5);
+  }
+}

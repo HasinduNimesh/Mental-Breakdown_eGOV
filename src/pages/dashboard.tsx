@@ -1,8 +1,5 @@
 import React, { useMemo } from 'react';
 import Link from 'next/link';
-import type { GetStaticProps } from 'next';
-import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
-import { useTranslation } from 'next-i18next';
 import { useUser } from "../context/UserContext";
 import { departmentDash } from "../lib/departments";
 
@@ -12,7 +9,6 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { UserSwitcher } from "../components/debug/UserSwitcher";
 import { AppointmentTable, type AppointmentRow } from "../components/health/AppointmentTable";
-
 
 // Returns today's date in YYYY-MM-DD format
 function today(): string {
@@ -30,7 +26,7 @@ export default function Dashboard() {
     ? `${capitalize(user.departmentId.replace("_", " "))} – ${capitalize(user.role)}`
     : "Dashboard";
 
- // --- Mock rows per department (swap with API later) ---
+  // --- Mock rows per department (swap with API later) ---
   const rowsByDept: Record<Dept, AppointmentRow[]> = useMemo(() => ({
     health: [
       { id: "H-001", department: "Health", date: today(), time: "09:00", status: "Scheduled", doctorName: "Dr. Perera", patientName: "N. Silva", room: "OPD-3" },
@@ -57,42 +53,47 @@ export default function Dashboard() {
   return (
     <Layout title={title}>
       <Container className="py-8 space-y-8">
-        {/* Header */}
+        {/* Page header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">{title}</h1>
-            <p className="text-sm text-gray-600">Common dashboard rendering department-specific KPIs.</p>
+            <h1 className="text-3xl font-semibold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-sky-600 to-violet-600">
+              {title}
+            </h1>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+              Department-specific KPIs and quick actions.
+            </p>
           </div>
           {/* DEV ONLY: simulate login/department */}
           <UserSwitcher />
         </div>
 
         {/* KPIs */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
           {data.kpis.map((k) => (
             <Card key={k.title} title={k.title} value={k.value} />
           ))}
         </div>
 
         {/* Shortcuts */}
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-5 md:grid-cols-3">
           {data.shortcuts.map((s) => (
-            <Card key={s.title} className="p-5">
+            <Card key={s.title} subtle>
               <h3 className="font-semibold">{s.title}</h3>
-              <p className="mt-1 text-sm text-gray-600">{s.desc}</p>
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{s.desc}</p>
               <div className="mt-4">
-                <Button>{s.action}</Button>
+                <Button variant="primary" rightIcon={<RightArrow />}>{s.action}</Button>
               </div>
             </Card>
           ))}
         </div>
-        {/* Department-specific Appointments (ONLY the current user's department) */}
+
+        {/* Department-specific Appointments */}
         <section className="space-y-4">
-          <h2 className="text-xl font-semibold">{labelForDept(dept)} Appointments</h2>
+          <h2 className="text-xl font-semibold"> {labelForDept(dept)} Appointments</h2>
           <AppointmentTable rows={rows} />
         </section>
-        </Container>
-      </Layout>
+      </Container>
+    </Layout>
   );
 }
 
@@ -108,3 +109,10 @@ function labelForDept(d: Dept) {
   }
 }
 
+function RightArrow() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden className="-mr-1">
+      <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l5 5a1 1 0 010 1.414l-5 5a1 1 0 11-1.414-1.414L13.586 10H4a1 1 0 110-2h9.586l-3.293-3.293a1 1 0 010-1.414z" clipRule="evenodd" />
+    </svg>
+  );
+}
