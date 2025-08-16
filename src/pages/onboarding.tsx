@@ -15,6 +15,28 @@ export default function OnboardingPage() {
   const router = useRouter();
   const isNew = router.query.new === '1';
 
+  // If redirected here without an authenticated session (e.g., sign-up requires email confirmation),
+  // show a friendly prompt instead of rendering an empty flow.
+  if (!user) {
+    return (
+      <>
+        <Head>
+          <title>Complete your account - Onboarding</title>
+          <meta name="robots" content="noindex" />
+        </Head>
+        <div className="min-h-screen bg-bg-100">
+          <Container className="max-w-lg py-12 sm:py-16">
+            <div className="bg-white border border-border rounded-lg shadow-card p-6 sm:p-8 text-center">
+              <h1 className="text-xl sm:text-2xl font-bold text-text-900 mb-2">Confirm your email</h1>
+              <p className="text-sm text-text-700 mb-6">Please confirm your email address using the link we sent, then sign in to continue onboarding.</p>
+              <Button href="/signin" className="w-full h-12 text-base">Go to sign in</Button>
+            </div>
+          </Container>
+        </div>
+      </>
+    );
+  }
+
   // Form state aligned with public.profiles columns we allow
   const [fullName, setFullName] = React.useState('');
   const [nic, setNic] = React.useState('');

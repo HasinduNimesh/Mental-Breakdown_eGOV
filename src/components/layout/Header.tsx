@@ -199,8 +199,8 @@ export const Header: React.FC = () => {
                     <div className="h-10 w-[172px] rounded-lg bg-bg-100 border border-border animate-pulse" aria-hidden />
                   ) : (
                     <div className="flex items-center gap-2">
-                      <Link href="/signin" className="btn-signin-arrow h-10 px-4">Sign in<span className="arrow-wrapper"><span className="arrow" /></span></Link>
-                      <Button href="/signup" size="md" className="h-10 px-4 rounded-lg bg-[#2D5BFF] text-white hover:bg-[#224BE6] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">Sign up</Button>
+                      <Button href="/signin" variant="outline" size="md" className="h-10 px-4 rounded-lg border border-[#1A4DCC] text-[#1A4DCC] bg-white hover:bg-[#F5F8FF] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">Sign in</Button>
+                      <Button href="/signup" size="md" className="h-10 px-4 rounded-lg bg-[#1A4DCC] text-white hover:bg-[#153FA6] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">Sign up</Button>
                     </div>
                   )
                 )}
@@ -302,8 +302,8 @@ export const Header: React.FC = () => {
                     <div className="mx-3 mb-3 w-[calc(100%-1.5rem)] h-10 rounded-lg bg-bg-100 border border-border animate-pulse" aria-hidden />
                   ) : (
                     <div className="mx-3 mb-3 flex gap-2">
-                      <Link href="/signin" className="btn-signin-arrow flex-1 h-10 justify-center">Sign in<span className="arrow-wrapper"><span className="arrow" /></span></Link>
-                      <Link href="/signup" className="inline-flex items-center justify-center h-10 px-3 rounded-lg bg-[#2D5BFF] text-white text-sm font-semibold hover:bg-[#224BE6] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">Sign up</Link>
+                      <Link href="/signin" className="flex-1 inline-flex items-center justify-center h-10 px-3 rounded-lg bg-white border border-[#1A4DCC] text-[#1A4DCC] text-sm font-semibold hover:bg-[#F5F8FF] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">Sign in</Link>
+                      <Link href="/signup" className="inline-flex items-center justify-center h-10 px-3 rounded-lg bg-[#1A4DCC] text-white text-sm font-semibold hover:bg-[#153FA6] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">Sign up</Link>
                     </div>
                   )
                 )}

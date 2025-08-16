@@ -463,17 +463,17 @@ const ServicesPage: React.FC<Props> = ({ initialServices }) => {
                             <Button
                               href={service.href}
                               size="sm"
-                              className="flex items-center gap-2 sm:flex-1 justify-center"
+                              leadingIcon={<CalendarDaysIcon className="w-4 h-4" />}
+                              className="sm:flex-1 justify-center w-full"
                               onClick={() => track('service_book_click', { serviceId: service.id })}
                             >
-                              <CalendarDaysIcon className="w-4 h-4" />
                               Book
                             </Button>
                             <Button
                               href={`/service/${service.id}`}
                               variant="outline"
                               size="sm"
-                              className="sm:flex-1 justify-center"
+                              className="sm:flex-1 justify-center w-full"
                               onClick={() => track('service_view_details', { serviceId: service.id })}
                             >
                               View details

@@ -89,7 +89,7 @@ export const WelcomeDashboard: React.FC = () => {
                 {user && (
                   <Button
                     size="lg"
-                    onClick={() => router.push('/book')}
+                    href="/services"
                   >
                     Book appointment
                   </Button>
