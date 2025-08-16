@@ -18,14 +18,14 @@ export const Header: React.FC = () => {
   const { user, signOut } = useAuth();
   const [showSignIn, setShowSignIn] = React.useState(false);
 
-  const navigation = [
-    { name: 'Home', href: '/' },
-    { name: 'About', href: '/about' },
-    { name: 'Services', href: '/services' },
-    { name: 'News & Notices', href: '/news' },
-    { name: 'Contact', href: '/contact' },
-  ];
-
+const navigation = [
+  { name: 'Home', href: '/' },
+  { name: 'About', href: '/about' },
+  { name: 'Services', href: '/services' },
+  { name: 'News & Notices', href: '/news' },
+  { name: 'Contact', href: '/contact' },
+  { name: 'Feedback', href: '/feedback' }, // ✅ Added feedback link
+];
   return (
     <>
       {/* Top Government Banner */}
