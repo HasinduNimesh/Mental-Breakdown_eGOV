@@ -11,13 +11,11 @@ export type AppointmentStatus =
   | "Delayed";
 
 export type AppointmentRow = {
-  id: string;                 // appointment number
+  id: string;
   department: string;
-  date: string;               // YYYY-MM-DD
-  time: string;               // HH:mm
+  date: string;  // YYYY-MM-DD
+  time: string;  // HH:mm
   status: AppointmentStatus;
-
-  // details (shown on expand)
   doctorName?: string;
   patientName?: string;
   room?: string;
@@ -67,27 +65,37 @@ export function AppointmentTable({ rows, searchable = true, onChangeStatus }: Pr
     }
   }
 
-  // ✅ Status chips aligned with donut colors
+  // Status chips with good contrast in both themes
   const badge = (status: AppointmentStatus) => {
     const base = "inline-flex items-center rounded px-2 py-0.5 text-xs font-medium";
     switch (status) {
-      case "Scheduled":   return <span className={clsx(base, "bg-blue-100 text-blue-700")}>Scheduled</span>;
-      case "In progress": return <span className={clsx(base, "bg-lime-100 text-lime-700")}>In progress</span>;
-      case "On hold":     return <span className={clsx(base, "bg-orange-100 text-orange-700")}>On hold</span>;
-      case "Completed":   return <span className={clsx(base, "bg-green-100 text-green-700")}>Completed</span>;
-      case "Delayed":     return <span className={clsx(base, "bg-red-100 text-red-700")}>Delayed</span>;
-      case "Cancelled":   return <span className={clsx(base, "bg-gray-200 text-gray-700")}>Cancelled</span>;
-      case "No-show":     return <span className={clsx(base, "bg-slate-100 text-slate-700")}>No-show</span>;
-      default:            return <span className={clsx(base, "bg-gray-200 text-gray-700")}>{status}</span>;
+      case "Scheduled":
+        return <span className={clsx(base, "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300")}>Scheduled</span>;
+      case "In progress":
+        return <span className={clsx(base, "bg-lime-100 text-lime-700 dark:bg-lime-900/25 dark:text-lime-300")}>In progress</span>;
+      case "On hold":
+        return <span className={clsx(base, "bg-orange-100 text-orange-700 dark:bg-orange-900/25 dark:text-orange-300")}>On hold</span>;
+      case "Completed":
+        return <span className={clsx(base, "bg-green-100 text-green-700 dark:bg-green-900/25 dark:text-green-300")}>Completed</span>;
+      case "Delayed":
+        return <span className={clsx(base, "bg-red-100 text-red-700 dark:bg-red-900/25 dark:text-red-300")}>Delayed</span>;
+      case "Cancelled":
+        return <span className={clsx(base, "bg-gray-200 text-gray-700 dark:bg-slate-800 dark:text-slate-300")}>Cancelled</span>;
+      case "No-show":
+        return <span className={clsx(base, "bg-slate-100 text-slate-700 dark:bg-slate-800/60 dark:text-slate-300")}>No-show</span>;
+      default:
+        return <span className={clsx(base, "bg-gray-200 text-gray-700 dark:bg-slate-800 dark:text-slate-300")}>{status}</span>;
     }
   };
 
   const allStatuses: AppointmentStatus[] = [
-      "Scheduled","In progress","Completed","Cancelled","No-show","Delayed","On hold"
-    ];
+    "Scheduled","In progress","Completed","Cancelled","No-show","Delayed","On hold"
+  ];
 
   return (
-    <div className="rounded-2xl border bg-white shadow-sm">
+    <div className="rounded-2xl border bg-white/80 shadow-sm
+                    border-slate-200/70
+                    dark:bg-slate-900/50 dark:border-slate-800/60">
       <div className="flex items-center justify-between px-4 py-3">
         <h2 className="font-semibold">Appointments</h2>
         {searchable && (
@@ -95,14 +103,17 @@ export function AppointmentTable({ rows, searchable = true, onChangeStatus }: Pr
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search…"
-            className="h-9 w-56 rounded-lg border px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+            className="h-9 w-56 rounded-lg border px-3 text-sm outline-none
+                       border-slate-300 placeholder-slate-400
+                       focus:ring-2 focus:ring-blue-500
+                       dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder-slate-500"
           />
         )}
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-600">
+          <thead className="bg-gray-50 text-gray-600 dark:bg-slate-800/60 dark:text-slate-300">
             <tr>
               <th className="p-3 text-left w-10"></th>
               <th className="p-3 text-left">Appointment</th>
@@ -120,11 +131,16 @@ export function AppointmentTable({ rows, searchable = true, onChangeStatus }: Pr
               const chosen = draft[r.id] ?? r.status;
               return (
                 <React.Fragment key={r.id}>
-                  <tr className={clsx("border-t", open && "bg-gray-50/60")}>
+                  <tr className={clsx(
+                        "border-t border-slate-200/70 dark:border-slate-800/60",
+                        open && "bg-gray-50/60 dark:bg-slate-800/30"
+                      )}>
                     <td className="p-3">
                       <button
                         onClick={() => toggle(r.id)}
-                        className="rounded-md border px-2 py-1 text-xs hover:bg-gray-100"
+                        className="rounded-md border px-2 py-1 text-xs
+                                   border-slate-300 hover:bg-gray-100
+                                   dark:border-slate-700 dark:hover:bg-slate-800/60"
                         aria-expanded={open}
                         aria-controls={`row-${r.id}`}
                       >
@@ -136,11 +152,11 @@ export function AppointmentTable({ rows, searchable = true, onChangeStatus }: Pr
                     <td className="p-3">{r.time}</td>
                     <td className="p-3">{r.department}</td>
                     <td className="p-3">{badge(r.status)}</td>
-                    <td className={clsx("p-3", t.isLate ? "text-red-600" : "text-gray-700")}>{t.label}</td>
+                    <td className={clsx("p-3", t.isLate ? "text-red-600" : "text-gray-700 dark:text-slate-300")}>{t.label}</td>
                   </tr>
 
                   {open && (
-                    <tr id={`row-${r.id}`} className="border-t">
+                    <tr id={`row-${r.id}`} className="border-t border-slate-200/70 dark:border-slate-800/60">
                       <td className="p-3"></td>
                       <td className="p-3" colSpan={6}>
                         <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
@@ -149,10 +165,13 @@ export function AppointmentTable({ rows, searchable = true, onChangeStatus }: Pr
                           <Info label="Room" value={r.room || "—"} />
                           {r.notes && <Info label="Notes" value={r.notes} />}
                         </div>
-                      <div className="mt-4 flex flex-wrap items-center gap-3">
+
+                        <div className="mt-4 flex flex-wrap items-center gap-3">
                           <label className="text-xs text-gray-500 dark:text-slate-400">Change status</label>
                           <select
-                            className="rounded border px-2 py-1 text-sm dark:bg-slate-900 dark:border-slate-700"
+                            className="rounded border px-2 py-1 text-sm
+                                       border-slate-300 bg-white
+                                       dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
                             value={chosen}
                             onChange={(e) =>
                               setDraft((d) => ({ ...d, [r.id]: e.target.value as AppointmentStatus }))
@@ -178,14 +197,14 @@ export function AppointmentTable({ rows, searchable = true, onChangeStatus }: Pr
 
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={7} className="p-6 text-center text-gray-500">No appointments.</td>
+                <td colSpan={7} className="p-6 text-center text-gray-500 dark:text-slate-400">No appointments.</td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
 
-      <div className="px-4 py-3 text-xs text-gray-500">
+      <div className="px-4 py-3 text-xs text-gray-500 dark:text-slate-400">
         Showing {filtered.length} {filtered.length === 1 ? "entry" : "entries"}
       </div>
     </div>
@@ -194,8 +213,10 @@ export function AppointmentTable({ rows, searchable = true, onChangeStatus }: Pr
 
 function Info({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="rounded-xl border p-3 bg-white">
-      <div className="text-xs text-gray-500">{label}</div>
+    <div className="rounded-xl border p-3 bg-white
+                    border-slate-200/70
+                    dark:bg-slate-900/60 dark:border-slate-800/60">
+      <div className="text-xs text-gray-500 dark:text-slate-400">{label}</div>
       <div className="mt-1 font-medium">{value}</div>
     </div>
   );
