@@ -55,7 +55,7 @@ const AppointmentsPage: React.FC = () => {
         <Container>
           <div className="grid grid-cols-1 gap-4">
             {list.map((b) => (
-              <AppointmentRow key={b.id} b={b} />
+              <AppointmentRow key={b.id} b={b} user={user} />
             ))}
             {user ? (
               list.length === 0 && (
@@ -74,13 +74,28 @@ const AppointmentsPage: React.FC = () => {
 };
 
 export default AppointmentsPage;
+import { sendEmailReminder } from '@/lib/email'; // Make sure the path is correct
 
-function AppointmentRow({ b }: { b: BookingDraft }) {
+function AppointmentRow({ b, user }: { b: BookingDraft, user: any  }) {
   const svc = SERVICES.find(s => s.id === b.serviceId)!;
   const off = OFFICES.find(o => o.id === b.officeId)!;
   const countdown = useTimeUntil(b.dateISO, b.time);
   const [qrDataUrl, setQrDataUrl] = React.useState<string | null>(null);
+  const [reminderSent, setReminderSent] = React.useState(false);
 
+  React.useEffect(() => {
+    const appointmentDateTime = new Date(`${b.dateISO}T${b.time}:00+05:30`).getTime();
+    const now = Date.now();
+    const twentyFourHoursInMillis = 48 * 60 * 60 * 1000;
+
+    if (appointmentDateTime - now <= twentyFourHoursInMillis && !reminderSent && user) {
+      console.log('Inspecting user object:', user);
+      sendEmailReminder(b, user);
+      setReminderSent(true);
+    }
+  }, [b, user, reminderSent]);
+  
+  
   React.useEffect(() => {
     let cancelled = false;
     async function makeQR() {
