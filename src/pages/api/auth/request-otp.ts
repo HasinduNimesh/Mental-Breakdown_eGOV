@@ -20,11 +20,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { email, next = '/' } = req.body ?? {};
   if (!email || typeof email !== 'string') return res.status(400).json({ ok: true });
 
-  // Basic rate limits: 5/min, 10/hour per email + IP
+  // Basic rate limits: 1/min, 10/hour per email + IP
   const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
   const key1 = `min:${email}:${ip}`;
   const key2 = `hr:${email}:${ip}`;
-  if (!rateLimit(key1, 5, 60_000).ok) return res.status(200).json({ ok: true });
+  if (!rateLimit(key1, 1, 60_000).ok) return res.status(200).json({ ok: true });
   if (!rateLimit(key2, 10, 60 * 60_000).ok) return res.status(200).json({ ok: true });
 
   const supabase = createServerClient(
@@ -43,9 +43,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // Enumeration-safe response: always 200 + ok: true
   try {
+    // Send a 6-digit email OTP (no magic link)
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${req.headers.origin || ''}/api/auth/callback?next=${encodeURIComponent(next)}` },
+      options: { shouldCreateUser: true },
     });
     if (error) console.warn('request-otp error', error.message);
   } catch (e) {

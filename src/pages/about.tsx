@@ -3,6 +3,7 @@ import { GetStaticProps } from 'next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useTranslation } from 'next-i18next';
 import { Layout } from '@/components/layout/Layout';
+import { useAuth } from '@/contexts/AuthContext';
 import { Container } from '@/components/ui/Container';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -78,45 +79,31 @@ const AboutPage: React.FC = () => {
           </svg>
         </div>
 
-        {/* Hero Content */}
-        <Container className="relative py-16 sm:py-20 lg:py-28">
+    {/* Hero Content (aligned with Services/News) */}
+  <Container className="relative pt-8 sm:pt-10 lg:pt-12 pb-16 sm:pb-20 lg:pb-24">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             <div>
-              <div className="text-blue-200 text-xs sm:text-sm uppercase tracking-wider mb-4 font-semibold">
+              <div className="text-blue-200 text-xs sm:text-sm uppercase tracking-wider mb-2 font-semibold">
                 OUR MISSION IS <span className="text-orange-400">FOR YOU!</span>
               </div>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-6">
                 About the Government of Sri Lanka
                 <span className="block text-blue-200">Citizen Services Portal</span>
               </h1>
-              <p className="text-lg sm:text-xl text-blue-100 mb-6 sm:mb-8 max-w-xl">
-                "Public service should be the birthright of every citizen"
-              </p>
-              <p className="text-base sm:text-lg text-blue-200 mb-6 sm:mb-8 max-w-xl">
+      <p className="text-base sm:text-lg text-blue-200 mb-6 sm:mb-8 max-w-2xl">
                 Empowering citizens through digital transformation and accessible government services. 
                 Building a more connected, efficient, and transparent Sri Lanka.
               </p>
               <div className="flex flex-col sm:flex-row flex-wrap gap-4">
-                <Button size="lg" variant="secondary" href="/book">Book Appointment</Button>
+                {/* Show booking CTA only to authenticated users */}
+                {(() => { try { return (typeof window !== 'undefined' && !!localStorage.getItem('sb-' + new URL(process.env.NEXT_PUBLIC_SUPABASE_URL || '').host + '-auth-token')); } catch { return false; } })() && (
+                  <Button size="lg" variant="secondary" href="/book">Book Appointment</Button>
+                )}
                 <Button size="lg" variant="outline" href="/contact" className="border-white text-white hover:text-blue-900">Contact Us</Button>
               </div>
             </div>
             
-            {/* Right side with decorative elements */}
-            <div className="relative hidden lg:block">
-              <div className="absolute top-8 right-8 w-72 h-48 rounded-lg bg-white/10 border border-white/20 backdrop-blur-sm transform rotate-6 shadow-2xl">
-                <div className="p-6">
-                  <div className="text-white font-semibold mb-2">Digital Services</div>
-                  <div className="text-blue-200 text-sm">Quick & Efficient</div>
-                </div>
-              </div>
-              <div className="absolute top-32 right-16 w-64 h-40 rounded-lg bg-white/5 border border-white/20 backdrop-blur-sm transform -rotate-3 shadow-xl">
-                <div className="p-6">
-                  <div className="text-white font-semibold mb-2">Citizen First</div>
-                  <div className="text-blue-200 text-sm">Service Excellence</div>
-                </div>
-              </div>
-            </div>
+            {/* Right visuals removed for a clean hero */}
           </div>
         </Container>
       </section>

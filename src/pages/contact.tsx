@@ -33,20 +33,17 @@ const ContactPage: React.FC = () => {
           </svg>
         </div>
 
-        {/* Hero Content */}
-        <Container className="relative py-16 sm:py-20 lg:py-28">
+    {/* Hero Content (aligned with Services/News) */}
+    <Container className="relative pt-8 sm:pt-10 lg:pt-12 pb-16 sm:pb-20 lg:pb-24">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             <div>
-              <div className="text-blue-200 text-xs sm:text-sm uppercase tracking-wider mb-4 font-semibold">
+              <div className="text-blue-200 text-xs sm:text-sm uppercase tracking-wider mb-2 font-semibold">
                 OUR MISSION IS <span className="text-orange-400">FOR YOU!</span>
               </div>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-6">
                 Contact Us
               </h1>
-              <p className="text-lg sm:text-xl text-blue-100 mb-6 sm:mb-8 max-w-xl">
-                "Public service should be the birthright of every citizen"
-              </p>
-              <p className="text-base sm:text-lg text-blue-200 mb-6 sm:mb-8 max-w-xl">
+      <p className="text-base sm:text-lg text-blue-200 mb-6 sm:mb-8 max-w-2xl">
                 We're here to help. Reach out via phone, email, or visit our offices.
               </p>
               <div className="flex flex-col sm:flex-row flex-wrap gap-4">
@@ -66,21 +63,7 @@ const ContactPage: React.FC = () => {
               <p className="mt-3 text-blue-100 text-sm">We reply within 1 business day.</p>
             </div>
             
-            {/* Right side with decorative elements */}
-            <div className="relative hidden lg:block">
-              <div className="absolute top-8 right-8 w-72 h-48 rounded-lg bg-white/10 border border-white/20 backdrop-blur-sm transform rotate-6 shadow-2xl">
-                <div className="p-6">
-                  <div className="text-white font-semibold mb-2">Digital Services</div>
-                  <div className="text-blue-200 text-sm">Quick & Efficient</div>
-                </div>
-              </div>
-              <div className="absolute top-32 right-16 w-64 h-40 rounded-lg bg-white/5 border border-white/20 backdrop-blur-sm transform -rotate-3 shadow-xl">
-                <div className="p-6">
-                  <div className="text-white font-semibold mb-2">Citizen First</div>
-                  <div className="text-blue-200 text-sm">Service Excellence</div>
-                </div>
-              </div>
-            </div>
+            {/* Right visuals removed for a clean hero */}
           </div>
         </Container>
       </section>

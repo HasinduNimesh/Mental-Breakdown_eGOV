@@ -1,0 +1,46 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "preserve",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "es2021"
+    ],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "target": "es2021",
+    "types": [
+      "node",
+      "react",
+      "react-dom"
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@egov/ui": [
+        "../../packages/ui/src/index"
+      ],
+      "@egov/ui/*": [
+        "../../packages/ui/src/*"
+      ],
+      "@egov/types": [
+        "../../packages/types/src/index"
+      ],
+      "@egov/types/*": [
+        "../../packages/types/src/*"
+      ]
+    },
+    "incremental": true
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

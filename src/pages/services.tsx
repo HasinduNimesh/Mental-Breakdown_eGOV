@@ -4,12 +4,14 @@ import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useTranslation } from 'next-i18next';
 import { useRouter } from 'next/router';
 import { Layout } from '@/components/layout/Layout';
+import { useAuth } from '@/contexts/AuthContext';
 import { Container } from '@/components/ui/Container';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { track, getExperimentVariant } from '@/lib/analytics';
+import { fetchServices, ServiceRow } from '@/lib/servicesApi';
 import {
   DocumentTextIcon,
   UserIcon,
@@ -28,7 +30,6 @@ import {
   FunnelIcon,
   StarIcon,
 } from '@heroicons/react/24/outline';
-
 interface Service {
   id: string;
   title: string;
@@ -39,7 +40,6 @@ interface Service {
   processingTime: string;
   fee: string;
   popularity: 'high' | 'medium' | 'low';
-  icon: React.ElementType;
   href: string;
   isOnline: boolean;
   requirements: string[];
@@ -47,9 +47,12 @@ interface Service {
   updatedAt: string; // ISO date string for "Recently updated"
 }
 
-const ServicesPage: React.FC = () => {
+type Props = { initialServices: Service[] };
+
+const ServicesPage: React.FC<Props> = ({ initialServices }) => {
   const { t } = useTranslation('common');
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [selectedCategory, setSelectedCategory] = React.useState('all');
   const [searchQuery, setSearchQuery] = React.useState('');
   const [loading, setLoading] = React.useState(false);
@@ -64,6 +67,7 @@ const ServicesPage: React.FC = () => {
   const [filterTime, setFilterTime] = React.useState<string[]>([]);
   const [filterDepartments, setFilterDepartments] = React.useState<string[]>([]);
   const [filterLocations, setFilterLocations] = React.useState<string[]>([]);
+  const searchRef = React.useRef<HTMLInputElement>(null);
 
   // Sync incoming ?query from header search deep links
   React.useEffect(() => {
@@ -91,216 +95,21 @@ const ServicesPage: React.FC = () => {
     { id: 'health', name: 'Health & Social', count: 2, icon: HeartIcon },
   ];
 
-  const services: Service[] = [
-    // Documents & Certificates
-    {
-      id: 'passport-application',
-      title: 'Passport Application',
-      description: 'Apply for new passport or renew existing passport with expedited processing options.',
-      category: 'immigration',
-  department: 'Department of Immigration & Emigration',
-  location: 'Colombo',
-      processingTime: '7-14 days',
-      fee: 'LKR 3,500 - 9,000',
-      popularity: 'high',
-      icon: DocumentTextIcon,
-      href: '/book?service=passport',
-      isOnline: true,
-      requirements: ['National ID', 'Birth Certificate', 'Photographs', 'Application Form'],
-  nextAvailableDays: 2,
-  updatedAt: '2025-07-30',
-    },
-    {
-      id: 'driving-license',
-      title: 'Driving License Services',
-      description: 'Apply for new driving license, renewal, duplicate, or international driving permit.',
-      category: 'transport',
-  department: 'Department of Motor Traffic',
-  location: 'Werahera',
-      processingTime: '1-3 days',
-      fee: 'LKR 500 - 2,500',
-      popularity: 'high',
-      icon: TruckIcon,
-      href: '/book?service=license',
-      isOnline: true,
-      requirements: ['Medical Certificate', 'National ID', 'Previous License (for renewal)'],
-  nextAvailableDays: 1,
-  updatedAt: '2025-07-28',
-    },
-    {
-      id: 'birth-certificate',
-      title: 'Birth Certificate',
-      description: 'Obtain certified copies of birth certificates for official purposes.',
-      category: 'documents',
-  department: 'Registrar General Department',
-  location: 'Nationwide',
-      processingTime: '2-5 days',
-      fee: 'LKR 100 - 500',
-      popularity: 'high',
-      icon: DocumentTextIcon,
-      href: '/book?service=birth-cert',
-      isOnline: true,
-      requirements: ['Application Form', 'Parent\'s ID', 'Hospital Records'],
-  nextAvailableDays: 3,
-  updatedAt: '2025-07-20',
-    },
-    {
-      id: 'marriage-certificate',
-      title: 'Marriage Certificate',
-      description: 'Register marriage and obtain certified marriage certificates.',
-      category: 'documents',
-  department: 'Registrar General Department',
-  location: 'Nationwide',
-      processingTime: '1-3 days',
-      fee: 'LKR 100 - 500',
-      popularity: 'medium',
-      icon: DocumentTextIcon,
-      href: '/book?service=marriage-cert',
-      isOnline: true,
-      requirements: ['Marriage Registration', 'Both Parties\' ID', 'Witnesses\' Details'],
-  nextAvailableDays: 4,
-  updatedAt: '2025-07-15',
-    },
-    {
-      id: 'police-clearance',
-      title: 'Police Clearance Certificate',
-      description: 'Obtain police clearance certificate for employment, visa, or immigration purposes.',
-      category: 'documents',
-  department: 'Sri Lanka Police',
-  location: 'Colombo',
-      processingTime: '7-14 days',
-      fee: 'LKR 500 - 1,000',
-      popularity: 'high',
-      icon: ShieldCheckIcon,
-      href: '/book?service=police-clearance',
-      isOnline: true,
-      requirements: ['National ID', 'Fingerprints', 'Purpose Declaration', 'Application Form'],
-  nextAvailableDays: 5,
-  updatedAt: '2025-07-22',
-    },
-    {
-      id: 'vehicle-registration',
-      title: 'Vehicle Registration',
-      description: 'Register new vehicles, transfer ownership, or update registration details.',
-      category: 'transport',
-  department: 'Department of Motor Traffic',
-  location: 'Nationwide',
-      processingTime: '3-7 days',
-      fee: 'LKR 1,000 - 15,000',
-      popularity: 'medium',
-      icon: TruckIcon,
-      href: '/book?service=vehicle-reg',
-      isOnline: true,
-      requirements: ['Import Permit', 'Insurance', 'Revenue License', 'Technical Inspection'],
-  nextAvailableDays: 6,
-  updatedAt: '2025-07-10',
-    },
-    {
-      id: 'business-registration',
-      title: 'Business Registration',
-      description: 'Register new business, company incorporation, or business name reservation.',
-      category: 'business',
-  department: 'Registrar of Companies',
-  location: 'Colombo',
-      processingTime: '5-10 days',
-      fee: 'LKR 2,000 - 25,000',
-      popularity: 'medium',
-      icon: BuildingOfficeIcon,
-      href: '/book?service=business-reg',
-      isOnline: true,
-      requirements: ['Business Plan', 'Director Details', 'Registered Address', 'Articles of Association'],
-  nextAvailableDays: 7,
-  updatedAt: '2025-07-26',
-    },
-    {
-      id: 'consular-services',
-      title: 'Consular Services',
-      description: 'Document attestation, visa assistance, and consular support services.',
-      category: 'immigration',
-  department: 'Ministry of Foreign Affairs',
-  location: 'Colombo',
-      processingTime: '3-7 days',
-      fee: 'LKR 1,500 - 5,000',
-      popularity: 'medium',
-      icon: GlobeAltIcon,
-      href: '/book?service=consular',
-      isOnline: true,
-      requirements: ['Original Documents', 'Application Form', 'Purpose Declaration'],
-  nextAvailableDays: 2,
-  updatedAt: '2025-07-18',
-    },
-    {
-      id: 'education-certificates',
-      title: 'Education Certificates',
-      description: 'Verification and certification of educational qualifications and transcripts.',
-      category: 'education',
-  department: 'Ministry of Education',
-  location: 'Nationwide',
-      processingTime: '5-10 days',
-      fee: 'LKR 200 - 1,000',
-      popularity: 'medium',
-      icon: AcademicCapIcon,
-      href: '/book?service=education-cert',
-      isOnline: true,
-      requirements: ['Original Certificates', 'Application Form', 'Student ID'],
-  nextAvailableDays: 9,
-  updatedAt: '2025-07-12',
-    },
-    {
-      id: 'health-services',
-      title: 'Health Services',
-      description: 'Medical certificates, vaccination records, and health department services.',
-      category: 'health',
-  department: 'Ministry of Health',
-  location: 'Nationwide',
-      processingTime: '1-3 days',
-      fee: 'LKR 100 - 2,000',
-      popularity: 'low',
-      icon: HeartIcon,
-      href: '/book?service=health',
-      isOnline: true,
-      requirements: ['Medical Records', 'National ID', 'Doctor\'s Recommendation'],
-  nextAvailableDays: 8,
-  updatedAt: '2025-07-08',
-    },
-    {
-      id: 'tax-services',
-      title: 'Tax & Revenue Services',
-      description: 'Tax registration, clearance certificates, and revenue department services.',
-      category: 'business',
-  department: 'Department of Inland Revenue',
-  location: 'Colombo',
-      processingTime: '3-7 days',
-      fee: 'LKR 500 - 2,000',
-      popularity: 'medium',
-      icon: CurrencyDollarIcon,
-      href: '/book?service=tax',
-      isOnline: true,
-      requirements: ['Business Registration', 'Financial Records', 'Tax ID', 'Application Form'],
-  nextAvailableDays: 12,
-  updatedAt: '2025-07-16',
-    },
-    {
-      id: 'land-registration',
-      title: 'Land & Property Services',
-      description: 'Land registration, property transfers, and survey department services.',
-      category: 'documents',
-      department: 'Survey Department',
-      location: 'District Offices',
-      processingTime: '10-21 days',
-      fee: 'LKR 2,000 - 50,000',
-      popularity: 'low',
-      icon: MapPinIcon,
-      href: '/book?service=land',
-      isOnline: false,
-      requirements: ['Title Deeds', 'Survey Reports', 'Tax Clearance', 'Legal Documentation'],
-      nextAvailableDays: 14,
-      updatedAt: '2025-07-01',
-    },
-  ];
+  const services = React.useMemo(() => initialServices, [initialServices]);
+  const iconForCategory = (category: string): React.ElementType => {
+    switch (category) {
+      case 'documents': return DocumentTextIcon;
+      case 'transport': return TruckIcon;
+      case 'immigration': return UserIcon;
+      case 'business': return BuildingOfficeIcon;
+      case 'education': return AcademicCapIcon;
+      case 'health': return HeartIcon;
+      default: return DocumentTextIcon;
+    }
+  };
 
-  const allDepartments = Array.from(new Set(services.map(s => s.department))).sort();
-  const allLocations = Array.from(new Set(services.map(s => s.location))).sort();
+  const allDepartments = React.useMemo(() => Array.from(new Set(services.map(s => s.department))).sort(), [services]);
+  const allLocations = React.useMemo(() => Array.from(new Set(services.map(s => s.location))).sort(), [services]);
 
   // Helper to parse min processing days
   const getMinDays = (s: Service) => {
@@ -402,111 +211,97 @@ const ServicesPage: React.FC = () => {
         </div>
 
         {/* Hero Content */}
-        <Container className="relative py-16 sm:py-20 lg:py-28">
+  <Container className="relative pt-8 sm:pt-10 lg:pt-12 pb-16 sm:pb-20 lg:pb-24">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             <div>
-              <div className="text-blue-200 text-xs sm:text-sm uppercase tracking-wider mb-4 font-semibold">
+              {/* Upper label and heading to mirror Service Guide */}
+              <div className="text-blue-200 text-xs sm:text-sm uppercase tracking-wider mb-2 font-semibold">
                 OUR MISSION IS <span className="text-orange-400">FOR YOU!</span>
               </div>
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-6">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-3">
                 Government Services
                 <span className="block text-blue-200">Find & Access Public Services</span>
               </h1>
-              <p className="text-lg sm:text-xl text-blue-100 mb-6 sm:mb-8 max-w-xl">
-                "Public service should be the birthright of every citizen"
+              <p className="text-blue-100/90 text-base sm:text-lg mb-6 max-w-3xl">
+                Learn how services work, what you need, and how to book appointments quickly and securely.
               </p>
-              <p className="text-base sm:text-lg text-blue-200 mb-6 sm:mb-8 max-w-xl">
-                Browse and book appointments for over 500+ government services across all departments. 
-                Fast, secure, and accessible online.
-              </p>
-
               {/* Search Bar */}
-              <div className="max-w-xl mb-6 sm:mb-8">
+              <div className="max-w-2xl">
                 <div className="relative">
-                  <MagnifyingGlassIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-blue-200" aria-hidden />
+                  <MagnifyingGlassIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-blue-200" aria-hidden />
                   <input
+                    ref={searchRef}
                     type="text"
                     placeholder="Search services, departments, or documents..."
-                    className="w-full pl-12 pr-4 py-4 rounded-xl text-text-900 placeholder-text-500 border border-white/20 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent"
+                    className="w-full pl-11 pr-4 py-3 rounded-lg bg-white text-text-900 placeholder-text-500 shadow-md ring-1 ring-black/10 focus:outline-none focus:ring-2 focus:ring-white"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row flex-wrap gap-4">
-                {/* Experiment: single vs dual CTA */}
-                {getExperimentVariant('services_hero_cta', ['single','dual']) === 'single' ? (
-                  <Button size="lg" variant="secondary">Book Appointment</Button>
-                ) : (
-                  <>
-                    <Button size="lg" variant="secondary">Book Appointment</Button>
-                    <Button size="lg" variant="outline" className="border-white text-white hover:text-blue-900">Service Guide</Button>
-                  </>
-                )}
+                <div className="mt-4">
+                  <Button
+                    size="lg"
+                    variant="secondary"
+                    onClick={() => {
+                      searchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      searchRef.current?.focus();
+                    }}
+                  >
+                    Search
+                  </Button>
+                </div>
               </div>
             </div>
             
-            {/* Right side with decorative elements */}
-            <div className="relative hidden lg:block">
-              <div className="absolute top-8 right-8 w-72 h-48 rounded-lg bg-white/10 border border-white/20 backdrop-blur-sm transform rotate-6 shadow-2xl">
-                <div className="p-6">
-                  <div className="text-white font-semibold mb-2">Digital Services</div>
-                  <div className="text-blue-200 text-sm">Quick & Efficient</div>
-                </div>
-              </div>
-              <div className="absolute top-32 right-16 w-64 h-40 rounded-lg bg-white/5 border border-white/20 backdrop-blur-sm transform -rotate-3 shadow-xl">
-                <div className="p-6">
-                  <div className="text-white font-semibold mb-2">Citizen First</div>
-                  <div className="text-blue-200 text-sm">Service Excellence</div>
-                </div>
-              </div>
-            </div>
+            {/* Right side visuals removed as requested */}
           </div>
         </Container>
       </section>
 
-      {/* Popular Services Quick Access */}
-      <div className="bg-white">
-        <Container className="pt-4">
-          <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'Services' }]} />
-        </Container>
-      </div>
-      <section className="relative -mt-12 z-10">
+  {/* Popular Services Quick Access (overlaps hero) */}
+  <section className="relative -mt-4 md:-mt-6 lg:-mt-6 z-20 bg-white">
         <Container>
-          <Card className="p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg sm:text-xl font-semibold text-text-900">Most Popular Services</h2>
-              <Badge tone="warning" className="flex items-center gap-1">
-                <StarIcon className="w-3 h-3" />
-                Trending
-              </Badge>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {popularServices.map((service) => (
-                <div key={service.id} className="group cursor-pointer">
-                  <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-bg-100 transition-colors">
-                    <div className="flex-shrink-0">
-                      <service.icon className="w-8 h-8 text-primary-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm text-text-900 group-hover:text-primary-700 transition-colors truncate">
-                        {service.title}
+          {/* Soft glow wrapper to mimic home notice panel */}
+          <div className="relative">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -left-6 -right-6 -bottom-6 -top-2 rounded-[28px] bg-gradient-to-r from-primary-500/10 via-sky-500/8 to-emerald-500/10 blur-2xl"
+            />
+            <Card className="relative rounded-2xl shadow-[0_12px_40px_rgba(2,6,23,0.08)] ring-1 ring-black/5 border-transparent bg-white px-5 sm:px-6 py-5 sm:py-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg sm:text-xl font-semibold text-text-900">Most Popular Services</h2>
+                <Badge tone="warning" className="flex items-center gap-1">
+                  <StarIcon className="w-3 h-3" />
+                  Trending
+                </Badge>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                {popularServices.map((service) => (
+                  <div key={service.id} className="group cursor-pointer">
+                    <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-bg-50 transition-colors">
+                      <div className="flex-shrink-0">
+                        {React.createElement(iconForCategory(service.category), { className: 'w-8 h-8 text-primary-600' })}
                       </div>
-                      <div className="text-xs text-text-500">{service.processingTime}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm text-text-900 group-hover:text-primary-700 transition-colors truncate">
+                          {service.title}
+                        </div>
+                        <div className="text-xs text-text-500">{service.processingTime}</div>
+                      </div>
+                      <ChevronRightIcon className="w-4 h-4 text-text-400 group-hover:text-primary-600 transition-colors" />
                     </div>
-                    <ChevronRightIcon className="w-4 h-4 text-text-400 group-hover:text-primary-600 transition-colors" />
                   </div>
-                </div>
-              ))}
-            </div>
-          </Card>
+                ))}
+              </div>
+            </Card>
+          </div>
         </Container>
       </section>
 
-      {/* Filters & Sorting */}
-      <section className="py-12 sm:py-16 bg-white">
+    {/* Filters & Sorting */}
+    <section className="pt-6 sm:pt-8 pb-12 sm:pb-16 bg-white">
         <Container>
+      <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'Services' }]} />
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Left Filter Rail */}
             <div className="lg:w-1/4">
@@ -616,66 +411,77 @@ const ServicesPage: React.FC = () => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {filteredServices.map((service) => (
-                    <Card key={service.id} className="p-6 hover:shadow-lg transition-shadow">
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0">
-                        <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
-                          <service.icon className="w-6 h-6 text-primary-600" />
-                        </div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between mb-2">
-                          <h3 className="font-semibold text-text-900 group-hover:text-primary-700 transition-colors">
-                            {service.title}
-                          </h3>
-                          <div className="flex gap-1">
-                            {service.isOnline && (
-                              <Badge tone="success" className="text-xs">Online</Badge>
-                            )}
-                            {service.popularity === 'high' && (
-                              <Badge tone="warning" className="text-xs">Popular</Badge>
-                            )}
+                    <Card
+                      key={service.id}
+                      className="group p-5 md:p-6 border border-border rounded-xl hover:border-primary-300/60 hover:shadow-card transition-all"
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="flex-shrink-0">
+                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-50 to-primary-100 ring-1 ring-primary-100 flex items-center justify-center">
+                            {React.createElement(iconForCategory(service.category), { className: 'w-6 h-6 text-primary-700' })}
                           </div>
                         </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-3">
+                            <h3 className="font-semibold text-text-900 group-hover:text-primary-800 transition-colors leading-snug">
+                              {service.title}
+                            </h3>
+                            <div className="flex gap-1 flex-shrink-0">
+                              {service.isOnline && (
+                                <Badge tone="success" className="text-[11px] px-2 py-0.5">Online</Badge>
+                              )}
+                              {service.popularity === 'high' && (
+                                <Badge tone="warning" className="text-[11px] px-2 py-0.5">Popular</Badge>
+                              )}
+                            </div>
+                          </div>
 
-                        <p className="text-sm text-text-600 mb-4 line-clamp-2">
-                          {service.description}
-                        </p>
+                          <p className="text-sm text-text-600 mt-1 mb-3 line-clamp-2">
+                            {service.description}
+                          </p>
 
-                        <div className="space-y-2 mb-4">
-                          <div className="flex items-center gap-4 text-xs text-text-500">
-                            <div className="flex items-center gap-1">
-                              <BuildingOfficeIcon className="w-4 h-4" />
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 text-xs text-text-600">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <BuildingOfficeIcon className="w-4 h-4 text-text-400" />
                               <span className="truncate" title={service.department}>{service.department}</span>
                             </div>
-                            <span className="text-text-300">•</span>
-                            <div className="flex items-center gap-1">
-                              <MapPinIcon className="w-4 h-4" />
+                            <div className="flex items-center gap-2">
+                              <MapPinIcon className="w-4 h-4 text-text-400" />
                               <span>{service.location}</span>
                             </div>
-                          </div>
-                          <div className="flex items-center gap-4 text-xs text-text-500">
-                            <div className="flex items-center gap-1">
-                              <ClockIcon className="w-4 h-4" />
+                            <div className="flex items-center gap-2">
+                              <ClockIcon className="w-4 h-4 text-text-400" />
                               <span>{service.processingTime}</span>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <CurrencyDollarIcon className="w-4 h-4" />
+                            <div className="flex items-center gap-2">
+                              <CurrencyDollarIcon className="w-4 h-4 text-text-400" />
                               <span>{service.fee}</span>
                             </div>
                           </div>
-                        </div>
 
-                        <div className="flex items-center gap-3">
-                          <Button href={service.href} size="sm" className="flex items-center gap-2" onClick={() => track('service_book_click', { serviceId: service.id })}>
-                            <CalendarDaysIcon className="w-4 h-4" />
-                            Book
-                          </Button>
-                          <Button href={`/service/${service.id}`} variant="outline" size="sm" onClick={() => track('service_view_details', { serviceId: service.id })}>View details</Button>
+                          <div className="mt-5 pt-4 border-t border-border flex flex-col sm:flex-row gap-3">
+                            <Button
+                              href={service.href}
+                              size="sm"
+                              leadingIcon={<CalendarDaysIcon className="w-4 h-4" />}
+                              className="sm:flex-1 justify-center w-full"
+                              onClick={() => track('service_book_click', { serviceId: service.id })}
+                            >
+                              Book
+                            </Button>
+                            <Button
+                              href={`/service/${service.id}`}
+                              variant="outline"
+                              size="sm"
+                              className="sm:flex-1 justify-center w-full"
+                              onClick={() => track('service_view_details', { serviceId: service.id })}
+                            >
+                              View details
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </Card>
+                    </Card>
                   ))}
                 </div>
               )}
@@ -728,11 +534,57 @@ const ServicesPage: React.FC = () => {
 };
 
 export const getStaticProps: GetStaticProps = async ({ locale }) => {
-  return {
-    props: {
-      ...(await serverSideTranslations(locale ?? 'en', ['common'])),
-    },
-  };
+  try {
+    const rows = await fetchServices();
+    const formatDays = (min: number | null, max: number | null) => {
+      if (min == null && max == null) return 'Varies';
+      if (min != null && max != null) return `${min}-${max} days`;
+      const d = (min ?? max) as number;
+      if (d === 0) return 'Same-day';
+      return `${d} day${d === 1 ? '' : 's'}`;
+    };
+
+    const formatFee = (min: number | null, max: number | null) => {
+      if (min == null && max == null) return 'N/A';
+      if (min != null && max != null) return `LKR ${min.toLocaleString()} - ${max.toLocaleString()}`;
+      const v = (min ?? max) as number;
+      return `LKR ${v.toLocaleString()}`;
+    };
+
+  const initialServices: Service[] = rows.map((r) => ({
+      id: r.slug,
+      title: r.title,
+      description: r.short_description ?? '',
+      category: r.category,
+      department: r.department ?? '—',
+      location: r.default_location ?? 'Nationwide',
+      processingTime: formatDays(r.processing_time_days_min, r.processing_time_days_max),
+      fee: formatFee(r.fee_min, r.fee_max),
+      popularity: r.popularity,
+      href: `/book?service=${encodeURIComponent(r.slug)}`,
+      isOnline: r.is_online,
+      requirements: [],
+      nextAvailableDays: 7,
+      updatedAt: r.updated_at,
+    }));
+
+    return {
+      props: {
+        ...(await serverSideTranslations(locale ?? 'en', ['common'])),
+        initialServices,
+      },
+      revalidate: 60,
+    };
+  } catch (e) {
+    console.error('Failed to fetch services', e);
+    return {
+      props: {
+        ...(await serverSideTranslations(locale ?? 'en', ['common'])),
+        initialServices: [],
+      },
+      revalidate: 60,
+    };
+  }
 };
 
 export default ServicesPage;

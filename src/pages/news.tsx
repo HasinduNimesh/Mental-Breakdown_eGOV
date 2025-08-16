@@ -3,11 +3,14 @@ import { GetStaticProps } from 'next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useTranslation } from 'next-i18next';
 import { Layout } from '@/components/layout/Layout';
+import { useAuth } from '@/contexts/AuthContext';
 import { Container } from '@/components/ui/Container';
+import { formatDate } from '@/lib/date';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import Badge from '@/components/ui/Badge';
+import ResourceCategoryRow from '@/components/ui/ResourceCategory';
 import {
   NewspaperIcon,
   MegaphoneIcon,
@@ -20,6 +23,11 @@ import {
   FunnelIcon,
   MagnifyingGlassIcon,
   ChevronRightIcon,
+  TrophyIcon,
+    DocumentTextIcon,
+    GlobeAltIcon,
+  AcademicCapIcon,
+  ComputerDesktopIcon,
 } from '@heroicons/react/24/outline';
 
 interface NewsItem {
@@ -103,6 +111,7 @@ type CategoryId = typeof categories[number]['id'];
 
 const NewsPage: React.FC = () => {
   const { t } = useTranslation('common');
+  const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = React.useState<CategoryId>('all');
   const [searchQuery, setSearchQuery] = React.useState('');
   const [selectedDepartment, setSelectedDepartment] = React.useState<'all' | string>('all');
@@ -151,11 +160,11 @@ const NewsPage: React.FC = () => {
           </svg>
         </div>
 
-        {/* Hero Content */}
-        <Container className="relative py-16 sm:py-20 lg:py-28">
+        {/* Hero Content (aligned with Services page styling) */}
+        <Container className="relative pt-8 sm:pt-10 lg:pt-12 pb-16 sm:pb-20 lg:pb-24">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             <div>
-              <div className="text-blue-200 text-xs sm:text-sm uppercase tracking-wider mb-4 font-semibold">
+              <div className="text-blue-200 text-xs sm:text-sm uppercase tracking-wider mb-2 font-semibold">
                 OUR MISSION IS <span className="text-orange-400">FOR YOU!</span>
               </div>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-6">
@@ -169,13 +178,13 @@ const NewsPage: React.FC = () => {
               </p>
 
               {/* Search */}
-              <div className="max-w-xl mb-6 sm:mb-8">
+              <div className="max-w-2xl mb-6 sm:mb-8">
                 <div className="relative">
-                  <MagnifyingGlassIcon aria-hidden className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-200" />
+                  <MagnifyingGlassIcon aria-hidden className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-200" />
                   <input
                     type="text"
                     placeholder="Search news, departments, or topics..."
-                    className="w-full pl-12 pr-4 py-4 rounded-xl text-text-900 placeholder-text-500 border border-white/20 focus:outline-none focus:ring-2 focus:ring-white"
+                    className="w-full pl-11 pr-4 py-3 rounded-lg bg-white text-text-900 placeholder-text-500 shadow-md ring-1 ring-black/10 focus:outline-none focus:ring-2 focus:ring-white"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -183,26 +192,12 @@ const NewsPage: React.FC = () => {
               </div>
 
               <div className="flex flex-col sm:flex-row flex-wrap gap-4">
-                <Button size="lg" variant="secondary" href="/book">Book Appointment</Button>
+                {user && <Button size="lg" variant="secondary" href="/book">Book Appointment</Button>}
                 <Button size="lg" variant="outline" className="border-white text-white hover:text-blue-900">Subscribe to News</Button>
               </div>
             </div>
             
-            {/* Right side with decorative elements */}
-            <div className="relative hidden lg:block">
-              <div className="absolute top-8 right-8 w-72 h-48 rounded-lg bg-white/10 border border-white/20 backdrop-blur-sm transform rotate-6 shadow-2xl">
-                <div className="p-6">
-                  <div className="text-white font-semibold mb-2">Digital Services</div>
-                  <div className="text-blue-200 text-sm">Quick & Efficient</div>
-                </div>
-              </div>
-              <div className="absolute top-32 right-16 w-64 h-40 rounded-lg bg-white/5 border border-white/20 backdrop-blur-sm transform -rotate-3 shadow-xl">
-                <div className="p-6">
-                  <div className="text-white font-semibold mb-2">Citizen First</div>
-                  <div className="text-blue-200 text-sm">Service Excellence</div>
-                </div>
-              </div>
-            </div>
+            {/* Right visuals removed for a clean, consistent hero */}
           </div>
         </Container>
       </section>
@@ -210,13 +205,28 @@ const NewsPage: React.FC = () => {
       <div className="bg-white">
         <Container className="pt-4">
           <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'News & Notices' }]} />
+          {/* Resource Category Row demo */}
+          <div className="mt-4">
+            <ResourceCategoryRow
+              items={[
+                { id: 'circulars', label: 'Circulars', icon: InformationCircleIcon },
+                { id: 'publications', label: 'Publications', icon: DocumentTextIcon },
+                { id: 'training', label: 'Training Opportunity', icon: AcademicCapIcon },
+                { id: 'digital', label: 'Digitalization', icon: ComputerDesktopIcon },
+                { id: 'education', label: 'Education Resource', icon: GlobeAltIcon },
+                { id: 'competitions', label: 'Competitions', icon: TrophyIcon },
+              ]}
+              selectedId={'circulars'}
+              onSelect={() => { /* wire as needed */ }}
+            />
+          </div>
         </Container>
       </div>
 
-      {/* Featured */}
-      <section className="relative -mt-10 z-10">
+    {/* Featured (slight overlap for continuity) */}
+    <section className="relative -mt-6 md:-mt-8 z-20">
         <Container>
-          <Card className="p-4 sm:p-6">
+      <Card className="p-4 sm:p-6 rounded-2xl shadow-[0_12px_40px_rgba(2,6,23,0.08)] ring-1 ring-black/5 border-transparent">
             <div className="flex items-start gap-4">
               <div className="hidden sm:flex w-14 h-14 rounded-lg bg-gradient-to-br from-primary-600 to-primary-500 items-center justify-center text-white">
                 <NewspaperIcon className="w-7 h-7" />
@@ -236,7 +246,7 @@ const NewsPage: React.FC = () => {
                     <BuildingOfficeIcon className="w-4 h-4" /> {featured.department}
                   </span>
                   <span className="inline-flex items-center gap-1">
-                    <ClockIcon className="w-4 h-4" /> {new Date(featured.publishedAt).toLocaleDateString()}
+                    <ClockIcon className="w-4 h-4" /> {formatDate(featured.publishedAt)}
                   </span>
                   <span className="inline-flex items-center gap-1">
                     <CalendarDaysIcon className="w-4 h-4" /> {featured.readTime}
