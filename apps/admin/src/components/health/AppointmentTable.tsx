@@ -67,7 +67,6 @@ export function AppointmentTable({ rows, searchable = true, onChangeStatus }: Pr
     }
   }
 
-  // ✅ Status chips aligned with donut colors
   const badge = (status: AppointmentStatus) => {
     const base = "inline-flex items-center rounded px-2 py-0.5 text-xs font-medium";
     switch (status) {

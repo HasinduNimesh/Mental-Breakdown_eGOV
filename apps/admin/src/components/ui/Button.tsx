@@ -23,7 +23,7 @@ export function Button({
   className,
   ...props
 }: ButtonProps) {
-  const base = "inline-flex items-center justify-center rounded-xl font-medium transition-all focus:outline-none focus:ring-2 focus:ring-sky-400/60 disabled:opacity-60 disabled:cursor-not-allowed";
+  const base = "inline-flex items-center justify-center rounded-md font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-700 disabled:opacity-60 disabled:cursor-not-allowed";
 
   const sizes: Record<Size, string> = {
     sm: "text-xs px-3 py-1.5",
@@ -32,12 +32,12 @@ export function Button({
   };
 
   const variants: Record<Variant, string> = {
-    primary: "bg-gradient-to-r from-sky-600 to-violet-600 text-white hover:brightness-110 shadow-sm",
-    secondary: "bg-slate-200 text-slate-900 hover:bg-slate-300",
+    primary: "bg-primary-700 text-white hover:bg-primary-800",
+    secondary: "bg-accent-500 text-white hover:bg-accent-600",
     destructive: "bg-red-600 text-white hover:bg-red-700",
-    outline: "border border-slate-300 text-slate-700 hover:bg-slate-50",
-    ghost: "text-slate-700 hover:bg-slate-100",
-    soft: "bg-sky-50 text-sky-700 hover:bg-sky-100",
+    outline: "border-2 border-primary-700 text-primary-700 hover:bg-primary-700 hover:text-white",
+    ghost: "text-primary-700 hover:bg-bg-100",
+    soft: "bg-info-300/20 text-primary-700 hover:bg-info-300/30",
   };
 
   return (

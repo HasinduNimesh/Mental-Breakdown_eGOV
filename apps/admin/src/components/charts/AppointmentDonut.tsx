@@ -73,7 +73,7 @@ export function AppointmentDonutCard({
             {total.toLocaleString()}
           </span>
           <span className="mt-1 text-[11px] leading-3 text-slate-500 dark:text-slate-400">
-            Total&nbsp;No.&nbsp;of&nbsp;appointments
+            Total\u00A0No.\u00A0of\u00A0appointments
           </span>
         </div>
       </div>
