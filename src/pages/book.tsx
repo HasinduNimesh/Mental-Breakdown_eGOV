@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { OFFICES, SERVICES, getNextAvailableDate, getNextBusinessDay, generateSlots, formatDateISO, BookingDraft, saveBooking, generateBookingCode, buildICS } from '@/lib/booking';
+import { SERVICES_DETAILS, type ServiceDetail } from '@/lib/servicesData';
 import Calendar from '@/components/booking/Calendar';
 import { track } from '@/lib/analytics';
 import { CloudArrowUpIcon, MapPinIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
@@ -51,6 +52,17 @@ const BookPage: React.FC = () => {
   const [qrDataUrl, setQrDataUrl] = React.useState<string | null>(null);
 
   const service = SERVICES.find(s => s.id === serviceId)!;
+  // Map booking serviceId -> ServiceDetail to list requirements
+  const serviceDetail: ServiceDetail | undefined = React.useMemo(() => {
+    const map: Record<string, string> = {
+      'passport': 'passport-application',
+      'license': 'driving-license',
+      'birth-cert': 'birth-certificate',
+      'police-clearance': 'police-clearance',
+    };
+    const detailId = map[serviceId] || serviceId;
+    return SERVICES_DETAILS.find(d => d.id === detailId);
+  }, [serviceId]);
   const office = OFFICES.find(o => o.id === officeId)!;
   const slots = React.useMemo(() => {
     // Prefer server-provided slots if available, otherwise use local generator
@@ -540,6 +552,17 @@ const BookPage: React.FC = () => {
             {step === 4 && (
               <div>
                 <div className="mb-3 text-sm text-text-700">Upload the required documents for this service or choose from your saved documents.</div>
+                {/* Required documents for this service */}
+                {serviceDetail?.requirements?.length ? (
+                  <div className="mb-4">
+                    <div className="font-medium text-text-900 mb-2">Required for {service.title}</div>
+                    <ul className="list-disc pl-5 text-sm text-text-700 space-y-1">
+                      {serviceDetail.requirements.map((r, i) => (
+                        <li key={i}><span className="font-medium">{r.label}</span>{r.example ? <span className="text-text-600"> — {r.example}</span> : null}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
                 <div className="mb-3 flex items-start gap-2 text-xs text-text-600">
                   <InformationCircleIcon className="w-4 h-4 mt-0.5 text-text-500" aria-hidden />
                   <div>
@@ -554,36 +577,95 @@ const BookPage: React.FC = () => {
                     <div className="text-xs text-text-600">Loading…</div>
                   ) : savedDocsError ? (
                     <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded p-2">{savedDocsError}</div>
-                  ) : savedDocs.length === 0 ? (
-                    <div className="text-xs text-text-600">No saved documents yet. Upload below to reuse them for future bookings.</div>
                   ) : (
-                    <ul className="space-y-2">
-                      {savedDocs.map(doc => (
-                        <li key={doc.id} className="flex items-center justify-between gap-3 border border-border rounded-md p-2 bg-white">
-                          <label className="flex items-center gap-2 text-sm text-text-800">
-                            <input
-                              type="checkbox"
-                              checked={selectedDocIds.includes(doc.id)}
-                              onChange={(e) => setSelectedDocIds(prev => e.target.checked ? [...prev, doc.id] : prev.filter(id => id !== doc.id))}
-                            />
-                            <span className="truncate max-w-[60ch]">{doc.label || doc.original_name || 'Document'}</span>
-                          </label>
-                          <span className="text-[11px] text-text-500">{doc.doc_type || 'other'} • {Math.round(((doc.size_bytes||0)/1024))} KB</span>
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="space-y-3">
+                      {/* NIC group */}
+                      <div className="border border-border rounded-md bg-white">
+                        <div className="px-3 py-2 bg-bg-50 border-b border-border text-sm font-medium">National Identity Card (NIC)</div>
+                        <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {(() => {
+                            const nicFront = savedDocs.find(d => d.doc_type === 'nic-front');
+                            const nicBack = savedDocs.find(d => d.doc_type === 'nic-back');
+                            return (
+                              <>
+                                <div className="border border-border rounded p-2">
+                                  <div className="text-xs text-text-600 mb-1">Front side</div>
+                                  {nicFront ? (
+                                    <label className="flex items-center gap-2 text-sm">
+                                      <input type="checkbox" checked={selectedDocIds.includes(nicFront.id)} onChange={(e)=> setSelectedDocIds(prev=> e.target.checked ? [...prev, nicFront.id] : prev.filter(id=>id!==nicFront.id))} />
+                                      <span className="truncate">{nicFront.label || nicFront.original_name || 'NIC (front)'}</span>
+                                    </label>
+                                  ) : (
+                                    <div className="text-xs italic text-text-500">Not uploaded</div>
+                                  )}
+                                </div>
+                                <div className="border border-border rounded p-2">
+                                  <div className="text-xs text-text-600 mb-1">Back side</div>
+                                  {nicBack ? (
+                                    <label className="flex items-center gap-2 text-sm">
+                                      <input type="checkbox" checked={selectedDocIds.includes(nicBack.id)} onChange={(e)=> setSelectedDocIds(prev=> e.target.checked ? [...prev, nicBack.id] : prev.filter(id=>id!==nicBack.id))} />
+                                      <span className="truncate">{nicBack.label || nicBack.original_name || 'NIC (back)'}</span>
+                                    </label>
+                                  ) : (
+                                    <div className="text-xs italic text-text-500">Not uploaded</div>
+                                  )}
+                                </div>
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                      {/* Passport group (only show if available) */}
+                      {(() => {
+                        const pass = savedDocs.find(d => d.doc_type === 'passport');
+                        if (!pass) return null;
+                        return (
+                          <div className="border border-border rounded-md bg-white">
+                            <div className="px-3 py-2 bg-bg-50 border-b border-border text-sm font-medium">Passport</div>
+                            <div className="p-3">
+                              <label className="flex items-center gap-2 text-sm">
+                                <input type="checkbox" checked={selectedDocIds.includes(pass.id)} onChange={(e)=> setSelectedDocIds(prev=> e.target.checked ? [...prev, pass.id] : prev.filter(id=>id!==pass.id))} />
+                                <span className="truncate">{pass.label || pass.original_name || 'Passport'}</span>
+                              </label>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                      {/* Others */}
+                      <div className="border border-border rounded-md bg-white">
+                        <div className="px-3 py-2 bg-bg-50 border-b border-border text-sm font-medium">Other saved documents</div>
+                        <div className="p-3 space-y-2">
+                          {(() => {
+                            const others = savedDocs.filter(d => d.doc_type !== 'nic-front' && d.doc_type !== 'nic-back' && d.doc_type !== 'passport');
+                            if (!others.length) return <div className="text-xs italic text-text-500">No other documents</div>;
+                            return (
+                              <ul className="space-y-2">
+                                {others.map(doc => (
+                                  <li key={doc.id} className="flex items-center justify-between gap-3">
+                                    <label className="flex items-center gap-2 text-sm text-text-800">
+                                      <input type="checkbox" checked={selectedDocIds.includes(doc.id)} onChange={(e)=> setSelectedDocIds(prev=> e.target.checked ? [...prev, doc.id] : prev.filter(id=>id!==doc.id))} />
+                                      <span className="truncate max-w-[60ch]">{doc.label || doc.original_name || 'Document'}</span>
+                                    </label>
+                                    <span className="text-[11px] text-text-500">{doc.doc_type || 'other'} • {Math.round(((doc.size_bytes||0)/1024))} KB</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    </div>
                   )}
+                </div>
+                {/* Helper text between saved docs and upload */}
+                <div className="mt-4">
+                  <div className="text-sm font-medium text-text-900 mb-1">Upload here</div>
+                  <div className="text-xs text-text-600">If you don’t see your document above, you can add files below just for this booking.</div>
                 </div>
                 {uploadError && (
                   <div className="mb-3 text-xs text-red-700 bg-red-50 border border-red-200 rounded p-2">{uploadError}</div>
                 )}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <label className="block border-2 border-dashed border-border rounded-md p-6 text-center cursor-pointer hover:bg-bg-50">
-                    <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" multiple onChange={(e) => onUploadToProfile(e.target.files)} disabled={!user || profileUploadBusy} />
-                    <CloudArrowUpIcon className="w-6 h-6 mx-auto text-text-400" aria-hidden />
-                    <div className="mt-2 text-sm">Upload to your profile (reusable)</div>
-                    <div className="mt-1 text-xs text-text-600">Accepted: PDF, JPG, PNG. Max 10MB per file.</div>
-                  </label>
+                <div className="grid grid-cols-1 gap-4">
                   <label className="block border-2 border-dashed border-border rounded-md p-6 text-center cursor-pointer hover:bg-bg-50">
                     <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" multiple onChange={(e) => onFilesSelected(e.target.files)} disabled={!user} />
                     <CloudArrowUpIcon className="w-6 h-6 mx-auto text-text-400" aria-hidden />
