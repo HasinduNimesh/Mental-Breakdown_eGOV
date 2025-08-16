@@ -1,40 +1,29 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useUIStore } from '@/stores';
 import { Container } from '@/components/ui/Container';
 import { Button } from '@/components/ui/Button';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { Bars3Icon, XMarkIcon, PhoneIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from 'next-i18next';
 import { useAuth } from '@/contexts/AuthContext';
-// Using dedicated /signin and /signup pages
+
+const navigation = [
+  { name: 'Services', href: '/services' },
+  { name: 'Documents', href: '/documents' },
+  { name: 'Help', href: '/help' },
+];
 
 export const Header: React.FC = () => {
   const router = useRouter();
-  const { isMobileMenuOpen, setMobileMenuOpen } = useUIStore();
-  const { t } = useTranslation('common');
-  const { user, signOut, loading } = useAuth();
-  // const [showSignIn, setShowSignIn] = React.useState(false);
-  const [profileOpen, setProfileOpen] = React.useState(false);
-  const profileRef = React.useRef<HTMLDivElement>(null);
+  const { t } = useTranslation();
+  const { user, loading, signOut } = useAuth();
 
-  const navigation = [
-    { name: 'Home', href: '/' },
-    { name: 'Services', href: '/services' },
-    { name: 'Service Guide', href: '/help' },
-    { name: 'News', href: '/news' },
-    { name: 'About Us', href: '/about' },
-    { name: 'Contact', href: '/contact' },
-  ];
-
+  const [isMobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [showSearch, setShowSearch] = React.useState(false);
   const searchRef = React.useRef<HTMLInputElement>(null);
-  React.useEffect(() => {
-    if (showSearch) searchRef.current?.focus();
-  }, [showSearch]);
+  React.useEffect(() => { if (showSearch) searchRef.current?.focus(); }, [showSearch]);
 
-  // shrink header on scroll
   const [scrolled, setScrolled] = React.useState(false);
   React.useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 4);
@@ -43,26 +32,19 @@ export const Header: React.FC = () => {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Close profile menu on outside click or Escape
+  const [profileOpen, setProfileOpen] = React.useState(false);
+  const profileRef = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
     if (!profileOpen) return;
     const onDocClick = (e: MouseEvent) => {
-      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
-        setProfileOpen(false);
-      }
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) setProfileOpen(false);
     };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setProfileOpen(false);
-    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setProfileOpen(false); };
     document.addEventListener('mousedown', onDocClick);
     document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onDocClick);
-      document.removeEventListener('keydown', onKey);
-    };
+    return () => { document.removeEventListener('mousedown', onDocClick); document.removeEventListener('keydown', onKey); };
   }, [profileOpen]);
 
-  // Close profile menu on route change
   React.useEffect(() => {
     const close = () => setProfileOpen(false);
     router.events.on('routeChangeStart', close);
@@ -80,7 +62,6 @@ export const Header: React.FC = () => {
 
   return (
     <>
-      {/* Utility bar */}
       <div className="bg-blue-900 text-blue-100/90 text-[12.5px] h-8 hidden md:flex items-center border-b border-[#2C4A9A]">
         <Container className="max-w-[1200px] px-6 flex justify-end items-center">
           <div className="flex items-center gap-4">
@@ -91,11 +72,9 @@ export const Header: React.FC = () => {
         </Container>
       </div>
 
-      {/* Main nav */}
       <header className="bg-white border-b border-border sticky top-0 z-40">
         <Container className="relative max-w-[1200px] px-6">
           <div className={`flex items-center justify-between ${scrolled ? 'h-14' : 'h-16'} transition-[height] duration-200`}>
-            {/* Left branding: crest + wordmark stack */}
             <Link href="/" aria-label="Home" className="flex items-center gap-3">
               <img src="/logo.svg" alt={t('logo_alt', 'Sri Lanka Coat of Arms')} className="h-9 w-auto" />
               <div className="leading-tight hidden md:block">
@@ -105,9 +84,7 @@ export const Header: React.FC = () => {
               <div className="md:hidden text-[14px] font-semibold text-[#163B8F]">Citizen Services</div>
             </Link>
 
-            {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-6">
-              {/* Center nav */}
               <div className="flex items-center gap-6 ml-8">
                 {navigation.map((item) => (
                   <Link
@@ -124,9 +101,7 @@ export const Header: React.FC = () => {
                 ))}
               </div>
 
-              {/* Right actions */}
               <div className="flex items-center gap-4 ml-6">
-                {/* Search icon toggles input */}
                 <div className="relative">
                   <button className="p-2 rounded-md hover:bg-bg-100 focus:outline-none focus:ring-2 focus:ring-[#93B4FF]" aria-label="Open search" aria-expanded={showSearch} onClick={() => setShowSearch((v) => !v)}>
                     <MagnifyingGlassIcon className="w-5 h-5" />
@@ -155,7 +130,6 @@ export const Header: React.FC = () => {
                     </div>
                   )}
                 </div>
-                {/* Primary CTA */}
                 {user && (
                   <Button href="/services" size="md" className="h-10 px-4 rounded-lg bg-[#2D5BFF] text-white hover:bg-[#224BE6] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">
                     Book appointment
@@ -166,7 +140,6 @@ export const Header: React.FC = () => {
                     My appointments
                   </Button>
                 )}
-                {/* Profile avatar */}
                 {user ? (
                   <div className="relative" ref={profileRef}>
                     <button
@@ -180,11 +153,7 @@ export const Header: React.FC = () => {
                       {initialsFromEmail(user.email)}
                     </button>
                     {profileOpen && (
-                      <div
-                        id="profile-menu"
-                        role="menu"
-                        className="absolute right-0 mt-2 w-56 bg-white text-text-900 border border-border rounded-[10px] shadow-2xl"
-                      >
+                      <div id="profile-menu" role="menu" className="absolute right-0 mt-2 w-56 bg-white text-text-900 border border-border rounded-[10px] shadow-2xl">
                         <Link href="/appointments" className="block px-3 py-2 text-[13px] hover:bg-bg-100" role="menuitem">My appointments</Link>
                         <Link href="/documents" className="block px-3 py-2 text-[13px] hover:bg-bg-100" role="menuitem">Upload documents</Link>
                         <Link href="/track" className="block px-3 py-2 text-[13px] hover:bg-bg-100" role="menuitem">Track booking</Link>
@@ -194,7 +163,6 @@ export const Header: React.FC = () => {
                     )}
                   </div>
                 ) : (
-                  // Avoid flashing a Sign in button while auth is initializing
                   loading ? (
                     <div className="h-10 w-[172px] rounded-lg bg-bg-100 border border-border animate-pulse" aria-hidden />
                   ) : (
@@ -207,7 +175,6 @@ export const Header: React.FC = () => {
               </div>
             </nav>
 
-            {/* Mobile actions: Book, Search, Menu */}
             <div className="md:hidden flex items-center gap-2">
               {user && (
                 <Link href="/services" className="inline-flex items-center justify-center h-9 px-3 rounded-lg bg-[#2D5BFF] text-white text-sm font-semibold hover:bg-[#224BE6] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">
@@ -229,16 +196,11 @@ export const Header: React.FC = () => {
                 onClick={() => { setMobileMenuOpen(!isMobileMenuOpen); if (showSearch) setShowSearch(false); }}
                 aria-label={isMobileMenuOpen ? t('close_menu', 'Close menu') : t('open_menu', 'Open menu')}
               >
-                {isMobileMenuOpen ? (
-                  <XMarkIcon className="w-6 h-6" />
-                ) : (
-                  <Bars3Icon className="w-6 h-6" />
-                )}
+                {isMobileMenuOpen ? <XMarkIcon className="w-6 h-6" /> : <Bars3Icon className="w-6 h-6" />}
               </button>
             </div>
           </div>
 
-          {/* Mobile search overlay */}
           {showSearch && (
             <div className="md:hidden absolute right-4 top-full mt-2 w-[min(90vw,320px)] bg-white border border-border rounded-md shadow-lg p-2 z-50">
               <div className="flex items-center gap-2">
@@ -263,7 +225,6 @@ export const Header: React.FC = () => {
             </div>
           )}
 
-          {/* Mobile menu */}
           {isMobileMenuOpen && (
             <div className="md:hidden border-t border-border">
               <div className="py-3 space-y-1">
@@ -271,18 +232,12 @@ export const Header: React.FC = () => {
                   <Link
                     key={item.name}
                     href={item.href}
-                    className={`block px-3 py-2 text-base font-medium transition-colors ${
-                      router.pathname === item.href
-                        ? 'text-primary-700 bg-primary-50'
-                        : 'text-text-700 hover:text-primary-700 hover:bg-bg-100'
-                    }`}
+                    className={`block px-3 py-2 text-base font-medium transition-colors ${router.pathname === item.href ? 'text-primary-700 bg-primary-50' : 'text-text-700 hover:text-primary-700 hover:bg-bg-100'}`}
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {item.name}
                   </Link>
                 ))}
-                {/* Search field removed; use header icon overlay */}
-                {/* Language and Hotline */}
                 <div className="px-3 py-2 flex items-center justify-between">
                   <LanguageSwitcher />
                   <span className="flex items-center gap-1 text-text-600"><PhoneIcon className="w-4 h-4" />1919</span>
@@ -311,9 +266,9 @@ export const Header: React.FC = () => {
             </div>
           )}
         </Container>
-
       </header>
-  {/* auth modal removed */}
     </>
   );
 };
+
+export default Header;

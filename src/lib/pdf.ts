@@ -33,7 +33,7 @@ export async function buildBookingPDF({ booking, service, office, tz, qrDataUrl 
       if (!res.ok) return null;
       const svg = await res.text();
       const svgUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-      await new Promise<void>((resolve, reject) => {
+      const pngDataUrl = await new Promise<string>((resolve, reject) => {
         const img = new Image();
         img.onload = () => {
           try {
@@ -42,30 +42,13 @@ export async function buildBookingPDF({ booking, service, office, tz, qrDataUrl 
             const ctx = canvas.getContext('2d');
             if (!ctx) { reject(new Error('no-ctx')); return; }
             ctx.drawImage(img, 0, 0, w, h);
-            const pngUrl = canvas.toDataURL('image/png');
-            const bytes = dataUrlToBytes(pngUrl);
-            // @ts-expect-error attach for outer scope
-            (img as any)._bytes = bytes;
-            resolve();
+            resolve(canvas.toDataURL('image/png'));
           } catch (e) { reject(e); }
         };
         img.onerror = () => reject(new Error('logo-load-failed'));
         img.src = svgUrl;
       });
-      // Retrieve from attached
-      const imgAny = (null as any) as HTMLImageElement;
-      // TypeScript trick isn't needed; we'll simply recompute
-      const canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return null;
-      const tmpImg = new Image();
-      tmpImg.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-      await new Promise<void>((resolve, reject) => {
-        tmpImg.onload = () => { ctx.drawImage(tmpImg, 0, 0, w, h); resolve(); };
-        tmpImg.onerror = () => reject(new Error('logo-draw-failed'));
-      });
-      return dataUrlToBytes(canvas.toDataURL('image/png'));
+      return dataUrlToBytes(pngDataUrl);
     } catch { return null; }
   };
 

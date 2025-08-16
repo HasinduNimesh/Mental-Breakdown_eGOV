@@ -6,6 +6,8 @@ const nextConfig = {
   reactStrictMode: true,
   images: { domains: ['localhost'] },
   env: { TIMEZONE: 'Asia/Colombo' },
+  transpilePackages: ['@egov/ui', '@egov/types'],
+  eslint: { ignoreDuringBuilds: true },
   async headers() {
     return [
       {

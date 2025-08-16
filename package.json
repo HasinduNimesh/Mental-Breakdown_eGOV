@@ -3,12 +3,24 @@
   "version": "1.0.0",
   "private": true,
   "description": "Sri Lankan Government Citizen Portal - eGOV Services",
+  "workspaces": [
+    ".",
+    "packages/*",
+    "apps/*"
+  ],
+  "packageManager": "npm@10.8.2",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "type-check": "tsc --noEmit"
+  "dev": "next dev",
+  "build": "next build",
+  "start": "next start",
+  "lint": "next lint",
+  "type-check": "tsc --noEmit",
+  "clean": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true}); require('fs').rmSync('.turbo',{recursive:true,force:true})\"",
+  "repo:dev": "turbo run dev --parallel",
+  "repo:build": "turbo run build",
+  "repo:lint": "turbo run lint --parallel",
+  "repo:type-check": "turbo run type-check --parallel",
+  "repo:clean": "turbo run clean --parallel || echo clean"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.17",
@@ -30,8 +42,10 @@
     "react-dropzone": "^14.2.3",
     "react-hook-form": "^7.47.0",
     "react-query": "^3.39.3",
-    "tailwindcss": "^3.3.5",
-    "zustand": "^4.4.4"
+  "tailwindcss": "^3.3.5",
+  "zustand": "^4.4.4",
+  "@egov/types": "workspace:*",
+  "@egov/ui": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.8.7",
@@ -40,6 +54,7 @@
     "@types/react-dom": "^18.2.14",
     "eslint": "^8.57.0",
     "eslint-config-next": "~15.3.0",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "turbo": "^2.0.6"
   }
 }
