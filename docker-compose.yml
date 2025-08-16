@@ -1,0 +1,22 @@
+version: '3.9'
+
+services:
+  web:
+    image: node:20
+    working_dir: /app
+    volumes:
+      - ./:/app
+    env_file:
+      - ./.env.local
+    command: sh -lc "npm install && npm run dev:all"
+    ports:
+      - "3000:3000" # citizen portal
+      - "3002:3002" # admin portal
+      - "3003:3003" # analytics dashboard
+    tty: true
+    stdin_open: true
+
+# Notes:
+# - This compose runs the monorepo dev servers inside a single container using Turbo.
+# - It expects a hosted/local Supabase via .env.local; it does not run a Postgres/Supabase stack.
+# - For a local Supabase stack, use: npx @supabase/cli@latest start (which spins its own compose).
