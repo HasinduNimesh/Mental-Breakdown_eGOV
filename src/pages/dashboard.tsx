@@ -9,8 +9,7 @@ import { Button } from '../components/ui/Button';
 import { UserSwitcher } from "../components/debug/UserSwitcher";
 import { AppointmentTable, type AppointmentRow } from "../components/health/AppointmentTable";
 import { AppointmentDonutCard } from "../components/charts/AppointmentDonut";
-import { CalendarMonthCard, type DayCounts } from "../components/calendar/CalendarMonthCard";
-
+import { CalendarMonthCard, type DayCounts } from "../components/calender/CalenderMonthCard";
 
 // ---------- date helpers ----------
 function toYMD(d: Date) {
