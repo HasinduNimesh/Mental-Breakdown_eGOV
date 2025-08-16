@@ -10,11 +10,13 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const navigation = [
   { name: 'Home', href: '/' },
+  { name: 'About', href: '/about' },
   { name: 'Services', href: '/services' },
   { name: 'News', href: '/news' },
   { name: 'About us', href: '/about' },
   { name: 'Contact', href: '/contact' },
   { name: 'Service Guide', href: '/help' },
+  { name: 'Feedback', href: '/feedback' },
 ];
 
 export const Header: React.FC = () => {
