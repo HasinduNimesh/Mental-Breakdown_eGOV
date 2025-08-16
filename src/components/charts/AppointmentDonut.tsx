@@ -6,31 +6,50 @@ type Frame = "day" | "week" | "month";
 export type Segment = {
   label: "Delayed" | "On hold" | "In progress" | "Completed";
   value: number;
-  className: string; // tailwind text- color class; we use stroke-current
+  className: string; // Tailwind text-* color (we use stroke-current)
 };
 
 interface Props {
   segments: Segment[];
-  updatedAt: Date;
   frame: Frame;
   onChangeFrame?: (f: Frame) => void;
+
+  /** e.g. "27th June 2025", "24–30 Jun 2025", "March 2025" */
+  periodLabel: string;
+  onPrev?: () => void; // go to previous day/week/month
+  onNext?: () => void; // go to next day/week/month
+
   className?: string;
 }
 
-export function AppointmentDonutCard({ segments, updatedAt, frame, onChangeFrame, className }: Props) {
+export function AppointmentDonutCard({
+  segments,
+  frame,
+  onChangeFrame,
+  periodLabel,
+  onPrev,
+  onNext,
+  className,
+}: Props) {
   const total = React.useMemo(() => segments.reduce((n, s) => n + s.value, 0), [segments]);
 
   return (
-    <div className={clsx(
-      "rounded-2xl border border-slate-200/70 dark:border-slate-800/60 bg-white/70 dark:bg-slate-900/40 backdrop-blur p-5 shadow-sm",
-      className
-    )}>
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-sm font-semibold">Today’s Appointments</div>
-          <div className="text-xs text-slate-500">As of {updatedAt.toLocaleTimeString()}</div>
+    <div
+      className={clsx(
+        "rounded-2xl border border-slate-200/70 dark:border-slate-800/60 bg-white/70 dark:bg-slate-900/40 backdrop-blur p-5 shadow-sm",
+        className
+      )}
+    >
+      {/* Header: LEFT = period + arrows, RIGHT = segmented control */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <NavBtn ariaLabel="Previous period" onClick={onPrev} />
+          <div className="text-sm font-medium text-slate-800 dark:text-slate-200 tabular-nums">
+            {periodLabel}
+          </div>
+          <NavBtn ariaLabel="Next period" onClick={onNext} direction="next" />
         </div>
+
         <Segmented
           value={frame}
           onChange={onChangeFrame}
@@ -42,12 +61,20 @@ export function AppointmentDonutCard({ segments, updatedAt, frame, onChangeFrame
         />
       </div>
 
-      {/* Chart */}
-      <div className="mt-4 grid grid-cols-1 place-items-center">
-        <Donut segments={segments} total={total} size={180} thickness={20} />
-        <div className="mt-2 text-center">
-          <div className="text-2xl font-semibold tabular-nums">{total.toLocaleString()}</div>
-          <div className="text-xs text-slate-500">total appointments</div>
+      {/* Donut with centered total */}
+      <div className="mt-4 relative grid place-items-center">
+        <Donut segments={segments} total={total} size={220} thickness={22} />
+        <div
+            className="absolute flex flex-col items-center select-none"
+            role="group"
+            aria-label="Total number of appointments"
+        >
+            <span className="text-4xl font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+            {total.toLocaleString()}
+            </span>
+            <span className="mt-1 text-[11px] leading-3 text-slate-500 dark:text-slate-400">
+            Total&nbsp;No.&nbsp;of&nbsp;appointments
+            </span>
         </div>
       </div>
 
@@ -55,7 +82,7 @@ export function AppointmentDonutCard({ segments, updatedAt, frame, onChangeFrame
       <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
         {segments.map((s) => (
           <div key={s.label} className="flex items-center gap-2">
-            <span className={clsx("inline-block h-2.5 w-2.5 rounded-full", colorDotToBg(s.className))} />
+            <span className={clsx("inline-block h-2.5 w-2.5 rounded-full", textToBg(s.className))} />
             <span className="text-slate-700 dark:text-slate-300">{s.label}</span>
             <span className="ml-auto tabular-nums text-slate-600 dark:text-slate-400">{s.value}</span>
           </div>
@@ -66,11 +93,19 @@ export function AppointmentDonutCard({ segments, updatedAt, frame, onChangeFrame
 }
 
 /** Pure SVG donut using stroke-dasharray offsets */
-function Donut({ segments, total, size = 180, thickness = 18 }: { segments: Segment[]; total: number; size?: number; thickness?: number }) {
+function Donut({
+  segments,
+  total,
+  size = 180,
+  thickness = 18,
+}: {
+  segments: Segment[];
+  total: number;
+  size?: number;
+  thickness?: number;
+}) {
   const radius = (size - thickness) / 2;
   const circumference = 2 * Math.PI * radius;
-
-  // cumulative offset
   let offset = 0;
 
   return (
@@ -80,7 +115,7 @@ function Donut({ segments, total, size = 180, thickness = 18 }: { segments: Segm
         <circle r={radius} cx="0" cy="0" fill="none" stroke="rgba(203,213,225,0.5)" strokeWidth={thickness} />
         {segments.map((s) => {
           const len = total ? (s.value / total) * circumference : 0;
-          const circle = (
+          const el = (
             <circle
               key={s.label}
               r={radius}
@@ -91,12 +126,12 @@ function Donut({ segments, total, size = 180, thickness = 18 }: { segments: Segm
               stroke="currentColor"
               strokeWidth={thickness}
               strokeLinecap="round"
-              strokeDasharray={`${Math.max(len - 1, 0)} ${circumference}`} // small gap to show rounded caps
+              strokeDasharray={`${Math.max(len - 1, 0)} ${circumference}`} // tiny gap for rounded caps
               strokeDashoffset={-offset}
             />
           );
           offset += len;
-          return circle;
+          return el;
         })}
       </g>
     </svg>
@@ -136,7 +171,27 @@ function Segmented({
   );
 }
 
+function NavBtn({ onClick, direction = "prev", ariaLabel }: { onClick?: () => void; direction?: "prev" | "next"; ariaLabel: string }) {
+  const isNext = direction === "next";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={ariaLabel}
+      className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200/70 dark:border-slate-800/60 hover:bg-slate-100/70 dark:hover:bg-slate-800/40"
+    >
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
+        {isNext ? (
+          <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+        ) : (
+          <path fillRule="evenodd" d="M12.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4A1 1 0 0112.707 6.707L9.414 10l3.293 3.293a1 1 0 010 1.414z" clipRule="evenodd" />
+        )}
+      </svg>
+    </button>
+  );
+}
+
 /** Convert text-* to bg-* for legend dots */
-function colorDotToBg(textClass: string) {
+function textToBg(textClass: string) {
   return textClass.replace(/^text-/, "bg-");
 }

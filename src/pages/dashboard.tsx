@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { useUser } from "../context/UserContext";
 import { departmentDash } from "../lib/departments";
 
@@ -10,7 +10,50 @@ import { UserSwitcher } from "../components/debug/UserSwitcher";
 import { AppointmentTable, type AppointmentRow } from "../components/health/AppointmentTable";
 import { AppointmentDonutCard } from "../components/charts/AppointmentDonut";
 
-// Returns today's date in YYYY-MM-DD format
+// ---------- date helpers ----------
+function toYMD(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+function parseYMD(s: string) {
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, (m ?? 1) - 1, d ?? 1);
+}
+function addDays(d: Date, n: number) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
+function addMonths(d: Date, n: number) { const x = new Date(d); x.setMonth(x.getMonth() + n); return x; }
+
+function startOfWeek(d: Date) { // Monday as start
+  const day = d.getDay(); // 0 Sun..6 Sat
+  const diff = (day + 6) % 7; // 0 for Mon
+  return addDays(new Date(d.getFullYear(), d.getMonth(), d.getDate()), -diff);
+}
+function endOfWeek(d: Date) { return addDays(startOfWeek(d), 6); }
+function startOfMonth(d: Date) { return new Date(d.getFullYear(), d.getMonth(), 1); }
+function endOfMonth(d: Date) { return new Date(d.getFullYear(), d.getMonth() + 1, 0); }
+
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONTHS_LONG = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+function ordinal(n: number) {
+  const s = ["th","st","nd","rd"], v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+function formatDayLabel(d: Date) {
+  return `${ordinal(d.getDate())} ${MONTHS_LONG[d.getMonth()]} ${d.getFullYear()}`;
+}
+function formatWeekLabel(d: Date) {
+  const a = startOfWeek(d), b = endOfWeek(d);
+  const sameMonth = a.getMonth() === b.getMonth();
+  const left = `${a.getDate()} ${MONTHS[a.getMonth()]}`;
+  const right = `${b.getDate()} ${MONTHS[b.getMonth()]} ${b.getFullYear()}`;
+  return sameMonth ? `${a.getDate()}–${b.getDate()} ${MONTHS[a.getMonth()]} ${b.getFullYear()}` : `${left} – ${right}`;
+}
+function formatMonthLabel(d: Date) {
+  return `${MONTHS_LONG[d.getMonth()]} ${d.getFullYear()}`;
+}
+// ----------------------------------
+
 function today(): string {
   const d = new Date();
   return d.toISOString().slice(0, 10);
@@ -27,12 +70,11 @@ export default function Dashboard() {
     : "Dashboard";
 
   // --- Mock rows per department (swap with API later) ---
-  const rowsByDept: Record<Dept, AppointmentRow[]> = useMemo(() => ({
+  const rowsByDept: Record<Dept, AppointmentRow[]> = React.useMemo(() => ({
     health: [
       { id: "H-001", department: "Health", date: today(), time: "09:00", status: "Scheduled", doctorName: "Dr. Perera", patientName: "N. Silva", room: "OPD-3" },
       { id: "H-002", department: "Health", date: today(), time: "10:30", status: "Delayed",   doctorName: "Dr. Fernando", patientName: "K. Jayasuriya", room: "Clinic-2", notes: "Priority: elderly" },
       { id: "H-003", department: "Health", date: today(), time: "11:15", status: "In progress", doctorName: "Dr. Samarasinghe", patientName: "M. Peris", room: "OPD-1" },
-      // add examples of "On hold" & "Completed"
       { id: "H-004", department: "Health", date: today(), time: "12:00", status: "On hold", patientName: "Procedure", room: "OPD-2" },
       { id: "H-005", department: "Health", date: today(), time: "12:30", status: "Completed", patientName: "Checkup", room: "OPD-5" },
     ],
@@ -53,37 +95,68 @@ export default function Dashboard() {
 
   const rows = rowsByDept[dept];
 
-// ---- aggregate for donut (TODAY) ----
-type Frame = "day" | "week" | "month";
-const [frame, setFrame] = React.useState<Frame>("day");
+  // ---- timeframes & navigation ----
+  type Frame = "day" | "week" | "month";
+  const [frame, setFrame] = React.useState<Frame>("day");
 
-// Helpers to filter by frame; today for now
-const todayStr = today();
-const frameRows = React.useMemo(() => {
-  if (frame === "day") {
-    return rows.filter(r => r.date === todayStr);
+  const [dayDate, setDayDate] = React.useState<Date>(new Date());
+  const [weekDate, setWeekDate] = React.useState<Date>(new Date());           // any day in the week
+  const [monthDate, setMonthDate] = React.useState<Date>(startOfMonth(new Date())); // first of month
+
+  function handlePrev() {
+    if (frame === "day") setDayDate(addDays(dayDate, -1));
+    else if (frame === "week") setWeekDate(addDays(weekDate, -7));
+    else setMonthDate(addMonths(monthDate, -1));
   }
-  // TODO: swap with real weekly/monthly back-end queries
-  return rows;
-}, [rows, frame]);
+  function handleNext() {
+    if (frame === "day") setDayDate(addDays(dayDate, +1));
+    else if (frame === "week") setWeekDate(addDays(weekDate, +7));
+    else setMonthDate(addMonths(monthDate, +1));
+  }
 
-const counts = React.useMemo(() => {
-  const eq = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
-  return {
-    delayed:    frameRows.filter(x => eq(x.status, "Delayed")).length,
-    onhold:     frameRows.filter(x => eq(x.status, "On hold")).length,
-    inprogress: frameRows.filter(x => eq(x.status, "In progress")).length,
-    completed:  frameRows.filter(x => eq(x.status, "Completed")).length,
-  };
-}, [frameRows]);
+  const periodLabel = React.useMemo(() => {
+    if (frame === "day") return formatDayLabel(dayDate);
+    if (frame === "week") return formatWeekLabel(weekDate);
+    return formatMonthLabel(monthDate);
+  }, [frame, dayDate, weekDate, monthDate]);
 
-const donutSegments = [
-  { label: "Delayed" as const,     value: counts.delayed,    className: "text-red-500" },
-  { label: "On hold" as const,     value: counts.onhold,     className: "text-orange-400" },
-  { label: "In progress" as const, value: counts.inprogress, className: "text-lime-400" },
-  { label: "Completed" as const,   value: counts.completed,  className: "text-green-600" },
-];
+  // ---- filter rows for selected frame ----
+  const frameRows = React.useMemo(() => {
+    if (frame === "day") {
+      const key = toYMD(dayDate);
+      return rows.filter(r => r.date === key);
+    }
+    if (frame === "week") {
+      const a = startOfWeek(weekDate), b = endOfWeek(weekDate);
+      return rows.filter(r => {
+        const d = parseYMD(r.date);
+        return d >= a && d <= b;
+      });
+    }
+    // month
+    const start = startOfMonth(monthDate), end = endOfMonth(monthDate);
+    return rows.filter(r => {
+      const d = parseYMD(r.date);
+      return d >= start && d <= end;
+    });
+  }, [rows, frame, dayDate, weekDate, monthDate]);
 
+  const counts = React.useMemo(() => {
+    const eq = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+    return {
+      delayed:    frameRows.filter(x => eq(x.status, "Delayed")).length,
+      onhold:     frameRows.filter(x => eq(x.status, "On hold")).length,
+      inprogress: frameRows.filter(x => eq(x.status, "In progress")).length,
+      completed:  frameRows.filter(x => eq(x.status, "Completed")).length,
+    };
+  }, [frameRows]);
+
+  const donutSegments = [
+    { label: "Delayed" as const,     value: counts.delayed,    className: "text-red-500" },
+    { label: "On hold" as const,     value: counts.onhold,     className: "text-orange-400" },
+    { label: "In progress" as const, value: counts.inprogress, className: "text-lime-400" },
+    { label: "Completed" as const,   value: counts.completed,  className: "text-green-600" },
+  ];
 
   return (
     <Layout title={title}>
@@ -102,7 +175,7 @@ const donutSegments = [
         </div>
 
         {/* Main grid: left content + right donut card */}
-        <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+        <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
           {/* LEFT: KPIs + Shortcuts + Table */}
           <div className="space-y-6">
             {/* KPIs */}
@@ -132,13 +205,15 @@ const donutSegments = [
             </section>
           </div>
 
-          {/* RIGHT: Donut card (sticky on long pages) */}
+          {/* RIGHT: Donut card (sticky) */}
           <div className="lg:sticky lg:top-20 h-fit">
             <AppointmentDonutCard
               segments={donutSegments}
-              updatedAt={new Date()}
               frame={frame}
               onChangeFrame={setFrame}
+              periodLabel={periodLabel}
+              onPrev={handlePrev}
+              onNext={handleNext}
             />
           </div>
         </div>
