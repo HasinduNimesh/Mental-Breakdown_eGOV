@@ -9,14 +9,13 @@ import { useTranslation } from 'next-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 
 const navigation = [
-  { name: 'Home', href: '/' },
-  { name: 'About', href: '/about' },
-  { name: 'Services', href: '/services' },
-  { name: 'News', href: '/news' },
-  { name: 'About us', href: '/about' },
-  { name: 'Contact', href: '/contact' },
-  { name: 'Service Guide', href: '/help' },
-  { name: 'Feedback', href: '/feedback' },
+  { name: 'nav_home', href: '/' },
+  { name: 'nav_about', href: '/about' },
+  { name: 'nav_services', href: '/services' },
+  { name: 'nav_news', href: '/news' },
+  { name: 'nav_contact', href: '/contact' },
+  { name: 'nav_help', href: '/help' },
+  { name: 'nav_feedback', href: '/feedback' },
 ];
 
 export const Header: React.FC = () => {
@@ -81,22 +80,22 @@ export const Header: React.FC = () => {
             <Link href="/" aria-label="Home" className="flex items-center gap-3">
               <img src="/logo.svg" alt={t('logo_alt', 'Sri Lanka Coat of Arms')} className="h-9 w-auto" />
               <div className="leading-tight hidden md:block">
-                <div className="text-[14px] font-semibold text-[#163B8F]">Government of Sri Lanka</div>
-                <div className="text-[12px] font-medium text-[#4B5563]">Citizen Services Portal</div>
+                <div className="text-[14px] font-semibold text-[#163B8F]">{t('site_gov_name', 'Government of Sri Lanka')}</div>
+                <div className="text-[12px] font-medium text-[#4B5563]">{t('site_portal_name', 'Citizen Services Portal')}</div>
               </div>
-              <div className="md:hidden text-[14px] font-semibold text-[#163B8F]">Citizen Services</div>
+              <div className="md:hidden text-[14px] font-semibold text-[#163B8F]">{t('site_portal_short', 'Citizen Services')}</div>
             </Link>
 
             <nav className="hidden md:flex items-center gap-6">
               <div className="flex items-center gap-6 ml-8">
-                {navigation.map((item) => (
+        {navigation.map((item) => (
                   <Link
-                    key={item.name}
+          key={item.name}
                     href={item.href}
                     aria-current={router.pathname === item.href ? 'page' : undefined}
                     className={`px-1 py-2 text-[16px] font-medium transition-colors relative ${router.pathname === item.href ? 'text-primary-700' : 'text-text-700 hover:text-primary-700'}`}
                   >
-                    {item.name}
+          {t(item.name)}
                     {router.pathname === item.href && (
                       <span className="absolute -bottom-0.5 left-0 right-0 h-0.5 bg-[#2D5BFF]" aria-hidden />
                     )}
@@ -105,14 +104,14 @@ export const Header: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-4 ml-6">
-                {user && (
+        {user && (
                   <Button href="/services" size="md" className="h-10 px-4 rounded-lg bg-[#2D5BFF] text-white hover:bg-[#224BE6] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">
-                    Book appointment
+          {t('cta_book')}
                   </Button>
                 )}
-                {user && (
+        {user && (
                   <Button href="/appointments" variant="outline" size="md" className="h-10 px-3 rounded-lg border border-[#2D5BFF] text-[#2D5BFF] hover:bg-[#EEF3FF] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">
-                    My appointments
+          {t('cta_my_appointments')}
                   </Button>
                 )}
                 {user ? (
@@ -129,11 +128,11 @@ export const Header: React.FC = () => {
                     </button>
                     {profileOpen && (
                       <div id="profile-menu" role="menu" className="absolute right-0 mt-2 w-56 bg-white text-text-900 border border-border rounded-[10px] shadow-2xl">
-                        <Link href="/appointments" className="block px-3 py-2 text-[13px] hover:bg-bg-100" role="menuitem">My appointments</Link>
-                        <Link href="/documents" className="block px-3 py-2 text-[13px] hover:bg-bg-100" role="menuitem">Upload documents</Link>
-                        <Link href="/track" className="block px-3 py-2 text-[13px] hover:bg-bg-100" role="menuitem">Track booking</Link>
-                        <Link href="/profile" className="block px-3 py-2 text-[13px] hover:bg-bg-100" role="menuitem">Profile</Link>
-                        <button className="w-full text-left px-3 py-2 text-[13px] hover:bg-bg-100" onClick={() => signOut()} role="menuitem">Sign out</button>
+                        <Link href="/appointments" className="block px-3 py-2 text-[13px] hover:bg-bg-100" role="menuitem">{t('nav_my_appointments')}</Link>
+                        <Link href="/documents" className="block px-3 py-2 text-[13px] hover:bg-bg-100" role="menuitem">{t('nav_upload_docs')}</Link>
+                        <Link href="/track" className="block px-3 py-2 text-[13px] hover:bg-bg-100" role="menuitem">{t('nav_track_booking')}</Link>
+                        <Link href="/profile" className="block px-3 py-2 text-[13px] hover:bg-bg-100" role="menuitem">{t('nav_profile')}</Link>
+                        <button className="w-full text-left px-3 py-2 text-[13px] hover:bg-bg-100" onClick={() => signOut()} role="menuitem">{t('nav_sign_out')}</button>
                       </div>
                     )}
                   </div>
@@ -142,8 +141,8 @@ export const Header: React.FC = () => {
                     <div className="h-10 w-[172px] rounded-lg bg-bg-100 border border-border animate-pulse" aria-hidden />
                   ) : (
                     <div className="flex items-center gap-2">
-                      <Button href="/signin" variant="outline" size="md" className="h-10 px-4 rounded-lg border border-[#1A4DCC] text-[#1A4DCC] bg-white hover:bg-[#F5F8FF] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">Sign in</Button>
-                      <Button href="/signup" size="md" className="h-10 px-4 rounded-lg bg-[#1A4DCC] text-white hover:bg-[#153FA6] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">Sign up</Button>
+                      <Button href="/signin" variant="outline" size="md" className="h-10 px-4 rounded-lg border border-[#1A4DCC] text-[#1A4DCC] bg-white hover:bg-[#F5F8FF] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">{t('nav_sign_in')}</Button>
+                      <Button href="/signup" size="md" className="h-10 px-4 rounded-lg bg-[#1A4DCC] text-white hover:bg-[#153FA6] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">{t('nav_sign_up')}</Button>
                     </div>
                   )
                 )}
@@ -151,9 +150,9 @@ export const Header: React.FC = () => {
             </nav>
 
             <div className="md:hidden flex items-center gap-2">
-              {user && (
+        {user && (
                 <Link href="/services" className="inline-flex items-center justify-center h-9 px-3 rounded-lg bg-[#2D5BFF] text-white text-sm font-semibold hover:bg-[#224BE6] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">
-                  Book
+          {t('cta_book_short', 'Book')}
                 </Link>
               )}
               {user && (
@@ -182,14 +181,14 @@ export const Header: React.FC = () => {
           {/* Mobile inline nav bar (keep items in the nav bar, not in the drawer) */}
           <div className="md:hidden border-t border-border">
             <div className="flex items-center gap-5 px-2 py-2 overflow-x-auto no-scrollbar">
-              {navigation.map((item) => (
+        {navigation.map((item) => (
                 <Link
-                  key={item.name}
+          key={item.name}
                   href={item.href}
                   aria-current={router.pathname === item.href ? 'page' : undefined}
                   className={`whitespace-nowrap px-1 py-1.5 text-[15px] font-medium transition-colors relative ${router.pathname === item.href ? 'text-primary-700' : 'text-text-700 hover:text-primary-700'}`}
                 >
-                  {item.name}
+          {t(item.name)}
                   {router.pathname === item.href && (
                     <span className="absolute -bottom-0.5 left-0 right-0 h-0.5 bg-[#2D5BFF]" aria-hidden />
                   )}
@@ -211,7 +210,7 @@ export const Header: React.FC = () => {
                   className="mx-3 my-2 w-[calc(100%-1.5rem)] justify-center"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Book appointment
+                  {t('cta_book')}
                 </Button>
                 <Button
                   href={user ? "/appointments" : "/signin?next=/appointments"}
@@ -219,14 +218,14 @@ export const Header: React.FC = () => {
                   className="mx-3 mb-2 w-[calc(100%-1.5rem)] justify-center"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  My appointments
+                  {t('cta_my_appointments')}
                 </Button>
                 {user && (
                   <button
                     className="mx-3 mb-3 w-[calc(100%-1.5rem)] h-10 rounded-lg border border-border text-[13px] font-medium hover:bg-bg-100"
                     onClick={() => { setMobileMenuOpen(false); signOut(); }}
                   >
-                    Sign out
+                    {t('nav_sign_out')}
                   </button>
                 )}
               </div>

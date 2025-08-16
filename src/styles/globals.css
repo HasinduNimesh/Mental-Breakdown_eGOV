@@ -295,7 +295,7 @@ body.btt-visible .offset-for-btt {
 .btn-signin-arrow:focus-visible { outline: none; box-shadow: 0 0 0 3px #93B4FF; }
 
 /* Resource Category Row and Card */
-.rc-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0; }
+.rc-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
 @media (max-width: 1199px) { .rc-row { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 767px) { .rc-row { grid-template-columns: repeat(2, 1fr); } }
 
@@ -307,13 +307,20 @@ body.btt-visible .offset-for-btt {
   border-radius: 10px;
   background: #FFF;
   box-shadow: 0 1px 0 rgba(0,0,0,0.03);
-  display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start;
+  display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
   gap: 12px;
   transition: box-shadow 180ms ease, background-color 180ms ease, border-color 180ms ease;
 }
 
 .rc-card .rc-icon { width: 32px; height: 32px; transform-origin: top left; transition: transform 180ms ease; color: #2A6CF6; }
-.rc-card .rc-label { font: 600 16px/22px Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; color: #3A3D46; }
+.rc-card .rc-label {
+  font: 600 16px/22px Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  color: #3A3D46;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
 
 .rc-card:hover { border-color: #D7E6FF; box-shadow: 0 3px 12px rgba(13,71,161,0.08); }
 .rc-card:hover .rc-icon { transform: scale(0.92); }

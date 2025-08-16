@@ -2,6 +2,9 @@ import React from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import type { GetStaticProps } from 'next';
+import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
+import { useTranslation } from 'next-i18next';
 import { supabase } from '@/lib/supabaseClient';
 import { Button } from '@/components/ui/Button';
 import { Container } from '@/components/ui/Container';
@@ -9,6 +12,7 @@ import { Container } from '@/components/ui/Container';
 
 export default function SignUpPage() {
   const router = useRouter();
+  const { t } = useTranslation('common');
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [confirmPassword, setConfirmPassword] = React.useState('');
@@ -41,8 +45,8 @@ export default function SignUpPage() {
   return (
     <>
       <Head>
-        <title>Sign Up - Sri Lanka Citizen Services</title>
-        <meta name="description" content="Create your citizen services account to access government services online" />
+  <title>{t('signup_meta_title', 'Sign Up - Sri Lanka Citizen Services')}</title>
+  <meta name="description" content={t('signup_meta_desc', 'Create your citizen services account to access government services online')} />
       </Head>
 
       {/* Header with branding */}
@@ -50,14 +54,14 @@ export default function SignUpPage() {
         <Container className="max-w-[1200px] px-6">
           <div className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center gap-3">
-              <img src="/logo.svg" alt="Sri Lanka Coat of Arms" className="h-9 w-auto" />
+              <img src="/logo.svg" alt={t('logo_alt', 'Sri Lanka Coat of Arms')} className="h-9 w-auto" />
               <div className="leading-tight">
-                <div className="text-[14px] font-semibold text-[#163B8F]">Government of Sri Lanka</div>
-                <div className="text-[12px] font-medium text-[#4B5563]">Citizen Services Portal</div>
+                <div className="text-[14px] font-semibold text-[#163B8F]">{t('site_gov_name', 'Government of Sri Lanka')}</div>
+                <div className="text-[12px] font-medium text-[#4B5563]">{t('site_portal_name', 'Citizen Services Portal')}</div>
               </div>
             </Link>
             <Link href="/signin" className="text-sm text-text-600 hover:text-primary-700">
-              Already have an account? <span className="font-medium text-primary-700">Sign in</span>
+              {t('signup_have_account', 'Already have an account?')} <span className="font-medium text-primary-700">{t('nav_sign_in', 'Sign in')}</span>
             </Link>
           </div>
         </Container>
@@ -70,14 +74,14 @@ export default function SignUpPage() {
               {/* Header section */}
             <div className="bg-gradient-to-r from-blue-900 to-blue-800 text-white p-6 sm:p-8">
               <div className="mb-4">
-                <h1 className="text-xl sm:text-2xl font-bold">Create your account</h1>
-                <p className="text-blue-100 text-sm">Sign up to access government services online</p>
+                <h1 className="text-xl sm:text-2xl font-bold">{t('signup_title', 'Create your account')}</h1>
+                <p className="text-blue-100 text-sm">{t('signup_subtitle', 'Sign up to access government services online')}</p>
               </div>
 
               {/* Simple indicator */}
               <div className="flex items-center gap-2 text-sm">
                 <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold bg-white text-blue-900">1</div>
-                <span>Email & Password</span>
+                <span>{t('signup_step1', 'Email & Password')}</span>
               </div>
             </div>
 
@@ -86,17 +90,17 @@ export default function SignUpPage() {
               {!awaitingConfirmation ? (
               <form onSubmit={signUp} className="space-y-4">
                 <div className="mb-6">
-                  <h2 className="text-lg font-semibold text-text-900 mb-2">Enter your details</h2>
-                  <p className="text-sm text-text-600">Create your account with email and a strong password.</p>
+                  <h2 className="text-lg font-semibold text-text-900 mb-2">{t('signup_enter_details', 'Enter your details')}</h2>
+                  <p className="text-sm text-text-600">{t('signup_enter_details_help', 'Create your account with email and a strong password.')}</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-700 mb-2">Email address</label>
+                  <label className="block text-sm font-medium text-text-700 mb-2">{t('field_email', 'Email address')}</label>
                   <input
                     type="email"
                     autoComplete="email"
                     className="w-full border border-border rounded-md px-3 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="your.email@example.com"
+                    placeholder={t('placeholder_email', 'your.email@example.com')}
                     value={email}
                     onChange={e=>setEmail(e.target.value)}
                     required
@@ -104,12 +108,12 @@ export default function SignUpPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-700 mb-2">Password</label>
+                  <label className="block text-sm font-medium text-text-700 mb-2">{t('field_password', 'Password')}</label>
                   <input
                     type="password"
                     autoComplete="new-password"
                     className="w-full border border-border rounded-md px-3 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="At least 8 characters"
+                    placeholder={t('placeholder_password_min', 'At least 8 characters')}
                     value={password}
                     onChange={e=>setPassword(e.target.value)}
                     required
@@ -119,12 +123,12 @@ export default function SignUpPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-700 mb-2">Confirm password</label>
+                  <label className="block text-sm font-medium text-text-700 mb-2">{t('field_confirm_password', 'Confirm password')}</label>
                   <input
                     type="password"
                     autoComplete="new-password"
                     className="w-full border border-border rounded-md px-3 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Re-enter your password"
+                    placeholder={t('placeholder_confirm_password', 'Re-enter your password')}
                     value={confirmPassword}
                     onChange={e=>setConfirmPassword(e.target.value)}
                     required
@@ -139,26 +143,24 @@ export default function SignUpPage() {
                 )}
 
                 <Button type="submit" disabled={!email || !password || !confirmPassword || loading} className="w-full h-12 text-base">
-                  {loading ? 'Creating account…' : 'Create account'}
+                  {loading ? t('btn_creating_account', 'Creating account…') : t('btn_create_account', 'Create account')}
                 </Button>
               </form>
               ) : (
                 <div className="space-y-4">
                   <div className="mb-6">
-                    <h2 className="text-lg font-semibold text-text-900 mb-2">Confirm your email</h2>
-                    <p className="text-sm text-text-600">We sent a confirmation link to <span className="font-medium text-text-900">{email}</span>. Click the link to activate your account, then sign in.</p>
+                    <h2 className="text-lg font-semibold text-text-900 mb-2">{t('signup_confirm_title', 'Confirm your email')}</h2>
+                    <p className="text-sm text-text-600">{t('signup_confirm_desc', 'We sent a confirmation link to')} <span className="font-medium text-text-900">{email}</span>. {t('signup_confirm_desc2', 'Click the link to activate your account, then sign in.')}</p>
                   </div>
-                  <Button href="/signin" className="w-full h-12 text-base">Go to sign in</Button>
+                  <Button href="/signin" className="w-full h-12 text-base">{t('signup_go_to_signin', 'Go to sign in')}</Button>
                 </div>
               )}
 
               {/* Info section */}
               <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-md">
                 <div className="text-sm">
-                  <p className="font-medium text-blue-900 mb-1">Secure Registration</p>
-                  <p className="text-blue-700">
-                    Passwords are encrypted and managed by our identity provider; this app never stores raw passwords.
-                  </p>
+                  <p className="font-medium text-blue-900 mb-1">{t('secure_registration_title', 'Secure Registration')}</p>
+                  <p className="text-blue-700">{t('secure_registration_desc', 'Passwords are encrypted and managed by our identity provider; this app never stores raw passwords.')}</p>
                 </div>
               </div>
             </div>
@@ -167,11 +169,11 @@ export default function SignUpPage() {
           {/* Footer links */}
           <div className="mt-8 text-center">
             <div className="flex items-center justify-center gap-6 text-sm text-text-600">
-              <Link href="/help" className="hover:text-primary-700">Help Center</Link>
+              <Link href="/help" className="hover:text-primary-700">{t('link_help_center', 'Help Center')}</Link>
               <span>•</span>
-              <Link href="/contact" className="hover:text-primary-700">Contact Support</Link>
+              <Link href="/contact" className="hover:text-primary-700">{t('link_contact_support', 'Contact Support')}</Link>
               <span>•</span>
-              <Link href="/privacy" className="hover:text-primary-700">Privacy Policy</Link>
+              <Link href="/privacy" className="hover:text-primary-700">{t('link_privacy_policy', 'Privacy Policy')}</Link>
             </div>
           </div>
         </Container>
@@ -179,3 +181,11 @@ export default function SignUpPage() {
     </>
   );
 }
+
+export const getStaticProps: GetStaticProps = async ({ locale }) => {
+  return {
+    props: {
+      ...(await serverSideTranslations(locale ?? 'en', ['common'])),
+    },
+  };
+};

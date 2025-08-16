@@ -4,7 +4,7 @@ export interface NavigationItem {
 }
 
 export const FOOTER_DETAILS = {
-  orgName: 'Ministry of Education, Higher Education and Vocational Education',
+  orgName: 'Sri Lankan Goverment - eGOV',
   address: 'Isurupaya, Battaramulla, Sri Lanka',
   phones: ['+94 11 2 784 755', '+94 11 2 784 658'],
   email: 'info@moe.gov.lk',

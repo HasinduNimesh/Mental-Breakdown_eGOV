@@ -1,6 +1,8 @@
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { appWithTranslation } from 'next-i18next';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const nextI18NextConfig = require('../../next-i18next.config.js');
 import '../styles/globals.css';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { useEffect } from 'react';
@@ -23,7 +25,7 @@ function App({ Component, pageProps }: AppProps) {
   );
 }
 
-export default appWithTranslation(App);
+export default appWithTranslation(App, nextI18NextConfig);
 
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();

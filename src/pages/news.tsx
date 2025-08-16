@@ -223,8 +223,8 @@ const NewsPage: React.FC = () => {
         </Container>
       </div>
 
-    {/* Featured (slight overlap for continuity) */}
-    <section className="relative -mt-6 md:-mt-8 z-20">
+    {/* Featured */}
+    <section className="relative mt-4 md:mt-6 z-20">
         <Container>
       <Card className="p-4 sm:p-6 rounded-2xl shadow-[0_12px_40px_rgba(2,6,23,0.08)] ring-1 ring-black/5 border-transparent">
             <div className="flex items-start gap-4">
