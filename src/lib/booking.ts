@@ -1,6 +1,7 @@
 export type Office = { id: string; name: string; city: string; timezone: string };
 export type ServiceOption = { id: string; title: string; department: string };
 export type TimeSlot = { time: string; period: 'morning' | 'afternoon'; available: boolean };
+import { supabase } from './supabaseClient'; // Import the Supabase client
 
 export const OFFICES: Office[] = [
   { id: 'col-hq', name: 'Head Office', city: 'Colombo', timezone: 'Asia/Colombo' },
@@ -68,17 +69,45 @@ export type BookingDraft = {
   documents: Array<{ name: string; size: number; status: 'Pending review' | 'Needs fix' | 'Pre-checked' }>;
   createdAt: number;
   status: 'Scheduled' | 'Checked-in' | 'Completed' | 'Cancelled';
+  is_reminder_sent: boolean;
 };
 
 const KEY = 'egov_bookings_v1';
 
-export function saveBooking(b: BookingDraft) {
+/*export function saveBooking(b: BookingDraft) {
   const list = getBookings();
   const next = [b, ...list];
   localStorage.setItem(KEY, JSON.stringify(next));
+}*/
+
+export async function saveBooking(b: BookingDraft) {
+  const { error } = await supabase
+    .from('bookings') // Use your actual table name
+    .insert([b]);
+
+  if (error) {
+    console.error('Error saving booking:', error);
+    throw error;
+  }
 }
 
-export function getBookings(): BookingDraft[] {
+export async function getBookings(): Promise<BookingDraft[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return []; // Return empty if no user is logged in
+
+  const { data, error } = await supabase
+    .from('bookings') // Use your actual table name
+    .select('*') // Select all columns, including is_reminder_sent
+    .eq('user_id', user.id); // IMPORTANT: Assumes you have a 'user_id' column linking bookings to users
+
+  if (error) {
+    console.error('Error fetching bookings:', error);
+    return [];
+  }
+  return data || [];
+}
+
+/*export function getBookings(): BookingDraft[] {
   if (typeof window === 'undefined') return [];
   try {
     const raw = localStorage.getItem(KEY);
@@ -86,7 +115,7 @@ export function getBookings(): BookingDraft[] {
   } catch {
     return [];
   }
-}
+}*/
 
 export function generateBookingCode(): string {
   const s = Math.random().toString(36).slice(2, 8).toUpperCase();

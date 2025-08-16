@@ -11,6 +11,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
 import SignInModal from '@/components/auth/SignInModal';
 import QRCode from 'qrcode';
+import { sendEmailReminder } from '@/lib/email';
 
 function useTimeUntil(dateISO: string, time: string) {
   const [value, setValue] = React.useState<string>('');
@@ -35,45 +36,80 @@ const AppointmentsPage: React.FC = () => {
   const [showSignIn, setShowSignIn] = React.useState(false);
   const [list, setList] = React.useState<BookingDraft[]>([]);
 
+  const handleReminderSent = (bookingId: string) => {
+    setList(currentList =>
+      currentList.map(booking =>
+        booking.id === bookingId
+          ? { ...booking, is_reminder_sent: true } // Create a new object with the updated flag
+          : booking
+      )
+    );
+  };
+
   React.useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      if (loading) return;
-      if (!user) { setList([]); return; }
-      // Try DB first
-      try {
-        const { data, error } = await supabase
-          .from('bookings')
-          .select('booking_code, service_id, office_id, slot_date, slot_time, full_name, nic, email, phone, alt_phone, status')
-          .eq('user_id', user.id)
-          .order('slot_date', { ascending: false })
-          .limit(50);
-        if (!error && data) {
-          const mapped: BookingDraft[] = (data as any[]).map(r => ({
-            id: r.booking_code,
-            serviceId: r.service_id,
-            officeId: r.office_id,
-            dateISO: r.slot_date,
-            time: r.slot_time.slice(0,5),
-            fullName: r.full_name || '',
-            nic: r.nic || '',
-            email: r.email || '',
-            phone: r.phone || '',
-            altPhone: r.alt_phone || undefined,
-            documents: [],
-            createdAt: 0,
-            status: (r.status || 'Scheduled') as BookingDraft['status'],
-          }));
-          if (!cancelled) setList(mapped);
-          return;
-        }
-      } catch {}
-      // Fallback to local
-      if (!cancelled) setList(getBookings());
+  let cancelled = false;
+  async function load() {
+    if (loading) return;
+    if (!user) {
+      setList([]);
+      return;
     }
-    load();
-    return () => { cancelled = true; };
-  }, [user, loading]);
+
+    // Try DB first
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        // Your select statement is here, including 'is_reminder_sent'
+        .select('booking_code, service_id, office_id, slot_date, slot_time, full_name, nic, email, phone, alt_phone, status, is_reminder_sent')
+        .eq('user_id', user.id)
+        .order('slot_date', { ascending: false })
+        .limit(50);
+
+      if (error) {
+        // If there's an error, log it and proceed to the fallback
+        console.error("Error fetching from Supabase, falling back to local:", error);
+      } else if (data) {
+        // Map the data from the database
+        const mapped: BookingDraft[] = (data as any[]).map(r => ({
+          id: r.booking_code,
+          serviceId: r.service_id,
+          officeId: r.office_id,
+          dateISO: r.slot_date,
+          time: r.slot_time.slice(0, 5),
+          fullName: r.full_name || '',
+          nic: r.nic || '',
+          email: r.email || '',
+          phone: r.phone || '',
+          altPhone: r.alt_phone || undefined,
+          documents: [],
+          createdAt: 0,
+          status: (r.status || 'Scheduled') as BookingDraft['status'],
+          is_reminder_sent: r.is_reminder_sent || false,
+        }));
+
+        if (!cancelled) {
+          setList(mapped);
+        }
+        return; 
+      }
+    } catch (e) {
+      console.error("Exception fetching from Supabase, falling back to local:", e);
+    }
+    
+    try {
+      console.log("Using fallback: fetching bookings from local storage.");
+      const localBookings = await getBookings(); // Use 'await' here
+      if (!cancelled) {
+        setList(localBookings);
+      }
+    } catch (e) {
+      console.error("Failed to fetch from local storage fallback:", e);
+    }
+  }
+
+  load();
+  return () => { cancelled = true; };
+}, [user, loading]);
 
   React.useEffect(() => {
     if (loading) return;
@@ -93,7 +129,7 @@ const AppointmentsPage: React.FC = () => {
         <Container>
           <div className="grid grid-cols-1 gap-4">
             {list.map((b) => (
-              <AppointmentRow key={b.id} b={b} />
+              <AppointmentRow key={b.id} b={b} user={user} onReminderSent={handleReminderSent} />
             ))}
             {user ? (
               list.length === 0 && (
@@ -113,11 +149,51 @@ const AppointmentsPage: React.FC = () => {
 
 export default AppointmentsPage;
 
-function AppointmentRow({ b }: { b: BookingDraft }) {
+function AppointmentRow({ b, user, onReminderSent }: { b: BookingDraft, user: any, onReminderSent: (bookingId: string) => void }) {
   const svc = SERVICES.find(s => s.id === b.serviceId)!;
   const off = OFFICES.find(o => o.id === b.officeId)!;
   const countdown = useTimeUntil(b.dateISO, b.time);
   const [qrDataUrl, setQrDataUrl] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    async function checkAndSendReminder() {
+      if (b.is_reminder_sent) {
+        return;
+      }
+
+      const appointmentDateTime = new Date(`${b.dateISO}T${b.time}:00+05:30`).getTime();
+      const now = Date.now();
+      const twentyFourHoursInMillis = 48 * 60 * 60 * 1000;
+
+      // 2. Check time and user
+      if (user && (appointmentDateTime - now <= twentyFourHoursInMillis)) {
+        try {
+          // 3. Send email and wait for it
+          await sendEmailReminder(b, user);
+          console.log(`✅ Email sent for ${b.id}. Now attempting to update the database...`);
+
+          // 4. Update the database if email was successful
+          const { data: updateData, error: updateError } = await supabase
+            .from('bookings')
+            .update({ is_reminder_sent: true })
+            .eq('booking_code', b.id)
+            .select(); // Assuming 'id' is your primary key for bookings
+
+          if (updateError) {
+            console.error('Failed to update reminder status in DB:', updateError);
+          } else {
+            console.log(`Successfully updated DB for booking ${b.id}`);
+            // --- CALL THE PARENT'S FUNCTION TO UPDATE THE UI ---
+            onReminderSent(b.id);
+          }
+        } catch (error) {
+          console.error("Skipping DB update because email failed to send.");
+        }
+      }
+    }
+
+    checkAndSendReminder();
+  }, [b, user, onReminderSent]);
 
   React.useEffect(() => {
     let cancelled = false;

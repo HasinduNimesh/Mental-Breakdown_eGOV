@@ -20,7 +20,7 @@ serve(async (req: Request) => {
   const { data: { user }, error: uerr } = await supabase.auth.getUser();
   if (uerr || !user) return new Response(JSON.stringify({ error: "UNAUTHENTICATED" }), { status: 401, headers: { ...corsHeaders, "content-type": "application/json" } });
 
-  let payload: any;
+  let payload: Record<string, unknown>;
   try { payload = await req.json(); } catch { return new Response(JSON.stringify({ error: "INVALID_JSON" }), { status: 400, headers: { ...corsHeaders, "content-type": "application/json" } }); }
 
   const allowed = ["full_name","nic","dob","phone","address_line1","address_line2","district","postal_code","preferred_language"];
