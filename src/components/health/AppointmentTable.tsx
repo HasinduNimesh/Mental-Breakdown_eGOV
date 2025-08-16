@@ -1,13 +1,20 @@
 import React, { useMemo, useState } from "react";
 import clsx from "clsx";
 
-export type AppointmentStatus = "Scheduled" | "In progress" | "Completed" | "Cancelled" | "No-show" | "Delayed";
+export type AppointmentStatus =
+  | "Scheduled"
+  | "In progress"
+  | "On hold"
+  | "Completed"
+  | "Cancelled"
+  | "No-show"
+  | "Delayed";
 
 export type AppointmentRow = {
   id: string;                 // appointment number
   department: string;
-  date: string;               // e.g. "2025-08-16"
-  time: string;               // e.g. "10:30"
+  date: string;               // YYYY-MM-DD
+  time: string;               // HH:mm
   status: AppointmentStatus;
 
   // details (shown on expand)
@@ -41,7 +48,6 @@ export function AppointmentTable({ rows, searchable = true }: Props) {
   }
 
   function timeMeta(date: string, time: string) {
-    // returns { label, isLate }
     try {
       const target = new Date(`${date}T${time}:00`);
       const now = new Date();
@@ -51,7 +57,7 @@ export function AppointmentTable({ rows, searchable = true }: Props) {
       const hrs = Math.floor(mins / 60);
       const rem = mins % 60;
       const hhmm = hrs ? `${hrs}h ${rem}m` : `${rem}m`;
-      if (diffMs < -5 * 60000) return { label: `Delayed by ${hhmm}`, isLate: true };  // >5 min late
+      if (diffMs < -5 * 60000) return { label: `Delayed by ${hhmm}`, isLate: true };
       if (diffMs < 0) return { label: "Starting now", isLate: false };
       return { label: `In ${hhmm}`, isLate: false };
     } catch {
@@ -59,15 +65,17 @@ export function AppointmentTable({ rows, searchable = true }: Props) {
     }
   }
 
+  // ✅ Status chips aligned with donut colors
   const badge = (status: AppointmentStatus) => {
     const base = "inline-flex items-center rounded px-2 py-0.5 text-xs font-medium";
     switch (status) {
       case "Scheduled":   return <span className={clsx(base, "bg-blue-100 text-blue-700")}>Scheduled</span>;
-      case "In progress": return <span className={clsx(base, "bg-indigo-100 text-indigo-700")}>In progress</span>;
-      case "Completed":   return <span className={clsx(base, "bg-emerald-100 text-emerald-700")}>Completed</span>;
-      case "Cancelled":   return <span className={clsx(base, "bg-gray-200 text-gray-700")}>Cancelled</span>;
-      case "No-show":     return <span className={clsx(base, "bg-orange-100 text-orange-700")}>No-show</span>;
+      case "In progress": return <span className={clsx(base, "bg-lime-100 text-lime-700")}>In progress</span>;
+      case "On hold":     return <span className={clsx(base, "bg-orange-100 text-orange-700")}>On hold</span>;
+      case "Completed":   return <span className={clsx(base, "bg-green-100 text-green-700")}>Completed</span>;
       case "Delayed":     return <span className={clsx(base, "bg-red-100 text-red-700")}>Delayed</span>;
+      case "Cancelled":   return <span className={clsx(base, "bg-gray-200 text-gray-700")}>Cancelled</span>;
+      case "No-show":     return <span className={clsx(base, "bg-slate-100 text-slate-700")}>No-show</span>;
       default:            return <span className={clsx(base, "bg-gray-200 text-gray-700")}>{status}</span>;
     }
   };
@@ -100,7 +108,7 @@ export function AppointmentTable({ rows, searchable = true }: Props) {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((r, idx) => {
+            {filtered.map((r) => {
               const t = timeMeta(r.date, r.time);
               const open = !!expanded[r.id];
               return (
@@ -124,7 +132,6 @@ export function AppointmentTable({ rows, searchable = true }: Props) {
                     <td className={clsx("p-3", t.isLate ? "text-red-600" : "text-gray-700")}>{t.label}</td>
                   </tr>
 
-                  {/* Expandable details row */}
                   {open && (
                     <tr id={`row-${r.id}`} className="border-t">
                       <td className="p-3"></td>
