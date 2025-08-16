@@ -157,7 +157,7 @@ export const Header: React.FC = () => {
                 </div>
                 {/* Primary CTA */}
                 {user && (
-                  <Button href="/book" size="md" className="h-10 px-4 rounded-lg bg-[#2D5BFF] text-white hover:bg-[#224BE6] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">
+                  <Button href="/services" size="md" className="h-10 px-4 rounded-lg bg-[#2D5BFF] text-white hover:bg-[#224BE6] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">
                     Book appointment
                   </Button>
                 )}
@@ -210,7 +210,7 @@ export const Header: React.FC = () => {
             {/* Mobile actions: Book, Search, Menu */}
             <div className="md:hidden flex items-center gap-2">
               {user && (
-                <Link href="/book" className="inline-flex items-center justify-center h-9 px-3 rounded-lg bg-[#2D5BFF] text-white text-sm font-semibold hover:bg-[#224BE6] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">
+                <Link href="/services" className="inline-flex items-center justify-center h-9 px-3 rounded-lg bg-[#2D5BFF] text-white text-sm font-semibold hover:bg-[#224BE6] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">
                   Book
                 </Link>
               )}
@@ -288,7 +288,7 @@ export const Header: React.FC = () => {
                   <span className="flex items-center gap-1 text-text-600"><PhoneIcon className="w-4 h-4" />1919</span>
                 </div>
                 {user && (
-                  <Button href="/book" className="mx-3 my-2 w-[calc(100%-1.5rem)] justify-center" onClick={() => setMobileMenuOpen(false)}>
+                  <Button href="/services" className="mx-3 my-2 w-[calc(100%-1.5rem)] justify-center" onClick={() => setMobileMenuOpen(false)}>
                     Book appointment
                   </Button>
                 )}

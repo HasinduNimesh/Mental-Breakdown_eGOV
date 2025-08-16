@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { OFFICES, SERVICES, getNextAvailableDate, getNextBusinessDay, generateSlots, formatDateISO, BookingDraft, saveBooking, generateBookingCode, buildICS } from '@/lib/booking';
+import Calendar from '@/components/booking/Calendar';
 import { track } from '@/lib/analytics';
 import { CloudArrowUpIcon, MapPinIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,6 +15,7 @@ import QRCode from 'qrcode';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/router';
 import { listProfileDocuments, uploadProfileDocument, type ProfileDoc } from '@/lib/documents';
+import { downloadBookingPDF } from '@/lib/pdf';
 
 type Step = 1 | 2 | 3 | 4 | 5;
 
@@ -22,10 +24,15 @@ const BookPage: React.FC = () => {
   const { user } = useAuth();
   const [step, setStep] = React.useState<Step>(1);
   const [serviceId, setServiceId] = React.useState(SERVICES[0].id);
+  const [serverSlotTimes, setServerSlotTimes] = React.useState<Array<{ time: string; available: boolean; period: 'morning'|'afternoon' }>>([]);
+  const [loadingSlots, setLoadingSlots] = React.useState(false);
+  const [bookingBusy, setBookingBusy] = React.useState(false);
   const [serviceLocked, setServiceLocked] = React.useState<boolean>(true);
   const [officeId, setOfficeId] = React.useState(OFFICES[0].id);
   const [date, setDate] = React.useState(getNextAvailableDate());
   const [time, setTime] = React.useState('');
+  const [monthView, setMonthView] = React.useState<Date>(getNextAvailableDate());
+  const [availabilityByDate, setAvailabilityByDate] = React.useState<Record<string, number>>({});
   const [fullName, setFullName] = React.useState('');
   const [nic, setNic] = React.useState('');
   const [email, setEmail] = React.useState('');
@@ -45,11 +52,30 @@ const BookPage: React.FC = () => {
 
   const service = SERVICES.find(s => s.id === serviceId)!;
   const office = OFFICES.find(o => o.id === officeId)!;
-  const slots = React.useMemo(() => generateSlots(date), [date]);
+  const slots = React.useMemo(() => {
+    // Prefer server-provided slots if available, otherwise use local generator
+    if (serverSlotTimes.length) return serverSlotTimes;
+    return generateSlots(date);
+  }, [date, serverSlotTimes]);
   const morning = slots.filter(s => s.period === 'morning');
   const afternoon = slots.filter(s => s.period === 'afternoon');
 
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  // Load availability map for the visible month (placeholder local logic for now)
+  React.useEffect(() => {
+    const start = new Date(monthView.getFullYear(), monthView.getMonth(), 1);
+    const end = new Date(monthView.getFullYear(), monthView.getMonth() + 1, 0);
+    const next: Record<string, number> = {};
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      if (d.getDay() === 0) continue; // skip Sundays
+      const k = formatDateISO(d);
+      // derive from generateSlots to keep consistent until server API is added
+      const count = generateSlots(d).filter(s => s.available).length;
+      next[k] = count;
+    }
+    setAvailabilityByDate(next);
+  }, [monthView]);
 
   // Normalize incoming service query (?service=passport-application | passport | driving-license | license | birth-cert | birth-certificate | police-clearance)
   function normalizeService(input?: string | string[]): string | null {
@@ -77,6 +103,69 @@ const BookPage: React.FC = () => {
       setServiceLocked(true);
     }
   }, [router.isReady, router.query.service]);
+
+  // Try to load availability for the visible month and specific service/office via DB; fallback handled in UI
+  React.useEffect(() => {
+    let cancelled = false;
+    async function fetchMonthAvailability() {
+      const start = new Date(monthView.getFullYear(), monthView.getMonth(), 1);
+      const end = new Date(monthView.getFullYear(), monthView.getMonth() + 1, 0);
+      try {
+        const { data, error } = await supabase
+          .from('slots')
+          .select('slot_date, remaining')
+          .eq('service_id', serviceId)
+          .eq('office_id', officeId)
+          .gte('slot_date', formatDateISO(start))
+          .lte('slot_date', formatDateISO(end));
+        if (error || !data) {
+          // ignore; we'll keep local availability map
+          return;
+        }
+        const map: Record<string, number> = {};
+        for (const row of data as any[]) {
+          const day = row.slot_date as string; // YYYY-MM-DD
+          map[day] = (map[day] || 0) + (row.remaining ?? 0);
+        }
+        if (!cancelled) setAvailabilityByDate(map);
+      } catch {}
+    }
+    fetchMonthAvailability();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [monthView, serviceId, officeId]);
+
+  // Try to load per-day slot list from DB when date/service/office changes
+  React.useEffect(() => {
+    let cancelled = false;
+    async function fetchDaySlots() {
+      setLoadingSlots(true);
+      setServerSlotTimes([]);
+      try {
+        const { data, error } = await supabase
+          .from('slots')
+          .select('slot_time, remaining')
+          .eq('service_id', serviceId)
+          .eq('office_id', officeId)
+          .eq('slot_date', formatDateISO(date))
+          .order('slot_time', { ascending: true });
+        if (!error && data) {
+          const next = (data as any[]).map(r => {
+            const t: string = (r.slot_time as string).slice(0,5); // HH:MM
+            const hour = parseInt(t.slice(0,2), 10);
+            const period = hour < 12 ? 'morning' : 'afternoon';
+            return { time: t, available: (r.remaining ?? 0) > 0, period } as const;
+          });
+          if (!cancelled) setServerSlotTimes(next);
+        }
+      } catch {}
+      finally {
+        if (!cancelled) setLoadingSlots(false);
+      }
+    }
+    fetchDaySlots();
+    return () => { cancelled = true; };
+  }, [serviceId, officeId, date]);
 
   // Prefill user details from profile when signed in
   React.useEffect(() => {
@@ -164,7 +253,7 @@ const BookPage: React.FC = () => {
   }
 
   async function confirm() {
-    const booking: BookingDraft = {
+    const localBooking: BookingDraft = {
       id: generateBookingCode(),
       serviceId,
       officeId,
@@ -173,38 +262,91 @@ const BookPage: React.FC = () => {
       fullName,
       nic,
       email,
-  phone,
-  altPhone: altPhone || undefined,
+      phone,
+      altPhone: altPhone || undefined,
       documents: docs.map(d => ({ name: d.file.name, size: d.file.size, status: d.status })),
       createdAt: Date.now(),
       status: 'Scheduled',
     };
-    saveBooking(booking);
-    // Attach selected saved profile docs to this booking for officials
-    if (selectedDocIds.length) {
-      try {
-        const { data, error } = await supabase
-          .from('profile_documents')
-          .select('object_key, original_name, mime_type, size_bytes')
-          .in('id', selectedDocIds);
-        if (!error && data && data.length) {
-          const rows = data.map((d: any) => ({
-            booking_code: booking.id,
-            object_key: d.object_key,
-            original_name: d.original_name,
-            mime_type: d.mime_type,
-            size_bytes: d.size_bytes,
-            status: 'Pending review' as const,
-          }));
-          await supabase.from('appointment_documents').insert(rows);
+    setBookingBusy(true);
+    try {
+      // Try server-side atomic booking via RPC (if schema is installed)
+      const { data: rpcData, error: rpcError } = await supabase.rpc('book_appointment', {
+        p_service_id: serviceId,
+        p_office_id: officeId,
+        p_slot_date: localBooking.dateISO,
+        p_slot_time: localBooking.time,
+        p_full_name: fullName,
+        p_nic: nic,
+        p_email: email,
+        p_phone: phone,
+        p_alt_phone: altPhone || null,
+        p_booking_code: localBooking.id,
+      });
+      let bookingCode = localBooking.id;
+      if (!rpcError && rpcData && (rpcData as any).booking_code) {
+        bookingCode = (rpcData as any).booking_code as string;
+        // Store appointment documents linked to bookingCode
+        if (selectedDocIds.length) {
+          try {
+            const { data, error } = await supabase
+              .from('profile_documents')
+              .select('object_key, original_name, mime_type, size_bytes')
+              .in('id', selectedDocIds);
+            if (!error && data && data.length) {
+              const rows = data.map((d: any) => ({
+                booking_code: bookingCode,
+                object_key: d.object_key,
+                original_name: d.original_name,
+                mime_type: d.mime_type,
+                size_bytes: d.size_bytes,
+                status: 'Pending review' as const,
+              }));
+              await supabase.from('appointment_documents').insert(rows);
+            }
+          } catch {}
         }
-      } catch {
-        // non-blocking
+        // Persist QR payload details into DB (image generated client-side here)
+        try {
+          const payload = { id: bookingCode, serviceId, officeId, date: localBooking.dateISO, time: localBooking.time };
+          const url = await QRCode.toDataURL(JSON.stringify(payload), { width: 240, margin: 1, color: { dark: '#1f2937', light: '#ffffff' }, errorCorrectionLevel: 'M' });
+          await supabase.from('bookings').update({ qr_payload: payload as any, qr_data_url: url }).eq('booking_code', bookingCode);
+          setQrDataUrl(url);
+        } catch {}
+        const confirmed: BookingDraft = { ...localBooking, id: bookingCode };
+        track('booking_completed', { serviceId, officeId, date: confirmed.dateISO, time: confirmed.time });
+        setConfirmed(confirmed);
+        setStep(5);
+        return;
       }
+      // Fallback to local-only booking if RPC not available
+      saveBooking(localBooking);
+      // Attach selected saved profile docs to this booking for officials (local booking still stores appointment_documents if table exists)
+      if (selectedDocIds.length) {
+        try {
+          const { data, error } = await supabase
+            .from('profile_documents')
+            .select('object_key, original_name, mime_type, size_bytes')
+            .in('id', selectedDocIds);
+          if (!error && data && data.length) {
+            const rows = data.map((d: any) => ({
+              booking_code: localBooking.id,
+              object_key: d.object_key,
+              original_name: d.original_name,
+              mime_type: d.mime_type,
+              size_bytes: d.size_bytes,
+              status: 'Pending review' as const,
+            }));
+            await supabase.from('appointment_documents').insert(rows);
+          }
+        } catch {}
+      }
+      track('booking_completed', { serviceId, officeId, date: localBooking.dateISO, time: localBooking.time });
+      setConfirmed(localBooking);
+      setStep(5);
+    } finally {
+      setBookingBusy(false);
     }
-  track('booking_completed', { serviceId, officeId, date: booking.dateISO, time: booking.time });
-    setConfirmed(booking);
-    setStep(5);
   }
 
   // Generate QR after confirmation on client only
@@ -312,12 +454,20 @@ const BookPage: React.FC = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   {/* Calendar */}
                   <div className="lg:col-span-1">
-                    <div className="text-sm text-text-700 mb-2">Next available date</div>
-                    <div className="flex items-center gap-2">
-                      <input type="date" className="border border-border rounded-md px-3 py-2" value={formatDateISO(date)} onChange={(e) => { setDate(new Date(e.target.value)); setTime(''); }} />
-                      <Button variant="outline" onClick={() => { setDate(getNextBusinessDay(date)); setTime(''); }}>Jump to next</Button>
+                    <div className="text-sm text-text-700 mb-2">Pick a date</div>
+                    <Calendar
+                      month={monthView}
+                      selectedDate={date}
+                      onMonthChange={(m) => setMonthView(m)}
+                      onSelectDate={(d) => { setDate(d); setTime(''); }}
+                      availabilityByDate={availabilityByDate}
+                      minDate={getNextAvailableDate()}
+                      disableWeekdays={[0]}
+                    />
+                    <div className="mt-2 flex items-center gap-2">
+                      <Button size="sm" variant="outline" onClick={() => { setDate(getNextBusinessDay(date)); setTime(''); }}>Jump to next</Button>
+                      <span className="text-xs text-text-600">Cut-off: same-day bookings close at 3:00 PM.</span>
                     </div>
-                    <div className="mt-2 text-xs text-text-600">Cut-off: same-day bookings close at 3:00 PM.</div>
                   </div>
                   {/* Timeslots */}
                   <div className="lg:col-span-2">
@@ -346,7 +496,7 @@ const BookPage: React.FC = () => {
                     </div>
                     <div className="mt-4 flex items-center gap-3">
                       <Button onClick={() => setStep(1)} variant="outline">Back</Button>
-                      <Button onClick={() => { if (!user) { setShowSignIn(true); return; } setStep(3); }} disabled={!time || !user}>Enter your details</Button>
+                        <Button onClick={() => { if (!user) { setShowSignIn(true); return; } setStep(3); }} disabled={!time || !user || loadingSlots}>Enter your details</Button>
                     </div>
                   </div>
                 </div>
@@ -494,9 +644,28 @@ const BookPage: React.FC = () => {
                       {docs.map((d, i) => (<li key={i}>{d.file.name}</li>))}
                     </ul>
                   </Card>
-                  <div className="flex items-center gap-3">
-                    {!confirmed && <Button onClick={confirm}>Confirm booking</Button>}
-                    {confirmed && <Button href={buildICS(confirmed, service, office)} download={`appointment-${confirmed.id}.ics`} variant="outline">Add to calendar</Button>}
+          <div className="flex items-center gap-3">
+            {!confirmed && <Button onClick={confirm} disabled={bookingBusy}>{bookingBusy ? 'Confirming…' : 'Confirm booking'}</Button>}
+                    {confirmed && (
+                      <>
+                        <Button href={buildICS(confirmed, service, office)} download={`appointment-${confirmed.id}.ics`} variant="outline">Add to calendar</Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            if (!confirmed) return;
+                            downloadBookingPDF({
+                              booking: confirmed,
+                              service,
+                              office,
+                              tz,
+                              qrDataUrl,
+                            });
+                          }}
+                        >
+                          Download PDF
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
                 <div className="lg:col-span-1">

@@ -25,23 +25,12 @@ const HelpPage: React.FC = () => {
         </div>
         <Container className="relative py-16 sm:py-20 lg:py-28">
           <div className="max-w-3xl">
-            <div className="text-blue-200 text-xs sm:text-sm uppercase tracking-wider mb-3 font-semibold">Guides</div>
+            <div className="text-blue-200 text-xs sm:text-sm uppercase tracking-wider mb-3 font-semibold">OUR MISSION IS <span className="text-orange-400">FOR YOU!</span></div>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-4">Service Guide</h1>
             <p className="text-blue-100 text-lg max-w-2xl">
               Learn how government services work, what documents you need, and how to book an appointment quickly.
             </p>
-            {/* Quick search deep-linking to /services */}
-            <form action="/services" method="get" className="mt-8 max-w-xl">
-              <div className="relative">
-                <input
-                  type="text"
-                  name="query"
-                  placeholder="Search services, departments, or documents..."
-                  className="w-full pl-4 pr-32 py-4 rounded-xl text-text-900 placeholder-text-500 border border-white/20 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent"
-                />
-                <Button type="submit" variant="secondary" className="absolute right-2 top-1/2 -translate-y-1/2">Search</Button>
-              </div>
-            </form>
+            {/* Search bar intentionally removed as per design guidance */}
           </div>
         </Container>
       </section>

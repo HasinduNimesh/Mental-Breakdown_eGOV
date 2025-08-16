@@ -212,7 +212,7 @@ const DocumentsPage: React.FC = () => {
                     <DocumentTextIcon className="h-5 w-5 text-blue-600" />
                     <h2 className="text-lg font-semibold text-gray-900">Your saved documents</h2>
                   </div>
-                  <p className="text-sm text-gray-600">Upload once and reuse in future bookings. Photos (JPG/PNG) are recommended for best results.</p>
+                  <p className="text-sm text-gray-600">Save your documents here so you don’t have to upload them every time you book. Clear photos work best (JPG or PNG).</p>
                 </div>
                 
                 {savedLoading ? (
@@ -228,7 +228,7 @@ const DocumentsPage: React.FC = () => {
                     {savedDocs.length === 0 && (
                       <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 mb-6">
                         <PhotoIcon className="mx-auto h-12 w-12 text-gray-400 mb-3" />
-                        <div className="text-sm text-gray-600">No saved documents yet. Use the cards below to add NIC, Passport, or other documents.</div>
+                        <div className="text-sm text-gray-600">You haven’t added any documents yet. Use the buttons below to add your NIC, passport, or another document.</div>
                       </div>
                     )}
                   <div className="space-y-6">
@@ -241,9 +241,9 @@ const DocumentsPage: React.FC = () => {
                         <>
                           {/* NIC Card */}
                           <Card className="overflow-hidden" shadow={false} border={true}>
-                            <div className="flex items-center justify-between px-4 py-3 bg-blue-50 border-b border-gray-200">
+                            <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
                               <div className="flex items-center gap-2">
-                                <IdentificationIcon className="h-5 w-5 text-blue-600" />
+                                <IdentificationIcon className="h-5 w-5 text-gray-700" />
                                 <span className="font-medium text-gray-900">National Identity Card (NIC)</span>
                               </div>
                               <Button 
@@ -253,13 +253,13 @@ const DocumentsPage: React.FC = () => {
                                 className="flex items-center gap-1"
                               >
                                 <PlusIcon className="h-4 w-4" />
-                                {nicFrontDoc || nicBackDoc ? 'Update' : 'Add NIC'}
+                                {nicFrontDoc || nicBackDoc ? 'Update photos' : 'Add NIC photos'}
                               </Button>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4">
                               {/* Front slot */}
                               <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
-                                <div className="text-xs font-medium text-gray-900 mb-2">Front Side</div>
+                                <div className="text-xs font-medium text-gray-900 mb-2">Front side</div>
                                 {nicFrontDoc ? (
                                   <div className="space-y-2">
                                     <div className="h-28 bg-white rounded border grid place-items-center overflow-hidden">
@@ -281,7 +281,7 @@ const DocumentsPage: React.FC = () => {
                                         await removeProfileDocument(nicFrontDoc.id);
                                         setSavedDocs(prev => prev.filter(x => x.id !== nicFrontDoc.id));
                                       }}
-                                      className="w-full text-red-600 border-red-200 hover:bg-red-50"
+                                      className="w-full text-red-600 border-red-200 hover:bg-gray-50"
                                     >
                                       <TrashIcon className="h-4 w-4 mr-1" />
                                       Remove
@@ -293,7 +293,7 @@ const DocumentsPage: React.FC = () => {
                               </div>
                               {/* Back slot */}
                               <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
-                                <div className="text-xs font-medium text-gray-900 mb-2">Back Side</div>
+                                <div className="text-xs font-medium text-gray-900 mb-2">Back side</div>
                                 {nicBackDoc ? (
                                   <div className="space-y-2">
                                     <div className="h-28 bg-white rounded border grid place-items-center overflow-hidden">
@@ -315,7 +315,7 @@ const DocumentsPage: React.FC = () => {
                                         await removeProfileDocument(nicBackDoc.id);
                                         setSavedDocs(prev => prev.filter(x => x.id !== nicBackDoc.id));
                                       }}
-                                      className="w-full text-red-600 border-red-200 hover:bg-red-50"
+                                      className="w-full text-red-600 border-red-200 hover:bg-gray-50"
                                     >
                                       <TrashIcon className="h-4 w-4 mr-1" />
                                       Remove
@@ -330,9 +330,9 @@ const DocumentsPage: React.FC = () => {
 
                           {/* Passport Card */}
                           <Card className="overflow-hidden" shadow={false} border={true}>
-                            <div className="flex items-center justify-between px-4 py-3 bg-green-50 border-b border-gray-200">
+                            <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
                               <div className="flex items-center gap-2">
-                                <DocumentTextIcon className="h-5 w-5 text-green-600" />
+                                <DocumentTextIcon className="h-5 w-5 text-gray-700" />
                                 <span className="font-medium text-gray-900">Passport</span>
                               </div>
                               <Button 
@@ -342,7 +342,7 @@ const DocumentsPage: React.FC = () => {
                                 className="flex items-center gap-1"
                               >
                                 <PlusIcon className="h-4 w-4" />
-                                {passportDoc ? 'Replace' : 'Add Passport'}
+                                {passportDoc ? 'Replace photo' : 'Add passport photo'}
                               </Button>
                             </div>
                             <div className="p-4">
@@ -367,7 +367,7 @@ const DocumentsPage: React.FC = () => {
                                       await removeProfileDocument(passportDoc.id);
                                       setSavedDocs(prev => prev.filter(x => x.id !== passportDoc.id));
                                     }}
-                                    className="text-red-600 border-red-200 hover:bg-red-50"
+                                    className="text-red-600 border-red-200 hover:bg-gray-50"
                                   >
                                     <TrashIcon className="h-4 w-4 mr-1" />
                                     Remove
@@ -383,9 +383,9 @@ const DocumentsPage: React.FC = () => {
 
                           {/* Other Documents Card */}
                           <Card className="overflow-hidden" shadow={false} border={true}>
-                            <div className="flex items-center justify-between px-4 py-3 bg-orange-50 border-b border-gray-200">
+                            <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
                               <div className="flex items-center gap-2">
-                                <PhotoIcon className="h-5 w-5 text-orange-600" />
+                                <PhotoIcon className="h-5 w-5 text-gray-700" />
                                 <span className="font-medium text-gray-900">Other documents</span>
                               </div>
                               <Button 
@@ -395,7 +395,7 @@ const DocumentsPage: React.FC = () => {
                                 className="flex items-center gap-1"
                               >
                                 <PlusIcon className="h-4 w-4" />
-                                Add custom
+                                Add document
                               </Button>
                             </div>
                             <div className="p-4">
@@ -424,7 +424,7 @@ const DocumentsPage: React.FC = () => {
                                             if (!confirm('Remove this document?')) return;
                                             try { await removeProfileDocument(d.id); setSavedDocs(prev => prev.filter(x => x.id !== d.id)); } catch (e) { /* ignore */ }
                                           }}
-                                          className="text-red-600 border-red-200 hover:bg-red-50"
+                                          className="text-red-600 border-red-200 hover:bg-gray-50"
                                         >
                                           <TrashIcon className="h-4 w-4" />
                                         </Button>
@@ -465,9 +465,9 @@ const DocumentsPage: React.FC = () => {
           {/* Modal Header */}
           <div className="flex items-center justify-between px-6 py-4 bg-gray-50 border-b border-gray-200">
             <div className="flex items-center gap-2">
-              {modal === 'nic' && <IdentificationIcon className="h-5 w-5 text-blue-600" />}
-              {modal === 'passport' && <DocumentTextIcon className="h-5 w-5 text-green-600" />}
-              {modal === 'custom' && <PhotoIcon className="h-5 w-5 text-orange-600" />}
+              {modal === 'nic' && <IdentificationIcon className="h-5 w-5 text-gray-700" />}
+              {modal === 'passport' && <DocumentTextIcon className="h-5 w-5 text-gray-700" />}
+              {modal === 'custom' && <PhotoIcon className="h-5 w-5 text-gray-700" />}
               <h3 className="font-semibold text-gray-900">
                 {modal === 'nic' ? 'Add NIC Documents' : modal === 'passport' ? 'Add Passport' : 'Add Custom Document'}
               </h3>
@@ -495,7 +495,7 @@ const DocumentsPage: React.FC = () => {
                         accept="image/*,.pdf" 
                         capture="environment" 
                         onChange={e => setNicFront(e.target.files?.[0] || null)}
-                        className="flex-1 text-sm text-gray-600 file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        className="flex-1 text-sm text-gray-600 file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
                       />
                       <Button 
                         size="sm" 
@@ -517,7 +517,7 @@ const DocumentsPage: React.FC = () => {
                         accept="image/*,.pdf" 
                         capture="environment" 
                         onChange={e => setNicBack(e.target.files?.[0] || null)}
-                        className="flex-1 text-sm text-gray-600 file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        className="flex-1 text-sm text-gray-600 file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
                       />
                       <Button 
                         size="sm" 
@@ -546,7 +546,7 @@ const DocumentsPage: React.FC = () => {
                       accept="image/*,.pdf" 
                       capture="environment" 
                       onChange={e => setPassportFile(e.target.files?.[0] || null)}
-                      className="flex-1 text-sm text-gray-600 file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+                      className="flex-1 text-sm text-gray-600 file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
                     />
                     <Button 
                       size="sm" 
@@ -585,7 +585,7 @@ const DocumentsPage: React.FC = () => {
                       capture="environment" 
                       multiple 
                       onChange={e => setCustomFiles(Array.from(e.target.files || []))}
-                      className="flex-1 text-sm text-gray-600 file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
+                      className="flex-1 text-sm text-gray-600 file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
                     />
                     <Button 
                       size="sm" 

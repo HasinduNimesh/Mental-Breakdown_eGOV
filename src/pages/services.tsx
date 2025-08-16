@@ -211,117 +211,97 @@ const ServicesPage: React.FC<Props> = ({ initialServices }) => {
         </div>
 
         {/* Hero Content */}
-        <Container className="relative py-16 sm:py-20 lg:py-28">
+  <Container className="relative pt-8 sm:pt-10 lg:pt-12 pb-16 sm:pb-20 lg:pb-24">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             <div>
-              <div className="text-blue-200 text-xs sm:text-sm uppercase tracking-wider mb-4 font-semibold">
+              {/* Upper label and heading to mirror Service Guide */}
+              <div className="text-blue-200 text-xs sm:text-sm uppercase tracking-wider mb-2 font-semibold">
                 OUR MISSION IS <span className="text-orange-400">FOR YOU!</span>
               </div>
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-6">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-3">
                 Government Services
                 <span className="block text-blue-200">Find & Access Public Services</span>
               </h1>
-              <p className="text-lg sm:text-xl text-blue-100 mb-6 sm:mb-8 max-w-xl">
-                "Public service should be the birthright of every citizen"
+              <p className="text-blue-100/90 text-base sm:text-lg mb-6 max-w-3xl">
+                Learn how services work, what you need, and how to book appointments quickly and securely.
               </p>
-              <p className="text-base sm:text-lg text-blue-200 mb-6 sm:mb-8 max-w-xl">
-                Browse and book appointments for over 500+ government services across all departments. 
-                Fast, secure, and accessible online.
-              </p>
-
               {/* Search Bar */}
-              <div className="max-w-xl mb-6 sm:mb-8">
-        <div className="relative">
-                  <MagnifyingGlassIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-blue-200" aria-hidden />
-          <input
-          ref={searchRef}
-          type="text"
+              <div className="max-w-2xl">
+                <div className="relative">
+                  <MagnifyingGlassIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-blue-200" aria-hidden />
+                  <input
+                    ref={searchRef}
+                    type="text"
                     placeholder="Search services, departments, or documents..."
-                    className="w-full pl-12 pr-4 py-4 rounded-xl text-text-900 placeholder-text-500 border border-white/20 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent"
+                    className="w-full pl-11 pr-4 py-3 rounded-lg bg-white text-text-900 placeholder-text-500 shadow-md ring-1 ring-black/10 focus:outline-none focus:ring-2 focus:ring-white"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
-              </div>
-
-              {/* Hide booking CTA for signed-out users; avoid flicker during auth init */}
-              <div className="flex flex-col sm:flex-row flex-wrap gap-4">
-                {/* Experiment: single vs dual CTA */}
-                {!authLoading && user ? (
-                  getExperimentVariant('services_hero_cta', ['single','dual']) === 'single' ? (
-                    <Button size="lg" variant="secondary" onClick={() => { searchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); searchRef.current?.focus(); }}>Search</Button>
-                  ) : (
-                    <>
-                      <Button size="lg" variant="secondary" onClick={() => { searchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); searchRef.current?.focus(); }}>Search</Button>
-                      <Button href="/help" size="lg" variant="outline" className="border-white text-white hover:text-blue-900">Service Guide</Button>
-                    </>
-                  )
-                ) : (
-                  <Button href="/help" size="lg" variant="outline" className="border-white text-white hover:text-blue-900">Service Guide</Button>
-                )}
+                <div className="mt-4">
+                  <Button
+                    size="lg"
+                    variant="secondary"
+                    onClick={() => {
+                      searchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      searchRef.current?.focus();
+                    }}
+                  >
+                    Search
+                  </Button>
+                </div>
               </div>
             </div>
             
-            {/* Right side with decorative elements */}
-            <div className="relative hidden lg:block">
-              <div className="absolute top-8 right-8 w-72 h-48 rounded-lg bg-white/10 border border-white/20 backdrop-blur-sm transform rotate-6 shadow-2xl">
-                <div className="p-6">
-                  <div className="text-white font-semibold mb-2">Digital Services</div>
-                  <div className="text-blue-200 text-sm">Quick & Efficient</div>
-                </div>
-              </div>
-              <div className="absolute top-32 right-16 w-64 h-40 rounded-lg bg-white/5 border border-white/20 backdrop-blur-sm transform -rotate-3 shadow-xl">
-                <div className="p-6">
-                  <div className="text-white font-semibold mb-2">Citizen First</div>
-                  <div className="text-blue-200 text-sm">Service Excellence</div>
-                </div>
-              </div>
-            </div>
+            {/* Right side visuals removed as requested */}
           </div>
         </Container>
       </section>
 
-      {/* Popular Services Quick Access */}
-      <div className="bg-white">
-        <Container className="pt-4">
-          <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'Services' }]} />
-        </Container>
-      </div>
-      <section className="relative -mt-12 z-10">
+  {/* Popular Services Quick Access (overlaps hero) */}
+  <section className="relative -mt-4 md:-mt-6 lg:-mt-6 z-20 bg-white">
         <Container>
-          <Card className="p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg sm:text-xl font-semibold text-text-900">Most Popular Services</h2>
-              <Badge tone="warning" className="flex items-center gap-1">
-                <StarIcon className="w-3 h-3" />
-                Trending
-              </Badge>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {popularServices.map((service) => (
-                <div key={service.id} className="group cursor-pointer">
-                  <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-bg-100 transition-colors">
-                    <div className="flex-shrink-0">
-                      {React.createElement(iconForCategory(service.category), { className: 'w-8 h-8 text-primary-600' })}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm text-text-900 group-hover:text-primary-700 transition-colors truncate">
-                        {service.title}
+          {/* Soft glow wrapper to mimic home notice panel */}
+          <div className="relative">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -left-6 -right-6 -bottom-6 -top-2 rounded-[28px] bg-gradient-to-r from-primary-500/10 via-sky-500/8 to-emerald-500/10 blur-2xl"
+            />
+            <Card className="relative rounded-2xl shadow-[0_12px_40px_rgba(2,6,23,0.08)] ring-1 ring-black/5 border-transparent bg-white px-5 sm:px-6 py-5 sm:py-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg sm:text-xl font-semibold text-text-900">Most Popular Services</h2>
+                <Badge tone="warning" className="flex items-center gap-1">
+                  <StarIcon className="w-3 h-3" />
+                  Trending
+                </Badge>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                {popularServices.map((service) => (
+                  <div key={service.id} className="group cursor-pointer">
+                    <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-bg-50 transition-colors">
+                      <div className="flex-shrink-0">
+                        {React.createElement(iconForCategory(service.category), { className: 'w-8 h-8 text-primary-600' })}
                       </div>
-                      <div className="text-xs text-text-500">{service.processingTime}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm text-text-900 group-hover:text-primary-700 transition-colors truncate">
+                          {service.title}
+                        </div>
+                        <div className="text-xs text-text-500">{service.processingTime}</div>
+                      </div>
+                      <ChevronRightIcon className="w-4 h-4 text-text-400 group-hover:text-primary-600 transition-colors" />
                     </div>
-                    <ChevronRightIcon className="w-4 h-4 text-text-400 group-hover:text-primary-600 transition-colors" />
                   </div>
-                </div>
-              ))}
-            </div>
-          </Card>
+                ))}
+              </div>
+            </Card>
+          </div>
         </Container>
       </section>
 
-      {/* Filters & Sorting */}
-      <section className="py-12 sm:py-16 bg-white">
+    {/* Filters & Sorting */}
+    <section className="pt-6 sm:pt-8 pb-12 sm:pb-16 bg-white">
         <Container>
+      <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'Services' }]} />
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Left Filter Rail */}
             <div className="lg:w-1/4">
@@ -431,66 +411,77 @@ const ServicesPage: React.FC<Props> = ({ initialServices }) => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {filteredServices.map((service) => (
-                    <Card key={service.id} className="p-6 hover:shadow-lg transition-shadow">
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0">
-                        <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
-                          {React.createElement(iconForCategory(service.category), { className: 'w-6 h-6 text-primary-600' })}
-                        </div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between mb-2">
-                          <h3 className="font-semibold text-text-900 group-hover:text-primary-700 transition-colors">
-                            {service.title}
-                          </h3>
-                          <div className="flex gap-1">
-                            {service.isOnline && (
-                              <Badge tone="success" className="text-xs">Online</Badge>
-                            )}
-                            {service.popularity === 'high' && (
-                              <Badge tone="warning" className="text-xs">Popular</Badge>
-                            )}
+                    <Card
+                      key={service.id}
+                      className="group p-5 md:p-6 border border-border rounded-xl hover:border-primary-300/60 hover:shadow-card transition-all"
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="flex-shrink-0">
+                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-50 to-primary-100 ring-1 ring-primary-100 flex items-center justify-center">
+                            {React.createElement(iconForCategory(service.category), { className: 'w-6 h-6 text-primary-700' })}
                           </div>
                         </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-3">
+                            <h3 className="font-semibold text-text-900 group-hover:text-primary-800 transition-colors leading-snug">
+                              {service.title}
+                            </h3>
+                            <div className="flex gap-1 flex-shrink-0">
+                              {service.isOnline && (
+                                <Badge tone="success" className="text-[11px] px-2 py-0.5">Online</Badge>
+                              )}
+                              {service.popularity === 'high' && (
+                                <Badge tone="warning" className="text-[11px] px-2 py-0.5">Popular</Badge>
+                              )}
+                            </div>
+                          </div>
 
-                        <p className="text-sm text-text-600 mb-4 line-clamp-2">
-                          {service.description}
-                        </p>
+                          <p className="text-sm text-text-600 mt-1 mb-3 line-clamp-2">
+                            {service.description}
+                          </p>
 
-                        <div className="space-y-2 mb-4">
-                          <div className="flex items-center gap-4 text-xs text-text-500">
-                            <div className="flex items-center gap-1">
-                              <BuildingOfficeIcon className="w-4 h-4" />
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 text-xs text-text-600">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <BuildingOfficeIcon className="w-4 h-4 text-text-400" />
                               <span className="truncate" title={service.department}>{service.department}</span>
                             </div>
-                            <span className="text-text-300">•</span>
-                            <div className="flex items-center gap-1">
-                              <MapPinIcon className="w-4 h-4" />
+                            <div className="flex items-center gap-2">
+                              <MapPinIcon className="w-4 h-4 text-text-400" />
                               <span>{service.location}</span>
                             </div>
-                          </div>
-                          <div className="flex items-center gap-4 text-xs text-text-500">
-                            <div className="flex items-center gap-1">
-                              <ClockIcon className="w-4 h-4" />
+                            <div className="flex items-center gap-2">
+                              <ClockIcon className="w-4 h-4 text-text-400" />
                               <span>{service.processingTime}</span>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <CurrencyDollarIcon className="w-4 h-4" />
+                            <div className="flex items-center gap-2">
+                              <CurrencyDollarIcon className="w-4 h-4 text-text-400" />
                               <span>{service.fee}</span>
                             </div>
                           </div>
-                        </div>
 
-                        <div className="flex items-center gap-3">
-                          <Button href={service.href} size="sm" className="flex items-center gap-2" onClick={() => track('service_book_click', { serviceId: service.id })}>
-                            <CalendarDaysIcon className="w-4 h-4" />
-                            Book
-                          </Button>
-                          <Button href={`/service/${service.id}`} variant="outline" size="sm" onClick={() => track('service_view_details', { serviceId: service.id })}>View details</Button>
+                          <div className="mt-5 pt-4 border-t border-border flex flex-col sm:flex-row gap-3">
+                            <Button
+                              href={service.href}
+                              size="sm"
+                              className="flex items-center gap-2 sm:flex-1 justify-center"
+                              onClick={() => track('service_book_click', { serviceId: service.id })}
+                            >
+                              <CalendarDaysIcon className="w-4 h-4" />
+                              Book
+                            </Button>
+                            <Button
+                              href={`/service/${service.id}`}
+                              variant="outline"
+                              size="sm"
+                              className="sm:flex-1 justify-center"
+                              onClick={() => track('service_view_details', { serviceId: service.id })}
+                            >
+                              View details
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </Card>
+                    </Card>
                   ))}
                 </div>
               )}
