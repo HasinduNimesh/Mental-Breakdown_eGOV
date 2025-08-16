@@ -27,11 +27,13 @@ export type AppointmentRow = {
 type Props = {
   rows: AppointmentRow[];
   searchable?: boolean;
+  onChangeStatus?: (id: string, next: AppointmentStatus) => void;
 };
 
-export function AppointmentTable({ rows, searchable = true }: Props) {
+export function AppointmentTable({ rows, searchable = true, onChangeStatus }: Props) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [q, setQ] = useState("");
+  const [draft, setDraft] = useState<Record<string, AppointmentStatus>>({});
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -80,6 +82,10 @@ export function AppointmentTable({ rows, searchable = true }: Props) {
     }
   };
 
+  const allStatuses: AppointmentStatus[] = [
+      "Scheduled","In progress","Completed","Cancelled","No-show","Delayed","On hold"
+    ];
+
   return (
     <div className="rounded-2xl border bg-white shadow-sm">
       <div className="flex items-center justify-between px-4 py-3">
@@ -111,6 +117,7 @@ export function AppointmentTable({ rows, searchable = true }: Props) {
             {filtered.map((r) => {
               const t = timeMeta(r.date, r.time);
               const open = !!expanded[r.id];
+              const chosen = draft[r.id] ?? r.status;
               return (
                 <React.Fragment key={r.id}>
                   <tr className={clsx("border-t", open && "bg-gray-50/60")}>
@@ -141,6 +148,26 @@ export function AppointmentTable({ rows, searchable = true }: Props) {
                           <Info label="Patient" value={r.patientName || "—"} />
                           <Info label="Room" value={r.room || "—"} />
                           {r.notes && <Info label="Notes" value={r.notes} />}
+                        </div>
+                      <div className="mt-4 flex flex-wrap items-center gap-3">
+                          <label className="text-xs text-gray-500 dark:text-slate-400">Change status</label>
+                          <select
+                            className="rounded border px-2 py-1 text-sm dark:bg-slate-900 dark:border-slate-700"
+                            value={chosen}
+                            onChange={(e) =>
+                              setDraft((d) => ({ ...d, [r.id]: e.target.value as AppointmentStatus }))
+                            }
+                          >
+                            {allStatuses.map(s => (
+                              <option key={s} value={s}>{s}</option>
+                            ))}
+                          </select>
+                          <button
+                            onClick={() => onChangeStatus?.(r.id, chosen)}
+                            className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+                          >
+                            Update
+                          </button>
                         </div>
                       </td>
                     </tr>

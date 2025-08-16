@@ -1,6 +1,7 @@
 import Link from "next/link";
 import React from "react";
 import dynamic from "next/dynamic";
+import { ThemeToggle } from "../ThemeToggle";
 const Clock = dynamic(() => import("../clock"), { ssr: false });
 
 interface LayoutProps {
@@ -17,8 +18,11 @@ export function Layout({ children, title }: LayoutProps) {
           <h1 className="text-base font-semibold bg-clip-text text-transparent bg-gradient-to-r from-sky-500 to-violet-500">
             {title || "Admin Dashboard"}
           </h1>
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
           <Clock />
         </div>
+      </div>
       </header>
 
       <main className="mx-auto w-full max-w-6xl px-4 py-6">

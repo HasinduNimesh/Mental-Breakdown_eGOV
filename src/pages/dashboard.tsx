@@ -7,7 +7,11 @@ import { Container } from '../components/ui/Container';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { UserSwitcher } from "../components/debug/UserSwitcher";
-import { AppointmentTable, type AppointmentRow } from "../components/health/AppointmentTable";
+import {
+  AppointmentTable,
+  type AppointmentRow,
+  type AppointmentStatus,       // 👈 add this
+} from "../components/health/AppointmentTable";
 import { AppointmentDonutCard } from "../components/charts/AppointmentDonut";
 import { CalendarMonthCard, type DayCounts } from "../components/calender/CalenderMonthCard";
 
@@ -18,13 +22,9 @@ function toYMD(d: Date) {
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 }
-function parseYMD(s: string) {
-  const [y, m, d] = s.split("-").map(Number);
-  return new Date(y, (m ?? 1) - 1, d ?? 1);
-}
+function parseYMD(s: string) { const [y, m, d] = s.split("-").map(Number); return new Date(y, (m ?? 1) - 1, d ?? 1); }
 function addDays(d: Date, n: number) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
 function addMonths(d: Date, n: number) { const x = new Date(d); x.setMonth(x.getMonth() + n); return x; }
-
 function startOfWeek(d: Date) { const day = d.getDay(); const diff = (day + 6) % 7; const x = new Date(d); x.setDate(d.getDate() - diff); x.setHours(0,0,0,0); return x; }
 function endOfWeek(d: Date) { return addDays(startOfWeek(d), 6); }
 function startOfMonth(d: Date) { return new Date(d.getFullYear(), d.getMonth(), 1); }
@@ -44,10 +44,8 @@ function formatWeekLabel(d: Date) {
 function formatMonthLabel(d: Date) { return `${MONTHS_LONG[d.getMonth()]} ${d.getFullYear()}`; }
 // ----------------------------------
 
-function today(): string {
-  const d = new Date();
-  return d.toISOString().slice(0, 10);
-}
+function today(): string { return new Date().toISOString().slice(0, 10); }
+
 type Dept =
   | "police"
   | "health"
@@ -56,7 +54,6 @@ type Dept =
   | "registration"
   | "motor_traffic"
   | "general";
-
 
 export default function Dashboard() {
   const { user } = useUser();
@@ -68,7 +65,7 @@ export default function Dashboard() {
     : "Dashboard";
 
   // --- Mock rows per department (swap with API later) ---
-  const rowsByDept: Record<Dept, AppointmentRow[]> = React.useMemo(() => ({
+  const baseByDept: Record<Dept, AppointmentRow[]> = React.useMemo(() => ({
     police: [
       { id: "P-101", department: "Sri Lanka Police", date: today(), time: "09:00", status: "Scheduled", patientName: "Complaint Filing", room: "Counter 3" },
       { id: "P-102", department: "Sri Lanka Police", date: today(), time: "09:30", status: "In progress", patientName: "License Verification", room: "Counter 5" },
@@ -93,16 +90,19 @@ export default function Dashboard() {
     ],
   }), []);
 
+  // 👇 Hold working rows in state (so we can edit them)
+  const [rows, setRows] = React.useState<AppointmentRow[]>(baseByDept[dept]);
 
-  const rows = rowsByDept[dept];
+  // reset rows whenever department changes
+  React.useEffect(() => { setRows(baseByDept[dept]); }, [dept, baseByDept]);
 
   // ---- timeframes & navigation ----
   type Frame = "day" | "week" | "month";
   const [frame, setFrame] = React.useState<Frame>("day");
 
   const [dayDate, setDayDate] = React.useState<Date>(new Date());
-  const [weekDate, setWeekDate] = React.useState<Date>(new Date());                 // any day in the week
-  const [monthDate, setMonthDate] = React.useState<Date>(startOfMonth(new Date())); // first of month
+  const [weekDate, setWeekDate] = React.useState<Date>(new Date());
+  const [monthDate, setMonthDate] = React.useState<Date>(startOfMonth(new Date()));
 
   function handlePrev() {
     if (frame === "day") setDayDate(addDays(dayDate, -1));
@@ -175,7 +175,7 @@ export default function Dashboard() {
         case "On hold":    inc(key, "onhold");     break;
         case "In progress":inc(key, "inprogress"); break;
         case "Completed":  inc(key, "completed");  break;
-        default: /* ignore others for calendar dots */ break;
+        default: break;
       }
     });
     return map;
@@ -183,6 +183,12 @@ export default function Dashboard() {
 
   const getCountsForDate = (d: Date): DayCounts =>
     countsByDate.get(toYMD(d)) || { delayed:0,onhold:0,inprogress:0,completed:0,total:0 };
+
+  // 👇 handle status changes from the table
+  const handleStatusChange = (id: string, next: AppointmentStatus) => {
+    setRows(prev => prev.map(r => (r.id === id ? { ...r, status: next } : r)));
+    // TODO: later call your API here, then update state on success
+  };
 
   return (
     <Layout title={title}>
@@ -206,14 +212,14 @@ export default function Dashboard() {
           <div className="space-y-6">
             {/* KPIs */}
             <div className="grid gap-5 md:grid-cols-2">
-              {data.kpis.map((k) => (
+              {data.kpis.map((k: any) => (
                 <Card key={k.title} title={k.title} value={k.value} />
               ))}
             </div>
 
             {/* Shortcuts */}
             <div className="grid gap-5 md:grid-cols-3">
-              {data.shortcuts.map((s) => (
+              {data.shortcuts.map((s: any) => (
                 <Card key={s.title}>
                   <h3 className="font-semibold">{s.title}</h3>
                   <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{s.desc}</p>
@@ -227,8 +233,8 @@ export default function Dashboard() {
             {/* Table */}
             <section className="space-y-4">
               <h2 className="text-xl font-semibold">{labelForDept(dept)} Appointments</h2>
-              {/* ✅ table follows the selected period */}
-              <AppointmentTable rows={frameRows} />
+              {/* ✅ table follows the selected period and can update statuses */}
+              <AppointmentTable rows={frameRows} onChangeStatus={handleStatusChange} />
             </section>
           </div>
 
@@ -259,9 +265,8 @@ export default function Dashboard() {
   );
 }
 
-function capitalize(s: string) {
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
+function capitalize(s: string) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
 function labelForDept(d: Dept) {
   switch (d) {
     case "police": return "Sri Lanka Police";
@@ -273,4 +278,3 @@ function labelForDept(d: Dept) {
     default: return "General";
   }
 }
-
