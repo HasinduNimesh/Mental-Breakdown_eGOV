@@ -79,7 +79,6 @@ export function CalendarMonthCard({
           const isSelected = key === selKey;
           const isDim = d.getMonth() !== monthIdx;
 
-          // heatmap-ish hint
           const severity = counts.delayed * 2 + counts.onhold;
           const heat =
             severity >= 6 ? "bg-red-50" :
@@ -118,7 +117,6 @@ export function CalendarMonthCard({
                     {d.getDate()}
                   </div>
 
-                  {/* Status dots */}
                   <div className="flex items-center gap-1">
                     {counts.delayed > 0 && <Dot className="bg-red-500" title={`${counts.delayed} delayed`} />}
                     {counts.onhold > 0 && <Dot className="bg-orange-400" title={`${counts.onhold} on hold`} />}
@@ -128,7 +126,6 @@ export function CalendarMonthCard({
                 </div>
               </button>
 
-              {/* Hover tooltip */}
               {counts.total > 0 && (
                 <div className="pointer-events-none absolute left-1/2 z-10 hidden -translate-x-1/2 translate-y-2 rounded-md border border-slate-200/70 bg-white p-2 text-xs shadow-md group-hover:block dark:border-slate-800/60 dark:bg-slate-900">
                   <div className="font-medium mb-1">{formatLongDate(d)}</div>

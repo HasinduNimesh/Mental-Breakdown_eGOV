@@ -27,12 +27,10 @@ const UserContext = createContext<Ctx>({ user: null, setUser: () => {} });
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
 
-  // Load from localStorage for now (simulate login). Replace with real session later.
   useEffect(() => {
     const raw = typeof window !== "undefined" ? localStorage.getItem("demo_user") : null;
     if (raw) setUser(JSON.parse(raw));
     else {
-      // default demo user
       const demo: User = { id: "1", name: "Demo Admin", role: "admin", departmentId: "health" };
       localStorage.setItem("demo_user", JSON.stringify(demo));
       setUser(demo);

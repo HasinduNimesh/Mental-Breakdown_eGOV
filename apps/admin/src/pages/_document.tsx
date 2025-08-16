@@ -11,7 +11,6 @@ const setInitialTheme = `
     } else {
       document.documentElement.classList.remove('dark');
     }
-    // help browsers style native controls too
     document.documentElement.style.colorScheme = theme;
   } catch (e) {}
 })();
@@ -23,7 +22,6 @@ export default class MyDocument extends Document {
       <Html>
         <Head />
         <body>
-          {/* run BEFORE React mounts */}
           <script dangerouslySetInnerHTML={{ __html: setInitialTheme }} />
           <Main />
           <NextScript />

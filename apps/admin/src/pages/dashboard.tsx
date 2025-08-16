@@ -10,18 +10,14 @@ import { UserSwitcher } from "../components/debug/UserSwitcher";
 import {
   AppointmentTable,
   type AppointmentRow,
-  type AppointmentStatus,       // 👈 add this
+  type AppointmentStatus,
 } from "../components/health/AppointmentTable";
 import { AppointmentDonutCard } from "../components/charts/AppointmentDonut";
 import { CalendarMonthCard, type DayCounts } from "../components/calender/CalenderMonthCard";
+import { ReviewPanel } from "../components/health/ReviewPanel";
+import { listBookings, updateBookingStatusByCode, type BookingStatus } from "../lib/adminData";
 
-// ---------- date helpers ----------
-function toYMD(d: Date) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
+function toYMD(d: Date) { const y = d.getFullYear(); const m = String(d.getMonth() + 1).padStart(2, "0"); const day = String(d.getDate()).padStart(2, "0"); return `${y}-${m}-${day}`; }
 function parseYMD(s: string) { const [y, m, d] = s.split("-").map(Number); return new Date(y, (m ?? 1) - 1, d ?? 1); }
 function addDays(d: Date, n: number) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
 function addMonths(d: Date, n: number) { const x = new Date(d); x.setMonth(x.getMonth() + n); return x; }
@@ -34,37 +30,20 @@ const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov
 const MONTHS_LONG = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 function ordinal(n: number) { const s = ["th","st","nd","rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
 function formatDayLabel(d: Date) { return `${ordinal(d.getDate())} ${MONTHS_LONG[d.getMonth()]} ${d.getFullYear()}`; }
-function formatWeekLabel(d: Date) {
-  const a = startOfWeek(d), b = endOfWeek(d);
-  const sameMonth = a.getMonth() === b.getMonth();
-  return sameMonth
-    ? `${a.getDate()}–${b.getDate()} ${MONTHS[a.getMonth()]} ${b.getFullYear()}`
-    : `${a.getDate()} ${MONTHS[a.getMonth()]} – ${b.getDate()} ${MONTHS[b.getMonth()]} ${b.getFullYear()}`;
-}
+function formatWeekLabel(d: Date) { const a = startOfWeek(d), b = endOfWeek(d); const sameMonth = a.getMonth() === b.getMonth(); return sameMonth ? `${a.getDate()}–${b.getDate()} ${MONTHS[a.getMonth()]} ${b.getFullYear()}` : `${a.getDate()} ${MONTHS[a.getMonth()]} – ${b.getDate()} ${MONTHS[b.getMonth()]} ${b.getFullYear()}`; }
 function formatMonthLabel(d: Date) { return `${MONTHS_LONG[d.getMonth()]} ${d.getFullYear()}`; }
-// ----------------------------------
 
 function today(): string { return new Date().toISOString().slice(0, 10); }
 
-type Dept =
-  | "police"
-  | "health"
-  | "education"
-  | "immigration"
-  | "registration"
-  | "motor_traffic"
-  | "general";
+type Dept = "police" | "health" | "education" | "immigration" | "registration" | "motor_traffic" | "general";
 
 export default function Dashboard() {
   const { user } = useUser();
 
   const data = user ? departmentDash[user.departmentId] : departmentDash.general;
   const dept: Dept = (user?.departmentId as Dept) ?? "general";
-  const title = user
-    ? `${capitalize(user.departmentId.replace("_", " "))} – ${capitalize(user.role)}`
-    : "Dashboard";
+  const title = user ? `${capitalize(user.departmentId.replace("_", " "))} – ${capitalize(user.role)}` : "Dashboard";
 
-  // --- Mock rows per department (swap with API later) ---
   const baseByDept: Record<Dept, AppointmentRow[]> = React.useMemo(() => ({
     police: [
       { id: "P-101", department: "Sri Lanka Police", date: today(), time: "09:00", status: "Scheduled", patientName: "Complaint Filing", room: "Counter 3" },
@@ -90,13 +69,34 @@ export default function Dashboard() {
     ],
   }), []);
 
-  // 👇 Hold working rows in state (so we can edit them)
   const [rows, setRows] = React.useState<AppointmentRow[]>(baseByDept[dept]);
-
-  // reset rows whenever department changes
   React.useEffect(() => { setRows(baseByDept[dept]); }, [dept, baseByDept]);
 
-  // ---- timeframes & navigation ----
+  // Try to load real bookings from Supabase if env/schema available
+  React.useEffect(() => {
+    const load = async () => {
+      try {
+        const todayStr = toYMD(new Date());
+        const nextWeek = toYMD(addDays(new Date(), 7));
+        const list = await listBookings(todayStr, nextWeek);
+        const mapped: AppointmentRow[] = list.map((b) => ({
+          id: b.booking_code,
+          department: b.service_id, // If you want names, join services and map id->title
+          date: b.slot_date,
+          time: (b.slot_time || '').slice(0,5),
+          status: b.status as AppointmentStatus,
+          patientName: b.full_name,
+          room: b.office_id,
+        }));
+        if (mapped.length) setRows(mapped);
+      } catch (e) {
+        // Fallback to demo rows when Supabase is not configured or schema is missing
+        console.warn('Bookings fetch failed; using demo data.', e);
+      }
+    };
+    load();
+  }, []);
+
   type Frame = "day" | "week" | "month";
   const [frame, setFrame] = React.useState<Frame>("day");
 
@@ -104,45 +104,17 @@ export default function Dashboard() {
   const [weekDate, setWeekDate] = React.useState<Date>(new Date());
   const [monthDate, setMonthDate] = React.useState<Date>(startOfMonth(new Date()));
 
-  function handlePrev() {
-    if (frame === "day") setDayDate(addDays(dayDate, -1));
-    else if (frame === "week") setWeekDate(addDays(weekDate, -7));
-    else setMonthDate(addMonths(monthDate, -1));
-  }
-  function handleNext() {
-    if (frame === "day") setDayDate(addDays(dayDate, +1));
-    else if (frame === "week") setWeekDate(addDays(weekDate, +7));
-    else setMonthDate(addMonths(monthDate, +1));
-  }
+  function handlePrev() { if (frame === "day") setDayDate(addDays(dayDate, -1)); else if (frame === "week") setWeekDate(addDays(weekDate, -7)); else setMonthDate(addMonths(monthDate, -1)); }
+  function handleNext() { if (frame === "day") setDayDate(addDays(dayDate, +1)); else if (frame === "week") setWeekDate(addDays(weekDate, +7)); else setMonthDate(addMonths(monthDate, +1)); }
 
-  const periodLabel = React.useMemo(() => {
-    if (frame === "day") return formatDayLabel(dayDate);
-    if (frame === "week") return formatWeekLabel(weekDate);
-    return formatMonthLabel(monthDate);
-  }, [frame, dayDate, weekDate, monthDate]);
+  const periodLabel = React.useMemo(() => { if (frame === "day") return formatDayLabel(dayDate); if (frame === "week") return formatWeekLabel(weekDate); return formatMonthLabel(monthDate); }, [frame, dayDate, weekDate, monthDate]);
 
-  // ---- filter rows for selected frame ----
   const frameRows = React.useMemo(() => {
-    if (frame === "day") {
-      const key = toYMD(dayDate);
-      return rows.filter(r => r.date === key);
-    }
-    if (frame === "week") {
-      const a = startOfWeek(weekDate), b = endOfWeek(weekDate);
-      return rows.filter(r => {
-        const d = parseYMD(r.date);
-        return d >= a && d <= b;
-      });
-    }
-    // month
-    const start = startOfMonth(monthDate), end = endOfMonth(monthDate);
-    return rows.filter(r => {
-      const d = parseYMD(r.date);
-      return d >= start && d <= end;
-    });
+    if (frame === "day") { const key = toYMD(dayDate); return rows.filter(r => r.date === key); }
+    if (frame === "week") { const a = startOfWeek(weekDate), b = endOfWeek(weekDate); return rows.filter(r => { const d = parseYMD(r.date); return d >= a && d <= b; }); }
+    const start = startOfMonth(monthDate), end = endOfMonth(monthDate); return rows.filter(r => { const d = parseYMD(r.date); return d >= start && d <= end; });
   }, [rows, frame, dayDate, weekDate, monthDate]);
 
-  // ---- counts for donut from frameRows ----
   const counts = React.useMemo(() => {
     const eq = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
     return {
@@ -160,7 +132,6 @@ export default function Dashboard() {
     { label: "Completed" as const,   value: counts.completed,  className: "text-green-600" },
   ];
 
-  // ---- daily counts map for calendar ----
   const countsByDate = React.useMemo(() => {
     const map = new Map<string, DayCounts>();
     const inc = (key: string, field: keyof DayCounts) => {
@@ -184,16 +155,23 @@ export default function Dashboard() {
   const getCountsForDate = (d: Date): DayCounts =>
     countsByDate.get(toYMD(d)) || { delayed:0,onhold:0,inprogress:0,completed:0,total:0 };
 
-  // 👇 handle status changes from the table
-  const handleStatusChange = (id: string, next: AppointmentStatus) => {
-    setRows(prev => prev.map(r => (r.id === id ? { ...r, status: next } : r)));
-    // TODO: later call your API here, then update state on success
+  const handleStatusChange = async (bookingCode: string, next: AppointmentStatus) => {
+    try {
+      await updateBookingStatusByCode(bookingCode, next as BookingStatus);
+      setRows(prev => prev.map(r => (r.id === bookingCode ? { ...r, status: next } : r)));
+    } catch (e) {
+      console.error(e);
+      if (typeof window !== 'undefined') alert('Failed to update booking status.');
+    }
+  };
+
+  const handleSendMessage = async (_bookingCode: string, _body: string) => {
+    if (typeof window !== 'undefined') alert('Messaging not configured. Add a messages table to enable this.');
   };
 
   return (
     <Layout title={title}>
       <Container className="py-8 space-y-8">
-        {/* Header row */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-semibold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-sky-600 to-violet-600">
@@ -206,18 +184,14 @@ export default function Dashboard() {
           <UserSwitcher />
         </div>
 
-        {/* Main grid: left content + right insight column */}
         <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
-          {/* LEFT: KPIs + Shortcuts + Table */}
           <div className="space-y-6">
-            {/* KPIs */}
             <div className="grid gap-5 md:grid-cols-2">
               {data.kpis.map((k: any) => (
                 <Card key={k.title} title={k.title} value={k.value} />
               ))}
             </div>
 
-            {/* Shortcuts */}
             <div className="grid gap-5 md:grid-cols-3">
               {data.shortcuts.map((s: any) => (
                 <Card key={s.title}>
@@ -230,15 +204,13 @@ export default function Dashboard() {
               ))}
             </div>
 
-            {/* Table */}
             <section className="space-y-4">
               <h2 className="text-xl font-semibold">{labelForDept(dept)} Appointments</h2>
-              {/* ✅ table follows the selected period and can update statuses */}
               <AppointmentTable rows={frameRows} onChangeStatus={handleStatusChange} />
+              <ReviewPanel onSendMessage={handleSendMessage} />
             </section>
           </div>
 
-          {/* RIGHT: Donut + Calendar (sticky) */}
           <div className="lg:sticky lg:top-20 h-fit">
             <AppointmentDonutCard
               segments={donutSegments}
