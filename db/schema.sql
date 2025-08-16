@@ -72,6 +72,16 @@ select service_id, office_id, slot_date,
 from public.slots
 group by service_id, office_id, slot_date;
 
+-- Attempt to mark the view as security invoker (supported on newer Postgres)
+DO $$
+BEGIN
+  BEGIN
+    EXECUTE 'ALTER VIEW public.daily_availability SET (security_invoker = on)';
+  EXCEPTION WHEN others THEN
+    RAISE NOTICE 'security_invoker is not supported on this Postgres version; skipping';
+  END;
+END $$;
+
 -- Stored procedure to atomically book a slot and return the booking code
 create or replace function public.book_appointment(
   p_service_id text,
@@ -87,6 +97,7 @@ create or replace function public.book_appointment(
 ) returns jsonb
 language plpgsql
 security definer
+ set search_path = public, pg_temp
 as $$
 DECLARE
   v_remaining integer;
@@ -140,10 +151,14 @@ $$;
 alter table public.slots enable row level security;
 alter table public.bookings enable row level security;
 alter table public.appointment_documents enable row level security;
+alter table public.offices enable row level security;
 
 -- Slots read for anyone (or restrict to authenticated)
 drop policy if exists select_slots_for_all on public.slots;
 create policy select_slots_for_all on public.slots for select using (true);
+-- Offices: allow read access for all (public catalog), with RLS enabled
+drop policy if exists select_offices_all on public.offices;
+create policy select_offices_all on public.offices for select using (true);
 
 -- Allow admins (role to be configured) to manage slots; placeholder permissive policies for now
 drop policy if exists insert_slots_for_admin on public.slots;
