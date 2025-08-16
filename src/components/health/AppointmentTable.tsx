@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import clsx from "clsx";
 
-export type AppointmentStatus = "Scheduled" | "In progress" | "Completed" | "Cancelled" | "No-show" | "Delayed";
+export type AppointmentStatus = "Scheduled" | "In progress" | "On hold" | "Completed" | "Cancelled" | "No-show" | "Delayed";
 
 export type AppointmentRow = {
   id: string;                 // appointment number
@@ -59,18 +59,30 @@ export function AppointmentTable({ rows, searchable = true }: Props) {
     }
   }
 
-  const badge = (status: AppointmentStatus) => {
-    const base = "inline-flex items-center rounded px-2 py-0.5 text-xs font-medium";
-    switch (status) {
-      case "Scheduled":   return <span className={clsx(base, "bg-blue-100 text-blue-700")}>Scheduled</span>;
-      case "In progress": return <span className={clsx(base, "bg-indigo-100 text-indigo-700")}>In progress</span>;
-      case "Completed":   return <span className={clsx(base, "bg-emerald-100 text-emerald-700")}>Completed</span>;
-      case "Cancelled":   return <span className={clsx(base, "bg-gray-200 text-gray-700")}>Cancelled</span>;
-      case "No-show":     return <span className={clsx(base, "bg-orange-100 text-orange-700")}>No-show</span>;
-      case "Delayed":     return <span className={clsx(base, "bg-red-100 text-red-700")}>Delayed</span>;
-      default:            return <span className={clsx(base, "bg-gray-200 text-gray-700")}>{status}</span>;
-    }
-  };
+const badge = (status: AppointmentStatus) => {
+  // palette matches the donut:
+  // Delayed = red, On hold = orange, In progress = light green, Completed = green
+  const base = "inline-flex items-center rounded px-2 py-0.5 text-xs font-medium";
+  switch (status) {
+    case "Scheduled":
+      return <span className={clsx(base, "bg-blue-100 text-blue-700")}>Scheduled</span>;
+    case "In progress":
+      return <span className={clsx(base, "bg-lime-100 text-lime-700")}>In progress</span>;
+    case "On hold":
+      return <span className={clsx(base, "bg-orange-100 text-orange-700")}>On hold</span>;
+    case "Completed":
+      return <span className={clsx(base, "bg-green-100 text-green-700")}>Completed</span>;
+    case "Delayed":
+      return <span className={clsx(base, "bg-red-100 text-red-700")}>Delayed</span>;
+    case "Cancelled":
+      return <span className={clsx(base, "bg-gray-200 text-gray-700")}>Cancelled</span>;
+    case "No-show":
+      return <span className={clsx(base, "bg-slate-100 text-slate-700")}>No-show</span>;
+    default:
+      return <span className={clsx(base, "bg-gray-200 text-gray-700")}>{status}</span>;
+  }
+};
+
 
   return (
     <div className="rounded-2xl border bg-white shadow-sm">

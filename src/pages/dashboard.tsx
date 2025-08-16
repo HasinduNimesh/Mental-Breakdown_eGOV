@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import Link from 'next/link';
 import { useUser } from "../context/UserContext";
 import { departmentDash } from "../lib/departments";
 
@@ -9,6 +8,7 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { UserSwitcher } from "../components/debug/UserSwitcher";
 import { AppointmentTable, type AppointmentRow } from "../components/health/AppointmentTable";
+import { AppointmentDonutCard } from "../components/charts/AppointmentDonut";
 
 // Returns today's date in YYYY-MM-DD format
 function today(): string {
@@ -32,6 +32,9 @@ export default function Dashboard() {
       { id: "H-001", department: "Health", date: today(), time: "09:00", status: "Scheduled", doctorName: "Dr. Perera", patientName: "N. Silva", room: "OPD-3" },
       { id: "H-002", department: "Health", date: today(), time: "10:30", status: "Delayed",   doctorName: "Dr. Fernando", patientName: "K. Jayasuriya", room: "Clinic-2", notes: "Priority: elderly" },
       { id: "H-003", department: "Health", date: today(), time: "11:15", status: "In progress", doctorName: "Dr. Samarasinghe", patientName: "M. Peris", room: "OPD-1" },
+      // add examples of "On hold" & "Completed"
+      { id: "H-004", department: "Health", date: today(), time: "12:00", status: "On hold", patientName: "Procedure", room: "OPD-2" },
+      { id: "H-005", department: "Health", date: today(), time: "12:30", status: "Completed", patientName: "Checkup", room: "OPD-5" },
     ],
     immigration: [
       { id: "I-1201", department: "Immigration", date: today(), time: "08:45", status: "Scheduled", patientName: "Passport Renewal", room: "Counter 5" },
@@ -50,10 +53,42 @@ export default function Dashboard() {
 
   const rows = rowsByDept[dept];
 
+// ---- aggregate for donut (TODAY) ----
+type Frame = "day" | "week" | "month";
+const [frame, setFrame] = React.useState<Frame>("day");
+
+// Helpers to filter by frame; today for now
+const todayStr = today();
+const frameRows = React.useMemo(() => {
+  if (frame === "day") {
+    return rows.filter(r => r.date === todayStr);
+  }
+  // TODO: swap with real weekly/monthly back-end queries
+  return rows;
+}, [rows, frame]);
+
+const counts = React.useMemo(() => {
+  const eq = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+  return {
+    delayed:    frameRows.filter(x => eq(x.status, "Delayed")).length,
+    onhold:     frameRows.filter(x => eq(x.status, "On hold")).length,
+    inprogress: frameRows.filter(x => eq(x.status, "In progress")).length,
+    completed:  frameRows.filter(x => eq(x.status, "Completed")).length,
+  };
+}, [frameRows]);
+
+const donutSegments = [
+  { label: "Delayed" as const,     value: counts.delayed,    className: "text-red-500" },
+  { label: "On hold" as const,     value: counts.onhold,     className: "text-orange-400" },
+  { label: "In progress" as const, value: counts.inprogress, className: "text-lime-400" },
+  { label: "Completed" as const,   value: counts.completed,  className: "text-green-600" },
+];
+
+
   return (
     <Layout title={title}>
       <Container className="py-8 space-y-8">
-        {/* Page header */}
+        {/* Header row */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-semibold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-sky-600 to-violet-600">
@@ -63,35 +98,50 @@ export default function Dashboard() {
               Department-specific KPIs and quick actions.
             </p>
           </div>
-          {/* DEV ONLY: simulate login/department */}
           <UserSwitcher />
         </div>
 
-        {/* KPIs */}
-        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-          {data.kpis.map((k) => (
-            <Card key={k.title} title={k.title} value={k.value} />
-          ))}
-        </div>
+        {/* Main grid: left content + right donut card */}
+        <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+          {/* LEFT: KPIs + Shortcuts + Table */}
+          <div className="space-y-6">
+            {/* KPIs */}
+            <div className="grid gap-5 md:grid-cols-2">
+              {data.kpis.map((k) => (
+                <Card key={k.title} title={k.title} value={k.value} />
+              ))}
+            </div>
 
-        {/* Shortcuts */}
-        <div className="grid gap-5 md:grid-cols-3">
-          {data.shortcuts.map((s) => (
-            <Card key={s.title} subtle>
-              <h3 className="font-semibold">{s.title}</h3>
-              <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{s.desc}</p>
-              <div className="mt-4">
-                <Button variant="primary" rightIcon={<RightArrow />}>{s.action}</Button>
-              </div>
-            </Card>
-          ))}
-        </div>
+            {/* Shortcuts */}
+            <div className="grid gap-5 md:grid-cols-3">
+              {data.shortcuts.map((s) => (
+                <Card key={s.title}>
+                  <h3 className="font-semibold">{s.title}</h3>
+                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{s.desc}</p>
+                  <div className="mt-4">
+                    <Button variant="primary">{s.action}</Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
 
-        {/* Department-specific Appointments */}
-        <section className="space-y-4">
-          <h2 className="text-xl font-semibold"> {labelForDept(dept)} Appointments</h2>
-          <AppointmentTable rows={rows} />
-        </section>
+            {/* Table */}
+            <section className="space-y-4">
+              <h2 className="text-xl font-semibold">{labelForDept(dept)} Appointments</h2>
+              <AppointmentTable rows={rows} />
+            </section>
+          </div>
+
+          {/* RIGHT: Donut card (sticky on long pages) */}
+          <div className="lg:sticky lg:top-20 h-fit">
+            <AppointmentDonutCard
+              segments={donutSegments}
+              updatedAt={new Date()}
+              frame={frame}
+              onChangeFrame={setFrame}
+            />
+          </div>
+        </div>
       </Container>
     </Layout>
   );
@@ -107,12 +157,4 @@ function labelForDept(d: Dept) {
     case "motor_traffic": return "Motor Traffic";
     default: return "General";
   }
-}
-
-function RightArrow() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden className="-mr-1">
-      <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l5 5a1 1 0 010 1.414l-5 5a1 1 0 11-1.414-1.414L13.586 10H4a1 1 0 110-2h9.586l-3.293-3.293a1 1 0 010-1.414z" clipRule="evenodd" />
-    </svg>
-  );
 }
