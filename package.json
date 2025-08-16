@@ -20,7 +20,8 @@
   "repo:build": "turbo run build",
   "repo:lint": "turbo run lint --parallel",
   "repo:type-check": "turbo run type-check --parallel",
-  "repo:clean": "turbo run clean --parallel || echo clean"
+  "repo:clean": "turbo run clean --parallel || echo clean",
+  "dev:all": "turbo run dev --filter=... --parallel"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.17",
@@ -44,8 +45,8 @@
     "react-query": "^3.39.3",
   "tailwindcss": "^3.3.5",
   "zustand": "^4.4.4",
-  "@egov/types": "workspace:*",
-  "@egov/ui": "workspace:*"
+  "@egov/types": "file:packages/types",
+  "@egov/ui": "file:packages/ui"
   },
   "devDependencies": {
     "@types/node": "^20.8.7",

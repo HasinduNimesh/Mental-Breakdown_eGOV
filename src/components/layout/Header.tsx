@@ -9,9 +9,12 @@ import { useTranslation } from 'next-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 
 const navigation = [
+  { name: 'Home', href: '/' },
   { name: 'Services', href: '/services' },
-  { name: 'Documents', href: '/documents' },
-  { name: 'Help', href: '/help' },
+  { name: 'Service Guide', href: '/help' },
+  { name: 'News', href: '/news' },
+  { name: 'About us', href: '/about' },
+  { name: 'Contact', href: '/contact' },
 ];
 
 export const Header: React.FC = () => {
