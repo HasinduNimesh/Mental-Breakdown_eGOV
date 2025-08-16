@@ -10,6 +10,7 @@ import { track } from '@/lib/analytics';
 import { CloudArrowUpIcon, MapPinIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
 import SignInModal from '@/components/auth/SignInModal';
+import QRCode from 'qrcode';
 
 type Step = 1 | 2 | 3 | 4 | 5;
 
@@ -28,6 +29,7 @@ const BookPage: React.FC = () => {
   const [confirmed, setConfirmed] = React.useState<BookingDraft | null>(null);
   const [uploadError, setUploadError] = React.useState<string | null>(null);
   const [showSignIn, setShowSignIn] = React.useState(false);
+  const [qrDataUrl, setQrDataUrl] = React.useState<string | null>(null);
 
   const service = SERVICES.find(s => s.id === serviceId)!;
   const office = OFFICES.find(o => o.id === officeId)!;
@@ -79,6 +81,37 @@ const BookPage: React.FC = () => {
     setConfirmed(booking);
     setStep(5);
   }
+
+  // Generate QR after confirmation on client only
+  React.useEffect(() => {
+    let cancelled = false;
+    async function makeQR() {
+      if (!confirmed) {
+        setQrDataUrl(null);
+        return;
+      }
+      try {
+        const payload = JSON.stringify({
+          id: confirmed.id,
+          serviceId: confirmed.serviceId,
+          officeId: confirmed.officeId,
+          date: confirmed.dateISO,
+          time: confirmed.time,
+        });
+        const url = await QRCode.toDataURL(payload, {
+          width: 240,
+          margin: 1,
+          color: { dark: '#1f2937', light: '#ffffff' },
+          errorCorrectionLevel: 'M',
+        });
+        if (!cancelled) setQrDataUrl(url);
+      } catch {
+        if (!cancelled) setQrDataUrl(null);
+      }
+    }
+    makeQR();
+    return () => { cancelled = true; };
+  }, [confirmed]);
 
   function proceedToReview() {
     if (!user) {
@@ -138,7 +171,7 @@ const BookPage: React.FC = () => {
                   <div className="mt-2 text-xs text-text-600 flex items-center gap-1"><MapPinIcon className="w-4 h-4" /> Local timezone: {tz}</div>
                 </div>
                 <div className="md:col-span-2">
-                  <Button onClick={() => { setStep(2); track('booking_started', { serviceId, officeId }); }} className="mt-2">Pick date and time</Button>
+                  <Button onClick={() => { if (!user) { setShowSignIn(true); return; } setStep(2); track('booking_started', { serviceId, officeId }); }} className="mt-2" disabled={!user}>Pick date and time</Button>
                 </div>
               </div>
             )}
@@ -163,7 +196,7 @@ const BookPage: React.FC = () => {
                         <div className="text-xs text-text-600 mb-2">Morning</div>
                         <div className="flex flex-wrap gap-2">
                           {morning.map((s, i) => (
-                            <button key={i} disabled={!s.available} onClick={() => setTime(s.time)} className={`px-3 py-2 rounded-md border ${time === s.time ? 'border-primary-600 text-primary-700' : 'border-border text-text-700'} ${!s.available ? 'opacity-40 cursor-not-allowed' : 'hover:border-primary-300'}`}>
+                            <button key={i} disabled={!s.available || !user} onClick={() => setTime(s.time)} className={`px-3 py-2 rounded-md border ${time === s.time ? 'border-primary-600 text-primary-700' : 'border-border text-text-700'} ${!s.available || !user ? 'opacity-40 cursor-not-allowed' : 'hover:border-primary-300'}`}>
                               {s.time}
                             </button>
                           ))}
@@ -173,7 +206,7 @@ const BookPage: React.FC = () => {
                         <div className="text-xs text-text-600 mb-2">Afternoon</div>
                         <div className="flex flex-wrap gap-2">
                           {afternoon.map((s, i) => (
-                            <button key={i} disabled={!s.available} onClick={() => setTime(s.time)} className={`px-3 py-2 rounded-md border ${time === s.time ? 'border-primary-600 text-primary-700' : 'border-border text-text-700'} ${!s.available ? 'opacity-40 cursor-not-allowed' : 'hover:border-primary-300'}`}>
+                            <button key={i} disabled={!s.available || !user} onClick={() => setTime(s.time)} className={`px-3 py-2 rounded-md border ${time === s.time ? 'border-primary-600 text-primary-700' : 'border-border text-text-700'} ${!s.available || !user ? 'opacity-40 cursor-not-allowed' : 'hover:border-primary-300'}`}>
                               {s.time}
                             </button>
                           ))}
@@ -182,7 +215,7 @@ const BookPage: React.FC = () => {
                     </div>
                     <div className="mt-4 flex items-center gap-3">
                       <Button onClick={() => setStep(1)} variant="outline">Back</Button>
-                      <Button onClick={() => setStep(3)} disabled={!time}>Enter your details</Button>
+                      <Button onClick={() => { if (!user) { setShowSignIn(true); return; } setStep(3); }} disabled={!time || !user}>Enter your details</Button>
                     </div>
                   </div>
                 </div>
@@ -193,27 +226,27 @@ const BookPage: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-text-900 mb-1">Full name</label>
-                  <input className="w-full border border-border rounded-md px-3 py-2" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+                  <input className="w-full border border-border rounded-md px-3 py-2" value={fullName} onChange={(e) => setFullName(e.target.value)} disabled={!user} />
                   <p className="mt-1 text-xs text-text-600">Use the name on your ID.</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-text-900 mb-1">NIC</label>
-                  <input className="w-full border border-border rounded-md px-3 py-2" value={nic} onChange={(e) => setNic(e.target.value)} />
+                  <input className="w-full border border-border rounded-md px-3 py-2" value={nic} onChange={(e) => setNic(e.target.value)} disabled={!user} />
                   <p className="mt-1 text-xs text-text-600">Use the 12-digit format if available.</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-text-900 mb-1">Email</label>
-                  <input type="email" className="w-full border border-border rounded-md px-3 py-2" value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <input type="email" className="w-full border border-border rounded-md px-3 py-2" value={email} onChange={(e) => setEmail(e.target.value)} disabled={!user} />
                   <p className="mt-1 text-xs text-text-600">We’ll send your confirmation to this email.</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-text-900 mb-1">Phone</label>
-                  <input className="w-full border border-border rounded-md px-3 py-2" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                  <input className="w-full border border-border rounded-md px-3 py-2" value={phone} onChange={(e) => setPhone(e.target.value)} disabled={!user} />
                   <p className="mt-1 text-xs text-text-600">Use a number we can reach you on if we need more info.</p>
                 </div>
                 <div className="md:col-span-2 flex items-center gap-3">
                   <Button onClick={() => setStep(2)} variant="outline">Back</Button>
-                  <Button onClick={() => setStep(4)} disabled={!fullName || !nic || !email || !phone}>Upload documents</Button>
+                  <Button onClick={() => { if (!user) { setShowSignIn(true); return; } setStep(4); }} disabled={!user || !fullName || !nic || !email || !phone}>Upload documents</Button>
                 </div>
               </div>
             )}
@@ -232,7 +265,7 @@ const BookPage: React.FC = () => {
                   <div className="mb-3 text-xs text-red-700 bg-red-50 border border-red-200 rounded p-2">{uploadError}</div>
                 )}
                 <label className="block border-2 border-dashed border-border rounded-md p-6 text-center cursor-pointer hover:bg-bg-50">
-                  <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" multiple onChange={(e) => onFilesSelected(e.target.files)} />
+                  <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" multiple onChange={(e) => onFilesSelected(e.target.files)} disabled={!user} />
                   <CloudArrowUpIcon className="w-6 h-6 mx-auto text-text-400" aria-hidden />
                   <div className="mt-2 text-sm">Drop files here or click to upload</div>
                 </label>
@@ -258,7 +291,7 @@ const BookPage: React.FC = () => {
                 </ul>
                 <div className="mt-4 flex items-center gap-3">
                   <Button onClick={() => setStep(3)} variant="outline">Back</Button>
-                  <Button onClick={proceedToReview} disabled={docs.length === 0}>Review & confirm</Button>
+                  <Button onClick={proceedToReview} disabled={!user || docs.length === 0}>Review & confirm</Button>
                 </div>
               </div>
             )}
@@ -299,8 +332,23 @@ const BookPage: React.FC = () => {
                     <div className="text-sm text-text-600">Booking code</div>
                     <div className="text-2xl font-bold text-text-900">{confirmed?.id ?? 'Pending'}</div>
                     <div className="my-4 flex items-center justify-center">
-                      {/* QR placeholder to avoid adding deps */}
-                      <div className="w-40 h-40 bg-[repeating-linear-gradient(45deg,_#e5e7eb,_#e5e7eb_10px,_#fff_10px,_#fff_20px)] rounded-md" aria-label="QR code placeholder" />
+                      {confirmed ? (
+                        qrDataUrl ? (
+                          <img
+                            src={qrDataUrl}
+                            alt={`QR code for booking ${confirmed.id}`}
+                            className="w-40 h-40 rounded-md border border-border bg-white p-1"
+                          />
+                        ) : (
+                          <div className="w-40 h-40 grid place-items-center rounded-md border border-border bg-bg-50 text-xs text-text-500">
+                            Generating QR…
+                          </div>
+                        )
+                      ) : (
+                        <div className="w-40 h-40 grid place-items-center rounded-md border border-border bg-bg-50 text-xs text-text-500">
+                          Confirm to generate QR
+                        </div>
+                      )}
                     </div>
                     <div className="flex flex-col gap-2">
                       <Button variant="outline" onClick={() => {

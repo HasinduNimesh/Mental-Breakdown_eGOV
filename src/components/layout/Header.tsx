@@ -14,8 +14,10 @@ export const Header: React.FC = () => {
   const router = useRouter();
   const { isMobileMenuOpen, setMobileMenuOpen } = useUIStore();
   const { t } = useTranslation('common');
-  const { user, signOut } = useAuth();
+  const { user, signOut, loading } = useAuth();
   const [showSignIn, setShowSignIn] = React.useState(false);
+  const [profileOpen, setProfileOpen] = React.useState(false);
+  const profileRef = React.useRef<HTMLDivElement>(null);
 
   const navigation = [
     { name: 'Home', href: '/' },
@@ -40,6 +42,32 @@ export const Header: React.FC = () => {
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  // Close profile menu on outside click or Escape
+  React.useEffect(() => {
+    if (!profileOpen) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setProfileOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setProfileOpen(false);
+    };
+    document.addEventListener('mousedown', onDocClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [profileOpen]);
+
+  // Close profile menu on route change
+  React.useEffect(() => {
+    const close = () => setProfileOpen(false);
+    router.events.on('routeChangeStart', close);
+    return () => router.events.off('routeChangeStart', close);
+  }, [router.events]);
 
   function initialsFromEmail(email?: string | null) {
     if (!email) return 'U';
@@ -69,7 +97,7 @@ export const Header: React.FC = () => {
           <div className={`flex items-center justify-between ${scrolled ? 'h-14' : 'h-16'} transition-[height] duration-200`}>
             {/* Left branding: crest + wordmark stack */}
             <Link href="/" aria-label="Home" className="flex items-center gap-3">
-              <img src="/logo.svg" alt={t('logo_alt', 'Sri Lanka Coat of Arms')} className="h-7 w-auto" />
+              <img src="/logo.svg" alt={t('logo_alt', 'Sri Lanka Coat of Arms')} className="h-9 w-auto" />
               <div className="leading-tight hidden md:block">
                 <div className="text-[14px] font-semibold text-[#163B8F]">Government of Sri Lanka</div>
                 <div className="text-[12px] font-medium text-[#4B5563]">Citizen Services Portal</div>
@@ -138,20 +166,45 @@ export const Header: React.FC = () => {
                 )}
                 {/* Profile avatar */}
                 {user ? (
-                  <div className="relative group">
-                    <button className="ml-1 w-7 h-7 rounded-full bg-text-200 text-text-800 text-xs font-semibold flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-[#93B4FF]" aria-haspopup="menu" aria-expanded="false" title={user.email || 'Account'}>
+                  <div className="relative" ref={profileRef}>
+                    <button
+                      className="ml-1 w-7 h-7 rounded-full bg-text-200 text-text-800 text-xs font-semibold flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-[#93B4FF]"
+                      aria-haspopup="menu"
+                      aria-expanded={profileOpen}
+                      aria-controls="profile-menu"
+                      title={user.email || 'Account'}
+                      onClick={() => setProfileOpen((v) => !v)}
+                    >
                       {initialsFromEmail(user.email)}
                     </button>
-                    <div className="absolute right-0 mt-2 w-56 bg-white text-text-900 border border-border rounded-[10px] shadow-2xl hidden group-hover:block">
-                      <Link href="/appointments" className="block px-3 py-2 text-[13px] hover:bg-bg-100">My appointments</Link>
-                      <Link href="/documents" className="block px-3 py-2 text-[13px] hover:bg-bg-100">Upload documents</Link>
-                      <Link href="/track" className="block px-3 py-2 text-[13px] hover:bg-bg-100">Track booking</Link>
-                      <Link href="/profile" className="block px-3 py-2 text-[13px] hover:bg-bg-100">Profile</Link>
-                      <button className="w-full text-left px-3 py-2 text-[13px] hover:bg-bg-100" onClick={() => signOut()}>Sign out</button>
-                    </div>
+                    {profileOpen && (
+                      <div
+                        id="profile-menu"
+                        role="menu"
+                        className="absolute right-0 mt-2 w-56 bg-white text-text-900 border border-border rounded-[10px] shadow-2xl"
+                      >
+                        <Link href="/appointments" className="block px-3 py-2 text-[13px] hover:bg-bg-100" role="menuitem">My appointments</Link>
+                        <Link href="/documents" className="block px-3 py-2 text-[13px] hover:bg-bg-100" role="menuitem">Upload documents</Link>
+                        <Link href="/track" className="block px-3 py-2 text-[13px] hover:bg-bg-100" role="menuitem">Track booking</Link>
+                        <Link href="/profile" className="block px-3 py-2 text-[13px] hover:bg-bg-100" role="menuitem">Profile</Link>
+                        <button className="w-full text-left px-3 py-2 text-[13px] hover:bg-bg-100" onClick={() => signOut()} role="menuitem">Sign out</button>
+                      </div>
+                    )}
                   </div>
                 ) : (
-                  <button className="text-sm text-text-700 underline" onClick={() => setShowSignIn(true)}>Sign in</button>
+                  // Avoid flashing a Sign in button while auth is initializing
+                  loading ? (
+                    <div className="h-10 w-[88px] rounded-lg bg-bg-100 border border-border animate-pulse" aria-hidden />
+                  ) : (
+                    <button
+                      className="btn-signin-arrow h-10 px-4"
+                      onClick={() => setShowSignIn(true)}
+                      aria-label="Sign in"
+                    >
+                      Sign in
+                      <span className="arrow-wrapper"><span className="arrow" /></span>
+                    </button>
+                  )
                 )}
               </div>
             </nav>
@@ -243,9 +296,18 @@ export const Header: React.FC = () => {
                   </Button>
                 )}
                 {!user && (
-                  <Button variant="outline" className="mx-3 mb-3 w-[calc(100%-1.5rem)] justify-center" onClick={() => { setMobileMenuOpen(false); setShowSignIn(true); }}>
-                    Sign in
-                  </Button>
+                  loading ? (
+                    <div className="mx-3 mb-3 w-[calc(100%-1.5rem)] h-10 rounded-lg bg-bg-100 border border-border animate-pulse" aria-hidden />
+                  ) : (
+                    <button
+                      className="btn-signin-arrow mx-3 mb-3 w-[calc(100%-1.5rem)] h-10 justify-center"
+                      onClick={() => { setMobileMenuOpen(false); setShowSignIn(true); }}
+                      aria-label="Sign in"
+                    >
+                      Sign in
+                      <span className="arrow-wrapper"><span className="arrow" /></span>
+                    </button>
+                  )
                 )}
               </div>
             </div>

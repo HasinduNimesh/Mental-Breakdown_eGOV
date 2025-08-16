@@ -31,9 +31,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     })();
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, s) => {
       setSession(s);
       setUser(s?.user ?? null);
+      if (s?.user) {
+        // create stub profile if needed (fire and forget)
+        try {
+          await supabase.functions.invoke('profile-upsert', { body: {} });
+        } catch {}
+      }
     });
     return () => {
       isMounted = false;

@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import Badge from '@/components/ui/Badge';
+import ResourceCategoryRow from '@/components/ui/ResourceCategory';
 import {
   NewspaperIcon,
   MegaphoneIcon,
@@ -21,6 +22,11 @@ import {
   FunnelIcon,
   MagnifyingGlassIcon,
   ChevronRightIcon,
+  TrophyIcon,
+    DocumentTextIcon,
+    GlobeAltIcon,
+  AcademicCapIcon,
+  ComputerDesktopIcon,
 } from '@heroicons/react/24/outline';
 
 interface NewsItem {
@@ -211,6 +217,21 @@ const NewsPage: React.FC = () => {
       <div className="bg-white">
         <Container className="pt-4">
           <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'News & Notices' }]} />
+          {/* Resource Category Row demo */}
+          <div className="mt-4">
+            <ResourceCategoryRow
+              items={[
+                { id: 'circulars', label: 'Circulars', icon: InformationCircleIcon },
+                { id: 'publications', label: 'Publications', icon: DocumentTextIcon },
+                { id: 'training', label: 'Training Opportunity', icon: AcademicCapIcon },
+                { id: 'digital', label: 'Digitalization', icon: ComputerDesktopIcon },
+                { id: 'education', label: 'Education Resource', icon: GlobeAltIcon },
+                { id: 'competitions', label: 'Competitions', icon: TrophyIcon },
+              ]}
+              selectedId={'circulars'}
+              onSelect={() => { /* wire as needed */ }}
+            />
+          </div>
         </Container>
       </div>
 

@@ -25,6 +25,10 @@ import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { NoticeRail } from '@/components/notice/NoticeRail';
 import { GovAction } from '@/components/ui/GovAction';
+import ResourceCategoryRow from '@/components/ui/ResourceCategory';
+import { useRouter } from 'next/router';
+import { useAuth } from '@/contexts/AuthContext';
+import SignInModal from '@/components/auth/SignInModal';
 import { useInView } from '@/lib/hooks/useInView';
 import { AccessibilityPanel } from '@/components/ui/AccessibilityPanel';
 import { formatDate } from '@/lib/date';
@@ -36,10 +40,14 @@ interface NavigationItem {
 
 export const WelcomeDashboard: React.FC = () => {
   const { t } = useTranslation('common');
+  const router = useRouter();
+  const { user } = useAuth();
   // Footer animation observers
   const orgCardObs = useInView();
   const navCardObs = useInView({ threshold: 0.1 });
   const mediaCardObs = useInView({ threshold: 0.1 });
+  const [selectedQuick, setSelectedQuick] = React.useState<string | undefined>(undefined);
+  const [showSignIn, setShowSignIn] = React.useState(false);
 
   return (
     <div>
@@ -49,9 +57,9 @@ export const WelcomeDashboard: React.FC = () => {
   <section className="relative overflow-hidden bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 text-white">
         {/* Background pattern */}
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-black/10" />
+          <div className="absolute inset-0 bg-black/5" />
           {/* Government-style pattern */}
-          <svg className="absolute right-0 top-0 h-full w-1/2 opacity-10" viewBox="0 0 400 400" aria-hidden="true">
+          <svg className="absolute right-0 top-0 h-full w-1/2 opacity-30" viewBox="0 0 400 400" aria-hidden="true">
             <defs>
               <pattern id="govt-pattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
                 <path d="M20 0L30 10L20 20L10 10Z" fill="white" opacity="0.3"/>
@@ -69,17 +77,23 @@ export const WelcomeDashboard: React.FC = () => {
                 OUR MISSION IS <span className="text-orange-400">FOR YOU!</span>
               </div>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-3">
-                Government Citizen Services Portal
+                Book government services online
               </h1>
               <p className="text-base sm:text-lg text-blue-200 mb-4 max-w-2xl">
-                Book, manage, and track your public service appointments online.
+                Fast, simple, and secure appointments for key public services.
               </p>
               <p className="text-sm sm:text-base text-blue-100 mb-6 sm:mb-8 max-w-xl italic">
                 "Public service should be the birthright of every citizen"
               </p>
               <div className="flex flex-col sm:flex-row flex-wrap gap-4">
-                <Button size="lg" variant="secondary" href="/services">Explore Services</Button>
-                <Button size="lg" variant="outline" className="border-white text-white hover:text-blue-900">Contact Directory</Button>
+                <Button
+                  size="lg"
+                  onClick={() => { if (!user) { setShowSignIn(true); } else { router.push('/book'); } }}
+                >
+                  Book appointment
+                </Button>
+                <Button size="lg" variant="secondary" href="/help">Service guide</Button>
+                <Button size="lg" variant="ghost" href="/contact" className="text-white hover:text-blue-900">Contact directory</Button>
               </div>
             </div>
             
@@ -132,54 +146,44 @@ export const WelcomeDashboard: React.FC = () => {
         </Container>
   </section>
 
-      {/* Government Services Grid */}
+      {/* Government Services Quick Access (Resource Category Cards) */}
       <section className="bg-white py-12 sm:py-16">
-  <Container>
+        <Container>
           <div className="text-center mb-8 sm:mb-12">
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">Quick Access Services</h2>
             <p className="text-base sm:text-lg text-gray-600">Access essential government services with just a few clicks</p>
           </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6">
-            <GovAction
-              href="/book"
-              label="Book Appointment"
-              icon={CalendarDaysIcon}
-              colors={{ from: 'from-blue-500', to: 'to-blue-600', ring: 'ring-blue-200' }}
-            />
-            <GovAction
-              href="/appointments"
-              label="My Appointments"
-              icon={ClipboardDocumentListIcon}
-              colors={{ from: 'from-green-500', to: 'to-green-600', ring: 'ring-green-200' }}
-            />
-            <GovAction
-              href="/documents"
-              label="Upload Documents"
-              icon={DocumentTextIcon}
-              colors={{ from: 'from-purple-500', to: 'to-purple-600', ring: 'ring-purple-200' }}
-            />
-            <GovAction
-              href="/citizen"
-              label="Find Offices"
-              icon={MapPinIcon}
-              colors={{ from: 'from-orange-500', to: 'to-orange-600', ring: 'ring-orange-200' }}
-            />
-            <GovAction
-              href="/help"
-              label="Help Center"
-              icon={InformationCircleIcon}
-              colors={{ from: 'from-red-500', to: 'to-red-600', ring: 'ring-red-200' }}
-            />
-            <GovAction
-              href="/checkin"
-              label="Track Token / Check-in"
-              icon={SpeakerWaveIcon}
-              colors={{ from: 'from-indigo-500', to: 'to-indigo-600', ring: 'ring-indigo-200' }}
-            />
-          </div>
-  </Container>
+
+          <ResourceCategoryRow
+            items={[
+              { id: 'book', label: 'Book Appointment', icon: CalendarDaysIcon },
+              { id: 'my-appts', label: 'My Appointments', icon: ClipboardDocumentListIcon },
+              { id: 'upload', label: 'Upload Documents', icon: DocumentTextIcon },
+              { id: 'offices', label: 'Find Offices', icon: MapPinIcon },
+              { id: 'help', label: 'Help Center', icon: InformationCircleIcon },
+              { id: 'track', label: 'Track Token / Check-in', icon: SpeakerWaveIcon },
+            ]}
+            disabledIds={!user ? ['book','my-appts','upload'] : []}
+            selectedId={selectedQuick}
+            onSelect={(id) => {
+              setSelectedQuick(id);
+              const routeMap: Record<string, string> = {
+                book: '/book',
+                'my-appts': '/appointments',
+                upload: '/documents',
+                offices: '/citizen',
+                help: '/help',
+                track: '/checkin',
+              };
+              const requiresAuth = id === 'book' || id === 'my-appts' || id === 'upload';
+              if (requiresAuth && !user) { setShowSignIn(true); return; }
+              const href = routeMap[id];
+              if (href) router.push(href);
+            }}
+          />
+        </Container>
       </section>
+      <SignInModal open={showSignIn && !user} onClose={() => setShowSignIn(false)} context="generic" />
 
       {/* Top Services Highlights */}
       <section className="bg-bg-100 py-12 sm:py-16">
