@@ -1,5 +1,8 @@
 import React from 'react';
 import Head from 'next/head';
+import type { GetStaticProps } from 'next';
+import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
+import { useTranslation } from 'next-i18next';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
@@ -11,6 +14,7 @@ import { EnvelopeIcon, ShieldCheckIcon, ArrowRightOnRectangleIcon } from '@heroi
 export default function SignInPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useTranslation('common');
   const [email, setEmail] = React.useState('');
   const [otp, setOtp] = React.useState('');
   const [phase, setPhase] = React.useState<'request'|'verify'>('request');
@@ -38,8 +42,8 @@ export default function SignInPage() {
   return (
     <>
       <Head>
-        <title>Sign In - Sri Lanka Citizen Services</title>
-        <meta name="description" content="Sign in to your citizen services account to access government services online" />
+  <title>{t('signin_meta_title', 'Sign In - Sri Lanka Citizen Services')}</title>
+  <meta name="description" content={t('signin_meta_desc', 'Sign in to your citizen services account to access government services online')} />
       </Head>
       
       {/* Header with branding */}
@@ -47,14 +51,14 @@ export default function SignInPage() {
         <Container className="max-w-[1200px] px-6">
           <div className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center gap-3">
-              <img src="/logo.svg" alt="Sri Lanka Coat of Arms" className="h-9 w-auto" />
+              <img src="/logo.svg" alt={t('logo_alt', 'Sri Lanka Coat of Arms')} className="h-9 w-auto" />
               <div className="leading-tight">
-                <div className="text-[14px] font-semibold text-[#163B8F]">Government of Sri Lanka</div>
-                <div className="text-[12px] font-medium text-[#4B5563]">Citizen Services Portal</div>
+                <div className="text-[14px] font-semibold text-[#163B8F]">{t('site_gov_name', 'Government of Sri Lanka')}</div>
+                <div className="text-[12px] font-medium text-[#4B5563]">{t('site_portal_name', 'Citizen Services Portal')}</div>
               </div>
             </Link>
             <Link href="/signup" className="text-sm text-text-600 hover:text-primary-700">
-              Need an account? <span className="font-medium text-primary-700">Sign up</span>
+              {t('signin_need_account', 'Need an account?')} <span className="font-medium text-primary-700">{t('nav_sign_up', 'Sign up')}</span>
             </Link>
           </div>
         </Container>
@@ -71,8 +75,8 @@ export default function SignInPage() {
                   <ArrowRightOnRectangleIcon className="w-6 h-6" />
                 </div>
                 <div>
-                  <h1 className="text-xl sm:text-2xl font-bold">Welcome Back</h1>
-                  <p className="text-blue-100 text-sm">Sign in to access your government services</p>
+                  <h1 className="text-xl sm:text-2xl font-bold">{t('signin_welcome', 'Welcome Back')}</h1>
+                  <p className="text-blue-100 text-sm">{t('signin_subtitle', 'Sign in to access your government services')}</p>
                 </div>
               </div>
               
@@ -95,17 +99,17 @@ export default function SignInPage() {
               {phase === 'request' ? (
                 <form onSubmit={requestOtp} className="space-y-4">
                   <div className="mb-6">
-                    <h2 className="text-lg font-semibold text-text-900 mb-2">Enter your email address</h2>
-                    <p className="text-sm text-text-600">We'll send you a secure verification code to sign in.</p>
+                    <h2 className="text-lg font-semibold text-text-900 mb-2">{t('signin_enter_email', 'Enter your email address')}</h2>
+                    <p className="text-sm text-text-600">{t('signin_enter_email_help', "We'll send you a secure verification code to sign in.")}</p>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-text-700 mb-2">Email address</label>
+                      <label className="block text-sm font-medium text-text-700 mb-2">{t('field_email', 'Email address')}</label>
                     <div className="relative">
                       <input 
                         type="email" 
                         className="w-full border border-border rounded-md px-3 py-3 pl-10 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500" 
-                        placeholder="your.email@example.com"
+                          placeholder={t('placeholder_email', 'your.email@example.com')}
                         value={email} 
                         onChange={e=>setEmail(e.target.value)} 
                         required 
@@ -127,14 +131,14 @@ export default function SignInPage() {
               ) : (
                 <form onSubmit={verifyOtp} className="space-y-4">
                   <div className="mb-6">
-                    <h2 className="text-lg font-semibold text-text-900 mb-2">Enter verification code</h2>
+                    <h2 className="text-lg font-semibold text-text-900 mb-2">{t('signin_enter_code', 'Enter verification code')}</h2>
                     <p className="text-sm text-text-600">
-                      We sent a 6-digit code to <span className="font-medium text-text-900">{email}</span>
+                      {t('signin_code_sent_to', 'We sent a 6-digit code to')} <span className="font-medium text-text-900">{email}</span>
                     </p>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-text-700 mb-2">Verification code</label>
+                    <label className="block text-sm font-medium text-text-700 mb-2">{t('field_verification_code', 'Verification code')}</label>
                     <div className="relative">
                       <input 
                         inputMode="numeric" 
@@ -158,7 +162,7 @@ export default function SignInPage() {
                   
                   <div className="space-y-3">
                     <Button type="submit" disabled={!otp} className="w-full h-12 text-base">
-                      Sign in to your account
+                      {t('signin_to_account', 'Sign in to your account')}
                     </Button>
                     <Button 
                       type="button" 
@@ -167,7 +171,7 @@ export default function SignInPage() {
                       onClick={requestOtp}
                       className="w-full h-12 text-base"
                     >
-                      {timer>0 ? `Resend code in ${timer}s` : 'Resend verification code'}
+                      {timer>0 ? t('signin_resend_in', 'Resend code in').concat(` ${timer}s`) : t('signin_resend_code', 'Resend verification code')}
                     </Button>
                   </div>
                 </form>
@@ -178,10 +182,9 @@ export default function SignInPage() {
                 <div className="flex gap-3">
                   <ShieldCheckIcon className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
                   <div className="text-sm">
-                    <p className="font-medium text-blue-900 mb-1">Secure Access</p>
+                    <p className="font-medium text-blue-900 mb-1">{t('secure_access_title', 'Secure Access')}</p>
                     <p className="text-blue-700">
-                      Your email is your secure gateway to all government services. 
-                      We use verification codes to keep your account safe.
+                      {t('signin_secure_blurb', 'Your email is your secure gateway to all government services. We use verification codes to keep your account safe.')}
                     </p>
                   </div>
                 </div>
@@ -192,11 +195,11 @@ export default function SignInPage() {
           {/* Footer links */}
           <div className="mt-8 text-center">
             <div className="flex items-center justify-center gap-6 text-sm text-text-600">
-              <Link href="/help" className="hover:text-primary-700">Help Center</Link>
+              <Link href="/help" className="hover:text-primary-700">{t('link_help_center', 'Help Center')}</Link>
               <span>•</span>
-              <Link href="/contact" className="hover:text-primary-700">Contact Support</Link>
+              <Link href="/contact" className="hover:text-primary-700">{t('link_contact_support', 'Contact Support')}</Link>
               <span>•</span>
-              <Link href="/privacy" className="hover:text-primary-700">Privacy Policy</Link>
+              <Link href="/privacy" className="hover:text-primary-700">{t('link_privacy_policy', 'Privacy Policy')}</Link>
             </div>
           </div>
         </Container>
@@ -204,3 +207,11 @@ export default function SignInPage() {
     </>
   );
 }
+
+export const getStaticProps: GetStaticProps = async ({ locale }) => {
+  return {
+    props: {
+      ...(await serverSideTranslations(locale ?? 'en', ['common'])),
+    },
+  };
+};

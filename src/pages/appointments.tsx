@@ -1,4 +1,6 @@
 import React from 'react';
+import type { GetStaticProps } from 'next';
+import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { Layout } from '@/components/layout/Layout';
 import { Container } from '@/components/ui/Container';
 import { Card } from '@/components/ui/Card';
@@ -148,6 +150,14 @@ const AppointmentsPage: React.FC = () => {
 };
 
 export default AppointmentsPage;
+
+export const getStaticProps: GetStaticProps = async ({ locale }) => {
+  return {
+    props: {
+      ...(await serverSideTranslations(locale ?? 'en', ['common'])),
+    },
+  };
+};
 
 function AppointmentRow({ b, user, onReminderSent }: { b: BookingDraft, user: any, onReminderSent: (bookingId: string) => void }) {
   const svc = SERVICES.find(s => s.id === b.serviceId)!;

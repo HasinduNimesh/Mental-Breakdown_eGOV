@@ -74,16 +74,16 @@ export const WelcomeDashboard: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             <div>
               <div className="text-blue-200 text-xs sm:text-sm uppercase tracking-wider mb-4 font-semibold">
-                OUR MISSION IS <span className="text-orange-400">FOR YOU!</span>
+                {t('home_mission_prefix', 'OUR MISSION IS')} <span className="text-orange-400">{t('home_mission_suffix', 'FOR YOU!')}</span>
               </div>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-3">
-                Book government services online
+                {t('home_hero_title', 'Book government services online')}
               </h1>
               <p className="text-base sm:text-lg text-blue-200 mb-4 max-w-2xl">
-                Fast, simple, and secure appointments for key public services.
+                {t('home_hero_subtitle', 'Fast, simple, and secure appointments for key public services.')}
               </p>
               <p className="text-sm sm:text-base text-blue-100 mb-6 sm:mb-8 max-w-xl italic">
-                "Public service should be the birthright of every citizen"
+                {t('home_hero_quote', '"Public service should be the birthright of every citizen"')}
               </p>
               <div className="flex flex-col sm:flex-row flex-wrap gap-4">
                 {user && (
@@ -91,11 +91,11 @@ export const WelcomeDashboard: React.FC = () => {
                     size="lg"
                     href="/services"
                   >
-                    Book appointment
+                    {t('cta_book')}
                   </Button>
                 )}
-                <Button size="lg" variant="secondary" href="/help">Service guide</Button>
-                <Button size="lg" variant="ghost" href="/contact" className="text-white hover:text-blue-900">Contact directory</Button>
+                <Button size="lg" variant="secondary" href="/help">{t('nav_help', 'Service Guide')}</Button>
+                <Button size="lg" variant="ghost" href="/contact" className="text-white hover:text-blue-900">{t('home_contact_directory', 'Contact directory')}</Button>
               </div>
             </div>
             
@@ -152,18 +152,18 @@ export const WelcomeDashboard: React.FC = () => {
       <section className="bg-white py-12 sm:py-16">
         <Container>
           <div className="text-center mb-8 sm:mb-12">
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">Quick Access Services</h2>
-            <p className="text-base sm:text-lg text-gray-600">Access essential government services with just a few clicks</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">{t('home_quick_title', 'Quick Access Services')}</h2>
+            <p className="text-base sm:text-lg text-gray-600">{t('home_quick_subtitle', 'Access essential government services with just a few clicks')}</p>
           </div>
 
           <ResourceCategoryRow
             items={[
-              { id: 'book', label: 'Book Appointment', icon: CalendarDaysIcon },
-              { id: 'my-appts', label: 'My Appointments', icon: ClipboardDocumentListIcon },
-              { id: 'upload', label: 'Upload Documents', icon: DocumentTextIcon },
-              { id: 'offices', label: 'Find Offices', icon: MapPinIcon },
-              { id: 'help', label: 'Help Center', icon: InformationCircleIcon },
-              { id: 'track', label: 'Track Token / Check-in', icon: SpeakerWaveIcon },
+              { id: 'book', label: t('quick_book', 'Book Appointment'), icon: CalendarDaysIcon },
+              { id: 'my-appts', label: t('quick_my_appts', 'My Appointments'), icon: ClipboardDocumentListIcon },
+              { id: 'upload', label: t('quick_upload', 'Upload Documents'), icon: DocumentTextIcon },
+              { id: 'offices', label: t('quick_find_offices', 'Find Offices'), icon: MapPinIcon },
+              { id: 'help', label: t('quick_help', 'Help Center'), icon: InformationCircleIcon },
+              { id: 'track', label: t('quick_track', 'Track Token / Check-in'), icon: SpeakerWaveIcon },
             ]}
             disabledIds={!user ? ['book','my-appts','upload'] : []}
             selectedId={selectedQuick}
@@ -192,10 +192,10 @@ export const WelcomeDashboard: React.FC = () => {
         <Container>
           <div className="mb-8 sm:mb-10 flex items-end justify-between">
             <div>
-              <h3 className="text-2xl sm:text-3xl font-bold text-text-900">Top Services</h3>
-              <p className="text-text-600">Most requested services—book directly or read the guide.</p>
+              <h3 className="text-2xl sm:text-3xl font-bold text-text-900">{t('home_top_services', 'Top Services')}</h3>
+              <p className="text-text-600">{t('home_top_services_sub', 'Most requested services—book directly or read the guide.')}</p>
             </div>
-            <a href="/services" className="text-primary-700 hover:text-primary-800 font-medium">View all services</a>
+            <a href="/services" className="text-primary-700 hover:text-primary-800 font-medium">{t('home_view_all_services', 'View all services')}</a>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
@@ -210,8 +210,8 @@ export const WelcomeDashboard: React.FC = () => {
                 <div className="mb-2 text-text-900 font-semibold">{s.title}</div>
                 <div className="text-sm text-text-600 mb-4">{s.desc}</div>
                 <div className="flex gap-3">
-                  {user && <Button href={s.book} size="sm">Book</Button>}
-                  <Button href={s.guide} variant="outline" size="sm">Guide</Button>
+                  {user && <Button href={s.book} size="sm">{t('cta_book_short', 'Book')}</Button>}
+                  <Button href={s.guide} variant="outline" size="sm">{t('home_guide', 'Guide')}</Button>
                 </div>
               </Card>
             ))}

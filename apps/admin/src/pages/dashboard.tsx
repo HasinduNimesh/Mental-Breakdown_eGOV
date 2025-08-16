@@ -53,7 +53,7 @@ export default function Dashboard() {
       { id: "H-001", department: "Ministry of Health", date: today(), time: "10:00", status: "Scheduled", patientName: "General Checkup", room: "OPD-1" },
     ],
     education: [
-      { id: "E-201", department: "Ministry of Education, Higher Education and Vocational Education", date: today(), time: "11:00", status: "Scheduled", patientName: "Scholarship Inquiry", room: "Desk A" },
+      { id: "E-201", department: "Sri Lankan Goverment - eGOV", date: today(), time: "11:00", status: "Scheduled", patientName: "Scholarship Inquiry", room: "Desk A" },
     ],
     immigration: [
       { id: "I-301", department: "Department of Immigration & Emigration", date: today(), time: "08:45", status: "In progress", patientName: "Passport Renewal", room: "Counter 1" },
@@ -243,7 +243,7 @@ function labelForDept(d: Dept) {
   switch (d) {
     case "police": return "Sri Lanka Police";
     case "health": return "Ministry of Health";
-    case "education": return "Ministry of Education, Higher Education and Vocational Education";
+    case "education": return "Sri Lankan Goverment - eGOV";
     case "immigration": return "Department of Immigration & Emigration";
     case "registration": return "Department for Registration of Persons";
     case "motor_traffic": return "Department of Motor Traffic";

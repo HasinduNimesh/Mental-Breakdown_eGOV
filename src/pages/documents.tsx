@@ -1,4 +1,6 @@
 import React from 'react';
+import type { GetStaticProps } from 'next';
+import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { Layout } from '@/components/layout/Layout';
 import { Container } from '@/components/ui/Container';
 import { Card } from '@/components/ui/Card';
@@ -726,3 +728,11 @@ const DocumentsPage: React.FC = () => {
 };
 
 export default DocumentsPage;
+
+export const getStaticProps: GetStaticProps = async ({ locale }) => {
+  return {
+    props: {
+      ...(await serverSideTranslations(locale ?? 'en', ['common'])),
+    },
+  };
+};

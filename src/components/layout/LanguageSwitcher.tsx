@@ -12,7 +12,13 @@ export const LanguageSwitcher: React.FC = () => {
   const active = router.locale ?? 'en';
 
   const switchTo = (locale: string) => {
-    router.push(router.asPath, router.asPath, { locale });
+    try {
+      // Persist preference for 1 year
+      const oneYear = 365 * 24 * 60 * 60;
+      document.cookie = `NEXT_LOCALE=${locale}; Max-Age=${oneYear}; Path=/`;
+    } catch {}
+  // Let Next.js compute the correct localized URL; do not override `as` with the old path
+  router.replace(router.asPath, undefined, { locale });
   };
 
   return (
