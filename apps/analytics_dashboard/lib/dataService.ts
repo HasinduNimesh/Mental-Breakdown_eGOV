@@ -1,6 +1,6 @@
 // Real Database Analytics Data Service
 // This service fetches actual data from the main database tables
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 
 // Types matching the main database structure
 export interface MainBooking {
@@ -93,19 +93,10 @@ export interface DashboardData {
 }
 
 export class AnalyticsDataService {
-  // Lazily create a Supabase client when env vars are present; otherwise return null
-  private static _supabase: SupabaseClient | null | undefined;
-  private static getSupabase(): SupabaseClient | null {
-    if (this._supabase !== undefined) return this._supabase;
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if (!url || !key) {
-      this._supabase = null;
-      return null;
-    }
-    this._supabase = createClient(url, key);
-    return this._supabase;
-  }
+  private static supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   // Cache for database queries (5 minute TTL)
   private static dataCache: Map<string, any> = new Map();
@@ -159,8 +150,6 @@ export class AnalyticsDataService {
 
   // Fetch all bookings for the given timeframe
   static async fetchBookings(timeframe: string = '7days'): Promise<MainBooking[]> {
-  const supabase = this.getSupabase();
-  if (!supabase) return [];
     const cacheKey = this.getCacheKey('bookings', { timeframe });
     if (this.isCacheValid(cacheKey)) {
       return this.getFromCache(cacheKey);
@@ -168,7 +157,7 @@ export class AnalyticsDataService {
 
     const { startDate, endDate } = this.getDateRange(timeframe);
 
-  const { data: bookings, error } = await supabase
+    const { data: bookings, error } = await this.supabase
       .from('bookings')
       .select('*')
       .gte('slot_date', startDate)
@@ -186,14 +175,12 @@ export class AnalyticsDataService {
 
   // Fetch all departments
   static async fetchDepartments(): Promise<MainDepartment[]> {
-  const supabase = this.getSupabase();
-  if (!supabase) return [];
     const cacheKey = this.getCacheKey('departments', {});
     if (this.isCacheValid(cacheKey)) {
       return this.getFromCache(cacheKey);
     }
 
-  const { data: departments, error } = await supabase
+    const { data: departments, error } = await this.supabase
       .from('departments')
       .select('*');
 
@@ -208,14 +195,12 @@ export class AnalyticsDataService {
 
   // Fetch all services
   static async fetchServices(): Promise<MainService[]> {
-  const supabase = this.getSupabase();
-  if (!supabase) return [];
     const cacheKey = this.getCacheKey('services', {});
     if (this.isCacheValid(cacheKey)) {
       return this.getFromCache(cacheKey);
     }
 
-  const { data: services, error } = await supabase
+    const { data: services, error } = await this.supabase
       .from('services')
       .select('*');
 
@@ -230,14 +215,12 @@ export class AnalyticsDataService {
 
   // Fetch all offices
   static async fetchOffices(): Promise<MainOffice[]> {
-  const supabase = this.getSupabase();
-  if (!supabase) return [];
     const cacheKey = this.getCacheKey('offices', {});
     if (this.isCacheValid(cacheKey)) {
       return this.getFromCache(cacheKey);
     }
 
-  const { data: offices, error } = await supabase
+    const { data: offices, error } = await this.supabase
       .from('offices')
       .select('*');
 
@@ -252,14 +235,12 @@ export class AnalyticsDataService {
 
   // Fetch slots (used as fallback when bookings are empty)
   static async fetchSlots(): Promise<any[]> {
-  const supabase = this.getSupabase();
-  if (!supabase) return [];
     const cacheKey = this.getCacheKey('slots', {});
     if (this.isCacheValid(cacheKey)) {
       return this.getFromCache(cacheKey);
     }
 
-  const { data: slots, error } = await supabase
+    const { data: slots, error } = await this.supabase
       .from('slots')
       .select('*')
       .order('slot_date', { ascending: false });
