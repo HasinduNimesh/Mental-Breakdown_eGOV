@@ -7,7 +7,7 @@
 -- Core reference tables
 -- =========================
 create table if not exists public.departments (
-  id text primary key,
+  id uuid primary key,
   name text not null
 );
 
@@ -25,10 +25,42 @@ create table if not exists public.services (
   popularity text check (popularity in ('high','medium','low')) default 'medium',
   default_location text,
   updated_at timestamptz not null default now(),
-  department_id text references public.departments(id)
+  department_id uuid references public.departments(id)
 );
 create index if not exists services_by_popularity on public.services(popularity);
 create index if not exists services_by_updated_at on public.services(updated_at desc);
+create index if not exists services_by_department on public.services(department_id);
+
+-- =========================
+-- Admin membership (users assigned to departments)
+-- =========================
+create table if not exists public.department_admins (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  department_id uuid not null references public.departments(id) on delete cascade,
+  role text not null default 'admin' check (role in ('admin','editor','viewer')),
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  constraint department_admins_pk primary key (user_id, department_id)
+);
+create index if not exists dept_admins_by_user on public.department_admins(user_id);
+create index if not exists dept_admins_by_dept on public.department_admins(department_id);
+
+-- Normalize legacy installs where department_admins.user_id was created as text
+DO $$
+DECLARE v_type text;
+BEGIN
+  SELECT data_type INTO v_type
+  FROM information_schema.columns
+  WHERE table_schema = 'public' AND table_name = 'department_admins' AND column_name = 'user_id';
+
+  IF v_type IS NOT NULL AND v_type <> 'uuid' THEN
+    BEGIN
+      ALTER TABLE public.department_admins ALTER COLUMN user_id TYPE uuid USING user_id::uuid;
+    EXCEPTION WHEN others THEN
+      RAISE NOTICE 'department_admins.user_id remains %, invalid data prevents cast; policies use direct uuid comparisons', v_type;
+    END;
+  END IF;
+END $$;
 
 -- Offices used by booking flow
 create table if not exists public.offices (
@@ -96,6 +128,16 @@ select service_id, office_id, slot_date,
 from public.slots
 group by service_id, office_id, slot_date;
 
+-- Attempt to mark the view as security invoker (supported on newer Postgres)
+DO $$
+BEGIN
+  BEGIN
+    EXECUTE 'ALTER VIEW public.daily_availability SET (security_invoker = on)';
+  EXCEPTION WHEN others THEN
+    RAISE NOTICE 'security_invoker is not supported on this Postgres version; skipping';
+  END;
+END $$;
+
 -- Atomic booking RPC
 create or replace function public.book_appointment(
   p_service_id text,
@@ -111,6 +153,7 @@ create or replace function public.book_appointment(
 ) returns jsonb
 language plpgsql
 security definer
+ set search_path = public, pg_temp
 as $$
 DECLARE
   v_remaining integer;
@@ -205,8 +248,27 @@ create index if not exists prof_photos_by_user on public.profile_photos(user_id)
 create table if not exists public.session_locks (
   user_id uuid primary key references auth.users(id) on delete cascade,
   device_id text not null,
+  selected_department_id uuid references public.departments(id),
   updated_at timestamptz not null default now()
 );
+
+-- Normalize existing installs where session_locks.selected_department_id was created as text
+DO $$
+DECLARE v_type text;
+BEGIN
+  SELECT data_type INTO v_type
+  FROM information_schema.columns
+  WHERE table_schema = 'public' AND table_name = 'session_locks' AND column_name = 'selected_department_id';
+
+  IF v_type IS NOT NULL AND v_type <> 'uuid' THEN
+    BEGIN
+      ALTER TABLE public.session_locks ALTER COLUMN selected_department_id TYPE uuid USING selected_department_id::uuid;
+    EXCEPTION WHEN others THEN
+      -- If invalid data prevents cast, keep as-is; views/policies will cast explicitly
+      RAISE NOTICE 'session_locks.selected_department_id remains %, invalid data prevents cast; view uses explicit casts', v_type;
+    END;
+  END IF;
+END $$;
 
 -- =========================
 -- RLS Policies
@@ -216,10 +278,12 @@ alter table public.bookings enable row level security;
 alter table public.appointment_documents enable row level security;
 alter table public.services enable row level security;
 alter table public.departments enable row level security;
+alter table public.offices enable row level security;
 alter table public.profiles enable row level security;
 alter table public.profile_documents enable row level security;
 alter table public.profile_photos enable row level security;
 alter table public.session_locks enable row level security;
+alter table public.department_admins enable row level security;
 -- saved forms table added below also has RLS enabled later
 
 -- Slots read (public), inserts/updates (admin placeholder - permissive)
@@ -227,30 +291,115 @@ DROP POLICY IF EXISTS select_slots_for_all ON public.slots;
 DROP POLICY IF EXISTS insert_slots_for_admin ON public.slots;
 DROP POLICY IF EXISTS update_slots_for_admin ON public.slots;
 CREATE POLICY select_slots_for_all ON public.slots FOR SELECT USING (true);
-CREATE POLICY insert_slots_for_admin ON public.slots FOR INSERT WITH CHECK (true);
-CREATE POLICY update_slots_for_admin ON public.slots FOR UPDATE USING (true) WITH CHECK (true);
+-- Offices: allow read access for all (public catalog), with RLS enabled
+DROP POLICY IF EXISTS select_offices_all ON public.offices;
+CREATE POLICY select_offices_all ON public.offices FOR SELECT USING (true);
+
+-- Add email format validation to profiles (guarded)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'profiles_valid_email_chk'
+      AND conrelid = 'public.profiles'::regclass
+  ) THEN
+    ALTER TABLE public.profiles
+      ADD CONSTRAINT profiles_valid_email_chk
+      CHECK (
+        email IS NULL OR email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$'
+      );
+  END IF;
+END $$;
+-- Allow admins of the owning department to manage capacity for their department's services
+CREATE POLICY insert_slots_for_admin ON public.slots FOR INSERT TO authenticated
+  WITH CHECK (exists (
+    select 1 from public.services s
+  join public.department_admins da on da.department_id = s.department_id and da.user_id = auth.uid() and da.is_active
+    where s.id = slots.service_id
+  ));
+CREATE POLICY update_slots_for_admin ON public.slots FOR UPDATE TO authenticated
+  USING (exists (
+    select 1 from public.services s
+  join public.department_admins da on da.department_id = s.department_id and da.user_id = auth.uid() and da.is_active
+    where s.id = slots.service_id
+  ))
+  WITH CHECK (exists (
+    select 1 from public.services s
+  join public.department_admins da on da.department_id = s.department_id and da.user_id = auth.uid() and da.is_active
+    where s.id = slots.service_id
+  ));
 
 -- Bookings: user-only access
 DROP POLICY IF EXISTS select_own_bookings ON public.bookings;
 DROP POLICY IF EXISTS update_own_booking_qr ON public.bookings;
+DROP POLICY IF EXISTS users_can_update_own_bookings ON public.bookings;
+DROP POLICY IF EXISTS admin_select_department_bookings ON public.bookings;
+DROP POLICY IF EXISTS admin_update_department_bookings ON public.bookings;
 CREATE POLICY select_own_bookings ON public.bookings FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY update_own_booking_qr ON public.bookings FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+-- Enable update access for users based on their user ID (Supabase template equivalent)
+CREATE POLICY users_can_update_own_bookings ON public.bookings
+  FOR UPDATE
+  TO authenticated
+  USING ((select auth.uid()) = user_id);
+-- Department admins can read and update bookings that belong to their department's services
+CREATE POLICY admin_select_department_bookings ON public.bookings
+  FOR SELECT TO authenticated
+  USING (exists (
+    select 1 from public.services s
+  join public.department_admins da on da.department_id = s.department_id and da.user_id = auth.uid() and da.is_active
+    where s.id = bookings.service_id
+  ));
+CREATE POLICY admin_update_department_bookings ON public.bookings
+  FOR UPDATE TO authenticated
+  USING (exists (
+    select 1 from public.services s
+  join public.department_admins da on da.department_id = s.department_id and da.user_id = auth.uid() and da.is_active
+    where s.id = bookings.service_id
+  ))
+  WITH CHECK (exists (
+    select 1 from public.services s
+  join public.department_admins da on da.department_id = s.department_id and da.user_id = auth.uid() and da.is_active
+    where s.id = bookings.service_id
+  ));
+
+-- Services: anyone can read, only department admins can update
+DROP POLICY IF EXISTS select_services_all ON public.services;
+DROP POLICY IF EXISTS update_services_admin ON public.services;
+CREATE POLICY select_services_all ON public.services FOR SELECT USING (true);
+CREATE POLICY update_services_admin ON public.services FOR UPDATE TO authenticated
+  USING (exists (select 1 from public.department_admins da where da.department_id = services.department_id and da.user_id = auth.uid() and da.is_active))
+  WITH CHECK (exists (select 1 from public.department_admins da where da.department_id = services.department_id and da.user_id = auth.uid() and da.is_active));
 
 -- Appointment docs tied to own booking
 DROP POLICY IF EXISTS insert_appt_docs ON public.appointment_documents;
 DROP POLICY IF EXISTS select_appt_docs ON public.appointment_documents;
+DROP POLICY IF EXISTS admin_select_appt_docs_by_department ON public.appointment_documents;
 CREATE POLICY insert_appt_docs ON public.appointment_documents FOR INSERT WITH CHECK (
   exists (select 1 from public.bookings b where b.booking_code = appointment_documents.booking_code and b.user_id = auth.uid())
 );
 CREATE POLICY select_appt_docs ON public.appointment_documents FOR SELECT USING (
   exists (select 1 from public.bookings b where b.booking_code = appointment_documents.booking_code and b.user_id = auth.uid())
 );
+-- Department admins can see appointment documents for bookings under their department's services
+CREATE POLICY admin_select_appt_docs_by_department ON public.appointment_documents
+  FOR SELECT TO authenticated
+  USING (exists (
+    select 1 from public.bookings b
+    join public.services s on s.id = b.service_id
+  join public.department_admins da on da.department_id = s.department_id and da.user_id = auth.uid() and da.is_active
+    where b.booking_code = appointment_documents.booking_code
+  ));
 
 -- Catalogs readable by anyone
 DROP POLICY IF EXISTS select_services_all ON public.services;
 DROP POLICY IF EXISTS select_departments_all ON public.departments;
 CREATE POLICY select_services_all ON public.services FOR SELECT USING (true);
 CREATE POLICY select_departments_all ON public.departments FOR SELECT USING (true);
+
+-- Department admins table policies (admins can see their own memberships)
+DROP POLICY IF EXISTS dept_admins_select_own ON public.department_admins;
+CREATE POLICY dept_admins_select_own ON public.department_admins FOR SELECT
+  TO authenticated USING (user_id = auth.uid());
 
 -- Profiles: user can read/update own row
 DROP POLICY IF EXISTS select_own_profile ON public.profiles;
@@ -275,6 +424,36 @@ CREATE POLICY prof_photos_manage_own ON public.profile_photos FOR ALL USING (aut
 DROP POLICY IF EXISTS session_lock_own ON public.session_locks;
 CREATE POLICY session_lock_own ON public.session_locks FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
+-- Helper view for the admin UI to list the departments an admin belongs to
+create or replace view public.my_departments as
+select d.id as department_id, d.name
+from public.department_admins da
+join public.departments d on d.id = da.department_id
+where da.user_id = auth.uid() and da.is_active;
+
+-- Helper view for the admin UI: current selected department context
+create or replace view public.admin_current_context as
+select sl.selected_department_id as department_id, d.name as department_name
+from public.session_locks sl
+left join public.departments d on d.id = sl.selected_department_id
+where sl.user_id = auth.uid();
+
+-- RPC to set the current admin's selected department (used by admin UI after sign-in)
+create or replace function public.set_selected_department(
+  p_department_id uuid,
+  p_device_id text default 'web'
+) returns void
+language sql
+security definer
+as $$
+  insert into public.session_locks (user_id, device_id, selected_department_id, updated_at)
+  values (auth.uid(), coalesce(p_device_id, 'web'), p_department_id, now())
+  on conflict (user_id) do update
+    set selected_department_id = excluded.selected_department_id,
+        device_id = excluded.device_id,
+        updated_at = now();
+$$;
+
 -- =========================
 -- Saved forms (referenced in src/lib/profile.ts)
 -- =========================
@@ -285,6 +464,19 @@ create table if not exists public.saved_forms (
   updated_at timestamptz not null default now(),
   constraint saved_forms_pk primary key (user_id, service_key)
 );
+-- Normalize existing installs where saved_forms.user_id was created as text
+DO $$
+DECLARE v_type text;
+BEGIN
+  SELECT data_type INTO v_type
+  FROM information_schema.columns
+  WHERE table_schema = 'public' AND table_name = 'saved_forms' AND column_name = 'user_id';
+
+  IF v_type IS NOT NULL AND v_type <> 'uuid' THEN
+    -- Cast any existing non-uuid user_id values to uuid
+    ALTER TABLE public.saved_forms ALTER COLUMN user_id TYPE uuid USING user_id::uuid;
+  END IF;
+END $$;
 alter table public.saved_forms enable row level security;
 DROP POLICY IF EXISTS saved_forms_manage_own ON public.saved_forms;
 DROP POLICY IF EXISTS saved_forms_select_own ON public.saved_forms;
