@@ -8,14 +8,14 @@ import { LanguageSwitcher } from './LanguageSwitcher';
 import { Bars3Icon, XMarkIcon, PhoneIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from 'next-i18next';
 import { useAuth } from '@/contexts/AuthContext';
-import SignInModal from '@/components/auth/SignInModal';
+// Using dedicated /signin and /signup pages
 
 export const Header: React.FC = () => {
   const router = useRouter();
   const { isMobileMenuOpen, setMobileMenuOpen } = useUIStore();
   const { t } = useTranslation('common');
   const { user, signOut, loading } = useAuth();
-  const [showSignIn, setShowSignIn] = React.useState(false);
+  // const [showSignIn, setShowSignIn] = React.useState(false);
   const [profileOpen, setProfileOpen] = React.useState(false);
   const profileRef = React.useRef<HTMLDivElement>(null);
 
@@ -156,9 +156,11 @@ export const Header: React.FC = () => {
                   )}
                 </div>
                 {/* Primary CTA */}
-                <Button href="/book" size="md" className="h-10 px-4 rounded-lg bg-[#2D5BFF] text-white hover:bg-[#224BE6] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">
-                  Book appointment
-                </Button>
+                {user && (
+                  <Button href="/book" size="md" className="h-10 px-4 rounded-lg bg-[#2D5BFF] text-white hover:bg-[#224BE6] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">
+                    Book appointment
+                  </Button>
+                )}
                 {user && (
                   <Button href="/appointments" variant="outline" size="md" className="h-10 px-3 rounded-lg border border-[#2D5BFF] text-[#2D5BFF] hover:bg-[#EEF3FF] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">
                     My appointments
@@ -194,16 +196,12 @@ export const Header: React.FC = () => {
                 ) : (
                   // Avoid flashing a Sign in button while auth is initializing
                   loading ? (
-                    <div className="h-10 w-[88px] rounded-lg bg-bg-100 border border-border animate-pulse" aria-hidden />
+                    <div className="h-10 w-[172px] rounded-lg bg-bg-100 border border-border animate-pulse" aria-hidden />
                   ) : (
-                    <button
-                      className="btn-signin-arrow h-10 px-4"
-                      onClick={() => setShowSignIn(true)}
-                      aria-label="Sign in"
-                    >
-                      Sign in
-                      <span className="arrow-wrapper"><span className="arrow" /></span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <Link href="/signin" className="btn-signin-arrow h-10 px-4">Sign in<span className="arrow-wrapper"><span className="arrow" /></span></Link>
+                      <Button href="/signup" size="md" className="h-10 px-4 rounded-lg bg-[#2D5BFF] text-white hover:bg-[#224BE6] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">Sign up</Button>
+                    </div>
                   )
                 )}
               </div>
@@ -211,9 +209,11 @@ export const Header: React.FC = () => {
 
             {/* Mobile actions: Book, Search, Menu */}
             <div className="md:hidden flex items-center gap-2">
-              <Link href="/book" className="inline-flex items-center justify-center h-9 px-3 rounded-lg bg-[#2D5BFF] text-white text-sm font-semibold hover:bg-[#224BE6] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">
-                Book
-              </Link>
+              {user && (
+                <Link href="/book" className="inline-flex items-center justify-center h-9 px-3 rounded-lg bg-[#2D5BFF] text-white text-sm font-semibold hover:bg-[#224BE6] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">
+                  Book
+                </Link>
+              )}
               <button
                 type="button"
                 className="p-2 rounded-md text-text-700 hover:bg-bg-100 focus:outline-none focus:ring-2 focus:ring-[#93B4FF]"
@@ -287,9 +287,11 @@ export const Header: React.FC = () => {
                   <LanguageSwitcher />
                   <span className="flex items-center gap-1 text-text-600"><PhoneIcon className="w-4 h-4" />1919</span>
                 </div>
-                <Button href="/book" className="mx-3 my-2 w-[calc(100%-1.5rem)] justify-center" onClick={() => setMobileMenuOpen(false)}>
-                  Book appointment
-                </Button>
+                {user && (
+                  <Button href="/book" className="mx-3 my-2 w-[calc(100%-1.5rem)] justify-center" onClick={() => setMobileMenuOpen(false)}>
+                    Book appointment
+                  </Button>
+                )}
                 {user && (
                   <Button href="/appointments" variant="outline" className="mx-3 mb-2 w-[calc(100%-1.5rem)] justify-center" onClick={() => setMobileMenuOpen(false)}>
                     My appointments
@@ -299,14 +301,10 @@ export const Header: React.FC = () => {
                   loading ? (
                     <div className="mx-3 mb-3 w-[calc(100%-1.5rem)] h-10 rounded-lg bg-bg-100 border border-border animate-pulse" aria-hidden />
                   ) : (
-                    <button
-                      className="btn-signin-arrow mx-3 mb-3 w-[calc(100%-1.5rem)] h-10 justify-center"
-                      onClick={() => { setMobileMenuOpen(false); setShowSignIn(true); }}
-                      aria-label="Sign in"
-                    >
-                      Sign in
-                      <span className="arrow-wrapper"><span className="arrow" /></span>
-                    </button>
+                    <div className="mx-3 mb-3 flex gap-2">
+                      <Link href="/signin" className="btn-signin-arrow flex-1 h-10 justify-center">Sign in<span className="arrow-wrapper"><span className="arrow" /></span></Link>
+                      <Link href="/signup" className="inline-flex items-center justify-center h-10 px-3 rounded-lg bg-[#2D5BFF] text-white text-sm font-semibold hover:bg-[#224BE6] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">Sign up</Link>
+                    </div>
                   )
                 )}
               </div>
@@ -315,7 +313,7 @@ export const Header: React.FC = () => {
         </Container>
 
       </header>
-      <SignInModal open={showSignIn} onClose={() => setShowSignIn(false)} context="generic" />
+  {/* auth modal removed */}
     </>
   );
 };

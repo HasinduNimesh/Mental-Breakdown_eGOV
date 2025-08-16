@@ -18,12 +18,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let isMounted = true;
+    // Compute a stable deviceId for this browser (persisted in localStorage)
+    const DEVKEY = 'egov_device_id_v1';
+    function getDeviceId() {
+      try {
+        const existing = localStorage.getItem(DEVKEY);
+        if (existing) return existing;
+        const id = 'dev_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+        localStorage.setItem(DEVKEY, id);
+        return id;
+      } catch { return 'dev_unknown'; }
+    }
+    async function resetAndGoHome() {
+      try {
+        await supabase.auth.signOut();
+      } catch {}
+      try { localStorage.removeItem(DEVKEY); } catch {}
+      try { window.location.assign('/'); } catch {}
+    }
     (async () => {
       try {
         const { data } = await supabase.auth.getSession();
         if (!isMounted) return;
         setSession(data.session ?? null);
         setUser(data.session?.user ?? null);
+        // Validate stored session; if stale/invalid, clear and redirect
+        if (data.session) {
+          const { data: u, error: ue } = await supabase.auth.getUser();
+          if (ue || !u?.user) {
+            await resetAndGoHome();
+            return;
+          }
+        }
       } catch {
         // env might not be set yet; keep unauthenticated
       } finally {
@@ -38,6 +64,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // create stub profile if needed (fire and forget)
         try {
           await supabase.functions.invoke('profile-upsert', { body: {} });
+        } catch {}
+        // Claim single-device session lock
+        try {
+          const token = (await supabase.auth.getSession()).data.session?.access_token;
+          if (token) {
+            const resp = await fetch('/api/session-claim', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json', Authorization: `Bearer ${token}` },
+              body: JSON.stringify({ deviceId: getDeviceId() })
+            });
+            if (resp.status === 409) {
+              // Another device holds the lock—sign out here
+              await supabase.auth.signOut();
+              alert('You are signed in on another device. Please sign out there or try again.');
+            }
+          }
         } catch {}
       }
     });

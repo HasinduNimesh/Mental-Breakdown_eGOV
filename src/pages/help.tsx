@@ -142,11 +142,12 @@ const HelpPage: React.FC = () => {
 
             {/* Sidebar */}
             <div className="space-y-6">
-              <Card className="p-6">
+        <Card className="p-6">
                 <h3 className="text-lg font-semibold text-text-900 mb-3">Quick links</h3>
                 <div className="flex flex-col gap-2">
                   <Button href="/services" variant="outline">Browse services</Button>
-                  <Button href="/book">Book appointment</Button>
+          {/* Booking is only available to signed-in users via header/hero */}
+          {/* <Button href="/book">Book appointment</Button> */}
                   <Button href="/appointments" variant="ghost">My appointments</Button>
                 </div>
               </Card>

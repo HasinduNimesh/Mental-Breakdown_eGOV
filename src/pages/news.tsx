@@ -3,6 +3,7 @@ import { GetStaticProps } from 'next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useTranslation } from 'next-i18next';
 import { Layout } from '@/components/layout/Layout';
+import { useAuth } from '@/contexts/AuthContext';
 import { Container } from '@/components/ui/Container';
 import { formatDate } from '@/lib/date';
 import { Card } from '@/components/ui/Card';
@@ -110,6 +111,7 @@ type CategoryId = typeof categories[number]['id'];
 
 const NewsPage: React.FC = () => {
   const { t } = useTranslation('common');
+  const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = React.useState<CategoryId>('all');
   const [searchQuery, setSearchQuery] = React.useState('');
   const [selectedDepartment, setSelectedDepartment] = React.useState<'all' | string>('all');
@@ -190,7 +192,7 @@ const NewsPage: React.FC = () => {
               </div>
 
               <div className="flex flex-col sm:flex-row flex-wrap gap-4">
-                <Button size="lg" variant="secondary" href="/book">Book Appointment</Button>
+                {user && <Button size="lg" variant="secondary" href="/book">Book Appointment</Button>}
                 <Button size="lg" variant="outline" className="border-white text-white hover:text-blue-900">Subscribe to News</Button>
               </div>
             </div>

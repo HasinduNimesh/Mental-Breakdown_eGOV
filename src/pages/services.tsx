@@ -4,6 +4,7 @@ import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useTranslation } from 'next-i18next';
 import { useRouter } from 'next/router';
 import { Layout } from '@/components/layout/Layout';
+import { useAuth } from '@/contexts/AuthContext';
 import { Container } from '@/components/ui/Container';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -50,6 +51,7 @@ interface Service {
 const ServicesPage: React.FC = () => {
   const { t } = useTranslation('common');
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [selectedCategory, setSelectedCategory] = React.useState('all');
   const [searchQuery, setSearchQuery] = React.useState('');
   const [loading, setLoading] = React.useState(false);
@@ -434,15 +436,20 @@ const ServicesPage: React.FC = () => {
                 </div>
               </div>
 
+              {/* Hide booking CTA for signed-out users; avoid flicker during auth init */}
               <div className="flex flex-col sm:flex-row flex-wrap gap-4">
                 {/* Experiment: single vs dual CTA */}
-                {getExperimentVariant('services_hero_cta', ['single','dual']) === 'single' ? (
-                  <Button href="/book" size="lg" variant="secondary">Book Appointment</Button>
-                ) : (
-                  <>
+                {!authLoading && user ? (
+                  getExperimentVariant('services_hero_cta', ['single','dual']) === 'single' ? (
                     <Button href="/book" size="lg" variant="secondary">Book Appointment</Button>
-                    <Button href="/help" size="lg" variant="outline" className="border-white text-white hover:text-blue-900">Service Guide</Button>
-                  </>
+                  ) : (
+                    <>
+                      <Button href="/book" size="lg" variant="secondary">Book Appointment</Button>
+                      <Button href="/help" size="lg" variant="outline" className="border-white text-white hover:text-blue-900">Service Guide</Button>
+                    </>
+                  )
+                ) : (
+                  <Button href="/help" size="lg" variant="outline" className="border-white text-white hover:text-blue-900">Service Guide</Button>
                 )}
               </div>
             </div>

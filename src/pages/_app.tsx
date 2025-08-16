@@ -31,16 +31,28 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Wait for initial auth restoration to finish to avoid flicker
-    if (loading || !user) return;
+    if (loading) return;
+    // If signed out on a protected route, go home
+    const protectedPaths = ['/appointments', '/book', '/documents', '/profile'];
+    if (!user && protectedPaths.some(p => router.pathname.startsWith(p))) {
+      router.replace('/');
+      return;
+    }
+    if (!user) return;
     // Only on certain pages, avoid loops on onboarding
     const skip = router.pathname.startsWith('/onboarding') || router.pathname.startsWith('/api');
     if (skip) return;
     (async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('full_name, nic, phone')
         .eq('id', user.id)
         .maybeSingle();
+      if (error && (error.code === '42501' || error.code === 'PGRST302' || error.message?.toLowerCase().includes('permission'))) {
+        // Stale/invalid session cookie: force clear by reloading root
+        router.replace('/');
+        return;
+      }
       const incomplete = !data || !data.full_name || !data.nic || !data.phone;
       if (incomplete) {
         router.replace('/onboarding?new=1');

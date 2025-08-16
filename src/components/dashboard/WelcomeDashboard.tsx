@@ -86,12 +86,14 @@ export const WelcomeDashboard: React.FC = () => {
                 "Public service should be the birthright of every citizen"
               </p>
               <div className="flex flex-col sm:flex-row flex-wrap gap-4">
-                <Button
-                  size="lg"
-                  onClick={() => { if (!user) { setShowSignIn(true); } else { router.push('/book'); } }}
-                >
-                  Book appointment
-                </Button>
+                {user && (
+                  <Button
+                    size="lg"
+                    onClick={() => router.push('/book')}
+                  >
+                    Book appointment
+                  </Button>
+                )}
                 <Button size="lg" variant="secondary" href="/help">Service guide</Button>
                 <Button size="lg" variant="ghost" href="/contact" className="text-white hover:text-blue-900">Contact directory</Button>
               </div>
@@ -208,7 +210,7 @@ export const WelcomeDashboard: React.FC = () => {
                 <div className="mb-2 text-text-900 font-semibold">{s.title}</div>
                 <div className="text-sm text-text-600 mb-4">{s.desc}</div>
                 <div className="flex gap-3">
-                  <Button href={s.book} size="sm">Book</Button>
+                  {user && <Button href={s.book} size="sm">Book</Button>}
                   <Button href={s.guide} variant="outline" size="sm">Guide</Button>
                 </div>
               </Card>
@@ -383,10 +385,13 @@ export const WelcomeDashboard: React.FC = () => {
             <div className="bg-primary-900 text-white rounded-lg shadow-card p-6">
               <h3 className="text-h3 font-bold mb-6 font-heading">Quick Links</h3>
               <div className="space-y-3">
-                {[
-                  { title: 'Passport – One-Day', href: '/book' },
-                  { title: 'Driving Licence – Renewal', href: '/book' },
-                  { title: 'Consular Attestation', href: '/book' },
+                {[ 
+                  // Only show book links when authenticated
+                  ...(user ? [
+                    { title: 'Passport – One-Day', href: '/book' },
+                    { title: 'Driving Licence – Renewal', href: '/book' },
+                    { title: 'Consular Attestation', href: '/book' },
+                  ] : []),
                   { title: 'RG – Birth/Marriage Certificates', href: '/citizen' },
                   { title: 'Public Grievance', href: '/help' },
                   { title: 'Holiday Calendar', href: '/citizen' },

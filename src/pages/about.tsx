@@ -3,6 +3,7 @@ import { GetStaticProps } from 'next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useTranslation } from 'next-i18next';
 import { Layout } from '@/components/layout/Layout';
+import { useAuth } from '@/contexts/AuthContext';
 import { Container } from '@/components/ui/Container';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -79,7 +80,7 @@ const AboutPage: React.FC = () => {
         </div>
 
         {/* Hero Content */}
-        <Container className="relative py-16 sm:py-20 lg:py-28">
+  <Container className="relative py-16 sm:py-20 lg:py-28">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             <div>
               <div className="text-blue-200 text-xs sm:text-sm uppercase tracking-wider mb-4 font-semibold">
@@ -97,7 +98,10 @@ const AboutPage: React.FC = () => {
                 Building a more connected, efficient, and transparent Sri Lanka.
               </p>
               <div className="flex flex-col sm:flex-row flex-wrap gap-4">
-                <Button size="lg" variant="secondary" href="/book">Book Appointment</Button>
+                {/* Show booking CTA only to authenticated users */}
+                {(() => { try { return (typeof window !== 'undefined' && !!localStorage.getItem('sb-' + new URL(process.env.NEXT_PUBLIC_SUPABASE_URL || '').host + '-auth-token')); } catch { return false; } })() && (
+                  <Button size="lg" variant="secondary" href="/book">Book Appointment</Button>
+                )}
                 <Button size="lg" variant="outline" href="/contact" className="border-white text-white hover:text-blue-900">Contact Us</Button>
               </div>
             </div>

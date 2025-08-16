@@ -62,7 +62,7 @@ const SiteMapPage: React.FC<Props> = ({ lastUpdated }) => {
             <Card className="p-6">
               <h2 className="text-xl font-semibold text-text-900 mb-3">Bookings & Account</h2>
               <ul className="space-y-2">
-                <li><Link href="/book" className="text-primary-700 hover:underline">Book Appointment</Link></li>
+                {/* Booking links are available after sign-in from the header/profile menu */}
                 <li><Link href="/appointments" className="text-primary-700 hover:underline">My Appointments</Link></li>
                 <li><Link href="/documents" className="text-primary-700 hover:underline">Upload Documents</Link></li>
                 <li><Link href="/track" className="text-primary-700 hover:underline">Track Booking</Link></li>
