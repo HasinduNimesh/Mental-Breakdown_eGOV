@@ -1,5 +1,7 @@
-import Image from "next/image";
+'use client';
+
 import React from "react";
+import Image from "next/image";
 import dynamic from "next/dynamic";
 import { ThemeToggle } from "../ThemeToggle";
 import { BRAND, getDeptBrand, type DeptKey } from "../../lib/branding";
@@ -8,13 +10,20 @@ const Clock = dynamic(() => import("../Clock"), { ssr: false });
 
 interface LayoutProps {
   children: React.ReactNode;
+  /** Optional page title (shows next to the department) */
+  title?: string;
   /** Which department is in context; controls name + logo shown in the header */
   dept?: DeptKey;
   /** Show small live clock on the right (optional) */
   showClock?: boolean;
 }
 
-export function Layout({ children, dept = "general", showClock = false }: LayoutProps) {
+export function Layout({
+  children,
+  title = "Admin Dashboard",
+  dept = "general",
+  showClock = false,
+}: LayoutProps) {
   const deptMeta = getDeptBrand(dept);
   const [siteLogoError, setSiteLogoError] = React.useState(false);
 
@@ -23,7 +32,7 @@ export function Layout({ children, dept = "general", showClock = false }: Layout
       {/* Sticky header */}
       <header className="sticky top-0 z-20 border-b border-slate-200/60 dark:border-slate-800/60 bg-white/70 dark:bg-slate-900/40 backdrop-blur supports-[backdrop-filter]:backdrop-blur-md">
         <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
-          {/* LEFT: Gov crest → Department name → Department logo */}
+          {/* LEFT: Gov crest → Department name/logo → (optional) title */}
           <div className="min-w-0 flex items-center gap-3 sm:gap-4">
             <Image
               src={BRAND.govSeal}
@@ -36,12 +45,18 @@ export function Layout({ children, dept = "general", showClock = false }: Layout
 
             <div className="min-w-0">
               <div
-                className="text-sm font-semibold leading-tight truncate"
+                className="text-xs font-semibold leading-tight text-slate-700 dark:text-slate-300 truncate"
                 title={deptMeta.name}
                 aria-label="Department name"
               >
                 {deptMeta.name}
               </div>
+              <h1
+                className="text-base font-semibold bg-clip-text text-transparent bg-gradient-to-r from-sky-500 to-violet-500 truncate"
+                title={title}
+              >
+                {title}
+              </h1>
             </div>
 
             <Image
@@ -78,9 +93,7 @@ export function Layout({ children, dept = "general", showClock = false }: Layout
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl px-4 py-6">
-        {children}
-      </main>
+      <main className="mx-auto w-full max-w-6xl px-4 py-6">{children}</main>
     </div>
   );
 }

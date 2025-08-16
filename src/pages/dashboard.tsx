@@ -192,19 +192,7 @@ export default function Dashboard() {
 
   return (
     <Layout dept={dept}>
-      <Container className="py-8 space-y-8">
-        {/* Header row */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-semibold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-sky-600 to-violet-600">
-              {title}
-            </h1>
-            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-              Department-specific KPIs and quick actions.
-            </p>
-          </div>
-          
-        </div>
+      <Container className="py-8 space-y-8">   
 
         {/* Main grid: left content + right insight column */}
         <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
