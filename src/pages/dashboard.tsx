@@ -6,11 +6,11 @@ import { Layout } from '../components/layout/Layout';
 import { Container } from '../components/ui/Container';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { UserSwitcher } from "../components/debug/UserSwitcher";
+
 import {
   AppointmentTable,
   type AppointmentRow,
-  type AppointmentStatus,       // 👈 add this
+  type AppointmentStatus,       
 } from "../components/health/AppointmentTable";
 import { AppointmentDonutCard } from "../components/charts/AppointmentDonut";
 import { CalendarMonthCard, type DayCounts } from "../components/calender/CalenderMonthCard";
@@ -203,7 +203,7 @@ export default function Dashboard() {
               Department-specific KPIs and quick actions.
             </p>
           </div>
-          <UserSwitcher />
+          
         </div>
 
         {/* Main grid: left content + right insight column */}
