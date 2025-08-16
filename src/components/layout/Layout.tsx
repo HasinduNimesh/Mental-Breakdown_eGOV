@@ -3,7 +3,6 @@
 import React from "react";
 import Image from "next/image";
 import dynamic from "next/dynamic";
-import { ThemeToggle } from "../ThemeToggle";
 import { BRAND, getDeptBrand, type DeptKey } from "../../lib/branding";
 
 const Clock = dynamic(() => import("../Clock"), { ssr: false });
@@ -87,7 +86,6 @@ export function Layout({
                 onError={() => setSiteLogoError(true)}
               />
             )}
-            <ThemeToggle />
             {showClock && <Clock />}
           </div>
         </div>
