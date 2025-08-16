@@ -5,20 +5,24 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
-import { OFFICES, SERVICES, getNextAvailableDate, generateSlots, formatDateISO, BookingDraft, saveBooking, generateBookingCode, buildICS } from '@/lib/booking';
+import { OFFICES, SERVICES, getNextAvailableDate, getNextBusinessDay, generateSlots, formatDateISO, BookingDraft, saveBooking, generateBookingCode, buildICS } from '@/lib/booking';
 import { track } from '@/lib/analytics';
 import { CloudArrowUpIcon, MapPinIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
 import SignInModal from '@/components/auth/SignInModal';
 import QRCode from 'qrcode';
 import { supabase } from '@/lib/supabaseClient';
+import { useRouter } from 'next/router';
+import { listProfileDocuments, uploadProfileDocument, type ProfileDoc } from '@/lib/documents';
 
 type Step = 1 | 2 | 3 | 4 | 5;
 
 const BookPage: React.FC = () => {
+  const router = useRouter();
   const { user } = useAuth();
   const [step, setStep] = React.useState<Step>(1);
   const [serviceId, setServiceId] = React.useState(SERVICES[0].id);
+  const [serviceLocked, setServiceLocked] = React.useState<boolean>(true);
   const [officeId, setOfficeId] = React.useState(OFFICES[0].id);
   const [date, setDate] = React.useState(getNextAvailableDate());
   const [time, setTime] = React.useState('');
@@ -28,6 +32,12 @@ const BookPage: React.FC = () => {
   const [phone, setPhone] = React.useState('');
   const [altPhone, setAltPhone] = React.useState('');
   const [docs, setDocs] = React.useState<Array<{ file: File; status: 'Pending review' | 'Needs fix' | 'Pre-checked' }>>([]);
+  // Saved profile documents support
+  const [savedDocs, setSavedDocs] = React.useState<ProfileDoc[]>([]);
+  const [selectedDocIds, setSelectedDocIds] = React.useState<number[]>([]);
+  const [savedDocsLoading, setSavedDocsLoading] = React.useState(false);
+  const [savedDocsError, setSavedDocsError] = React.useState<string | null>(null);
+  const [profileUploadBusy, setProfileUploadBusy] = React.useState(false);
   const [confirmed, setConfirmed] = React.useState<BookingDraft | null>(null);
   const [uploadError, setUploadError] = React.useState<string | null>(null);
   const [showSignIn, setShowSignIn] = React.useState(false);
@@ -40,6 +50,33 @@ const BookPage: React.FC = () => {
   const afternoon = slots.filter(s => s.period === 'afternoon');
 
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  // Normalize incoming service query (?service=passport-application | passport | driving-license | license | birth-cert | birth-certificate | police-clearance)
+  function normalizeService(input?: string | string[]): string | null {
+    if (!input) return null;
+    const raw = Array.isArray(input) ? input[0] : input;
+    const key = raw.toLowerCase();
+    const map: Record<string, string> = {
+      'passport': 'passport',
+      'passport-application': 'passport',
+      'driving-license': 'license',
+      'license': 'license',
+      'birth-cert': 'birth-cert',
+      'birth-certificate': 'birth-cert',
+      'police-clearance': 'police-clearance',
+    };
+    return map[key] ?? null;
+  }
+
+  // Set initial service based on query param and lock the selector
+  React.useEffect(() => {
+    if (!router.isReady) return;
+    const fromQuery = normalizeService(router.query.service);
+    if (fromQuery && SERVICES.some(s => s.id === fromQuery)) {
+      setServiceId(fromQuery);
+      setServiceLocked(true);
+    }
+  }, [router.isReady, router.query.service]);
 
   // Prefill user details from profile when signed in
   React.useEffect(() => {
@@ -65,6 +102,26 @@ const BookPage: React.FC = () => {
     return () => { cancelled = true; };
   }, [user?.id]);
 
+  // Load saved profile documents when user is ready and when entering step 4
+  React.useEffect(() => {
+    let cancelled = false;
+    async function loadSaved() {
+      if (!user || step !== 4) return;
+      setSavedDocsLoading(true);
+      setSavedDocsError(null);
+      try {
+        const list = await listProfileDocuments();
+        if (!cancelled) setSavedDocs(list);
+      } catch (e: any) {
+        if (!cancelled) setSavedDocsError(e?.message || 'Failed to load saved documents');
+      } finally {
+        if (!cancelled) setSavedDocsLoading(false);
+      }
+    }
+    loadSaved();
+    return () => { cancelled = true; };
+  }, [user?.id, step]);
+
   function onFilesSelected(files: FileList | null) {
     if (!files) return;
     const MAX = 10 * 1024 * 1024; // 10MB
@@ -87,7 +144,26 @@ const BookPage: React.FC = () => {
     setDocs(prev => prev.filter((_, i) => i !== index));
   }
 
-  function confirm() {
+  async function onUploadToProfile(files: FileList | null) {
+    if (!files || !user) return;
+    const MAX = 10 * 1024 * 1024; // 10MB
+    const accepted = Array.from(files).slice(0, 8).filter(f => f.size <= MAX);
+    if (!accepted.length) return;
+    setProfileUploadBusy(true);
+    try {
+      for (const f of accepted) {
+        await uploadProfileDocument(f);
+      }
+      const list = await listProfileDocuments();
+      setSavedDocs(list);
+    } catch (e: any) {
+      setSavedDocsError(e?.message || 'Upload failed');
+    } finally {
+      setProfileUploadBusy(false);
+    }
+  }
+
+  async function confirm() {
     const booking: BookingDraft = {
       id: generateBookingCode(),
       serviceId,
@@ -104,6 +180,28 @@ const BookPage: React.FC = () => {
       status: 'Scheduled',
     };
     saveBooking(booking);
+    // Attach selected saved profile docs to this booking for officials
+    if (selectedDocIds.length) {
+      try {
+        const { data, error } = await supabase
+          .from('profile_documents')
+          .select('object_key, original_name, mime_type, size_bytes')
+          .in('id', selectedDocIds);
+        if (!error && data && data.length) {
+          const rows = data.map((d: any) => ({
+            booking_code: booking.id,
+            object_key: d.object_key,
+            original_name: d.original_name,
+            mime_type: d.mime_type,
+            size_bytes: d.size_bytes,
+            status: 'Pending review' as const,
+          }));
+          await supabase.from('appointment_documents').insert(rows);
+        }
+      } catch {
+        // non-blocking
+      }
+    }
   track('booking_completed', { serviceId, officeId, date: booking.dateISO, time: booking.time });
     setConfirmed(booking);
     setStep(5);
@@ -184,11 +282,17 @@ const BookPage: React.FC = () => {
             {step === 1 && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-text-900 mb-1">Service</label>
-                  <select className="w-full border border-border rounded-md px-3 py-2" value={serviceId} onChange={(e) => setServiceId(e.target.value)}>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-sm font-medium text-text-900">Service</label>
+                    <label className="inline-flex items-center gap-2 text-xs text-text-600">
+                      <input type="checkbox" checked={!serviceLocked} onChange={(e) => setServiceLocked(!e.target.checked)} />
+                      Allow changing
+                    </label>
+                  </div>
+                  <select className="w-full border border-border rounded-md px-3 py-2" value={serviceId} onChange={(e) => setServiceId(e.target.value)} disabled={serviceLocked}>
                     {SERVICES.map(s => (<option key={s.id} value={s.id}>{s.title}</option>))}
                   </select>
-                  <div className="mt-2 text-xs text-text-600">Department: {service.department}</div>
+                  <div className="mt-2 text-xs text-text-600">Department: {service.department}{serviceLocked && ' • locked from previous selection'}</div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-text-900 mb-1">Office</label>
@@ -210,8 +314,8 @@ const BookPage: React.FC = () => {
                   <div className="lg:col-span-1">
                     <div className="text-sm text-text-700 mb-2">Next available date</div>
                     <div className="flex items-center gap-2">
-                      <input type="date" className="border border-border rounded-md px-3 py-2" value={formatDateISO(date)} onChange={(e) => setDate(new Date(e.target.value))} />
-                      <Button variant="outline" onClick={() => setDate(getNextAvailableDate())}>Jump to next</Button>
+                      <input type="date" className="border border-border rounded-md px-3 py-2" value={formatDateISO(date)} onChange={(e) => { setDate(new Date(e.target.value)); setTime(''); }} />
+                      <Button variant="outline" onClick={() => { setDate(getNextBusinessDay(date)); setTime(''); }}>Jump to next</Button>
                     </div>
                     <div className="mt-2 text-xs text-text-600">Cut-off: same-day bookings close at 3:00 PM.</div>
                   </div>
@@ -285,7 +389,7 @@ const BookPage: React.FC = () => {
 
             {step === 4 && (
               <div>
-                <div className="mb-3 text-sm text-text-700">Upload the required documents for this service.</div>
+                <div className="mb-3 text-sm text-text-700">Upload the required documents for this service or choose from your saved documents.</div>
                 <div className="mb-3 flex items-start gap-2 text-xs text-text-600">
                   <InformationCircleIcon className="w-4 h-4 mt-0.5 text-text-500" aria-hidden />
                   <div>
@@ -293,14 +397,50 @@ const BookPage: React.FC = () => {
                     Examples: NIC front and back, birth certificate scan, passport photo. Make sure photos are clear, well-lit, and not cropped.
                   </div>
                 </div>
+                {/* Saved documents selector */}
+                <div className="mb-4">
+                  <div className="font-medium text-text-900 mb-2">Your saved documents</div>
+                  {savedDocsLoading ? (
+                    <div className="text-xs text-text-600">Loading…</div>
+                  ) : savedDocsError ? (
+                    <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded p-2">{savedDocsError}</div>
+                  ) : savedDocs.length === 0 ? (
+                    <div className="text-xs text-text-600">No saved documents yet. Upload below to reuse them for future bookings.</div>
+                  ) : (
+                    <ul className="space-y-2">
+                      {savedDocs.map(doc => (
+                        <li key={doc.id} className="flex items-center justify-between gap-3 border border-border rounded-md p-2 bg-white">
+                          <label className="flex items-center gap-2 text-sm text-text-800">
+                            <input
+                              type="checkbox"
+                              checked={selectedDocIds.includes(doc.id)}
+                              onChange={(e) => setSelectedDocIds(prev => e.target.checked ? [...prev, doc.id] : prev.filter(id => id !== doc.id))}
+                            />
+                            <span className="truncate max-w-[60ch]">{doc.label || doc.original_name || 'Document'}</span>
+                          </label>
+                          <span className="text-[11px] text-text-500">{doc.doc_type || 'other'} • {Math.round(((doc.size_bytes||0)/1024))} KB</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
                 {uploadError && (
                   <div className="mb-3 text-xs text-red-700 bg-red-50 border border-red-200 rounded p-2">{uploadError}</div>
                 )}
-                <label className="block border-2 border-dashed border-border rounded-md p-6 text-center cursor-pointer hover:bg-bg-50">
-                  <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" multiple onChange={(e) => onFilesSelected(e.target.files)} disabled={!user} />
-                  <CloudArrowUpIcon className="w-6 h-6 mx-auto text-text-400" aria-hidden />
-                  <div className="mt-2 text-sm">Drop files here or click to upload</div>
-                </label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <label className="block border-2 border-dashed border-border rounded-md p-6 text-center cursor-pointer hover:bg-bg-50">
+                    <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" multiple onChange={(e) => onUploadToProfile(e.target.files)} disabled={!user || profileUploadBusy} />
+                    <CloudArrowUpIcon className="w-6 h-6 mx-auto text-text-400" aria-hidden />
+                    <div className="mt-2 text-sm">Upload to your profile (reusable)</div>
+                    <div className="mt-1 text-xs text-text-600">Accepted: PDF, JPG, PNG. Max 10MB per file.</div>
+                  </label>
+                  <label className="block border-2 border-dashed border-border rounded-md p-6 text-center cursor-pointer hover:bg-bg-50">
+                    <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" multiple onChange={(e) => onFilesSelected(e.target.files)} disabled={!user} />
+                    <CloudArrowUpIcon className="w-6 h-6 mx-auto text-text-400" aria-hidden />
+                    <div className="mt-2 text-sm">Attach just for this booking</div>
+                    <div className="mt-1 text-xs text-text-600">These files won't be saved to your profile.</div>
+                  </label>
+                </div>
                 <div className="mt-3 text-xs text-text-600">
                   Status guide: <span className="font-medium">Pending review</span> (we’re checking), <span className="font-medium">Needs fix</span> (please re-upload clearer or correct file), <span className="font-medium">Pre-checked</span> (looks good).
                 </div>
@@ -323,7 +463,7 @@ const BookPage: React.FC = () => {
                 </ul>
                 <div className="mt-4 flex items-center gap-3">
                   <Button onClick={() => setStep(3)} variant="outline">Back</Button>
-                  <Button onClick={proceedToReview} disabled={!user || docs.length === 0}>Review & confirm</Button>
+                  <Button onClick={proceedToReview} disabled={!user || (docs.length === 0 && selectedDocIds.length === 0)}>Review & confirm</Button>
                 </div>
               </div>
             )}

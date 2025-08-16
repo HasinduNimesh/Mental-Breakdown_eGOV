@@ -26,6 +26,16 @@ export function getNextAvailableDate(from = new Date()): Date {
   return d;
 }
 
+// Get the next business day after the provided date (always moves forward at least one day).
+export function getNextBusinessDay(from: Date): Date {
+  const d = new Date(from);
+  d.setDate(d.getDate() + 1);
+  // Skip Sunday (0)
+  while (d.getDay() === 0) d.setDate(d.getDate() + 1);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
 export function generateSlots(date: Date): TimeSlot[] {
   // simple deterministic availability hash by date
   const seed = date.getDate() + date.getMonth();

@@ -41,7 +41,7 @@ const ServiceDetailPage: React.FC<Props> = ({ service }) => {
       {/* Hero/Above the fold */}
       <section className="relative overflow-hidden bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 text-white">
         <Container className="relative py-12 sm:py-16">
-          <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'Services', href: '/services' }, { label: service.title }]} />
+          <Breadcrumbs tone="light" items={[{ label: 'Home', href: '/' }, { label: 'Services', href: '/services' }, { label: service.title }]} />
           <div className="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
             <div className="lg:col-span-2">
               <div className="flex items-start gap-4">
