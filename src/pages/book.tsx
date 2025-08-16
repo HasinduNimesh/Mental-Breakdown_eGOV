@@ -11,6 +11,7 @@ import { CloudArrowUpIcon, MapPinIcon, InformationCircleIcon } from '@heroicons/
 import { useAuth } from '@/contexts/AuthContext';
 import SignInModal from '@/components/auth/SignInModal';
 import QRCode from 'qrcode';
+import { supabase } from '@/lib/supabaseClient';
 
 type Step = 1 | 2 | 3 | 4 | 5;
 
@@ -25,6 +26,7 @@ const BookPage: React.FC = () => {
   const [nic, setNic] = React.useState('');
   const [email, setEmail] = React.useState('');
   const [phone, setPhone] = React.useState('');
+  const [altPhone, setAltPhone] = React.useState('');
   const [docs, setDocs] = React.useState<Array<{ file: File; status: 'Pending review' | 'Needs fix' | 'Pre-checked' }>>([]);
   const [confirmed, setConfirmed] = React.useState<BookingDraft | null>(null);
   const [uploadError, setUploadError] = React.useState<string | null>(null);
@@ -38,6 +40,30 @@ const BookPage: React.FC = () => {
   const afternoon = slots.filter(s => s.period === 'afternoon');
 
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  // Prefill user details from profile when signed in
+  React.useEffect(() => {
+    let cancelled = false;
+    async function loadProfile() {
+      if (!user) return;
+      try {
+        setEmail(user.email ?? '');
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('full_name, nic, phone')
+          .eq('id', user.id)
+          .single();
+        if (error) return;
+        if (!cancelled && data) {
+          if (data.full_name && !fullName) setFullName(data.full_name);
+          if (data.nic && !nic) setNic(String(data.nic));
+          if (data.phone && !phone) setPhone(String(data.phone));
+        }
+      } catch {}
+    }
+    loadProfile();
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   function onFilesSelected(files: FileList | null) {
     if (!files) return;
@@ -71,7 +97,8 @@ const BookPage: React.FC = () => {
       fullName,
       nic,
       email,
-      phone,
+  phone,
+  altPhone: altPhone || undefined,
       documents: docs.map(d => ({ name: d.file.name, size: d.file.size, status: d.status })),
       createdAt: Date.now(),
       status: 'Scheduled',
@@ -244,6 +271,11 @@ const BookPage: React.FC = () => {
                   <input className="w-full border border-border rounded-md px-3 py-2" value={phone} onChange={(e) => setPhone(e.target.value)} disabled={!user} />
                   <p className="mt-1 text-xs text-text-600">Use a number we can reach you on if we need more info.</p>
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-text-900 mb-1">Alternate phone (optional)</label>
+                  <input className="w-full border border-border rounded-md px-3 py-2" value={altPhone} onChange={(e) => setAltPhone(e.target.value)} disabled={!user} />
+                  <p className="mt-1 text-xs text-text-600">Provide another number if you prefer to be contacted differently.</p>
+                </div>
                 <div className="md:col-span-2 flex items-center gap-3">
                   <Button onClick={() => setStep(2)} variant="outline">Back</Button>
                   <Button onClick={() => { if (!user) { setShowSignIn(true); return; } setStep(4); }} disabled={!user || !fullName || !nic || !email || !phone}>Upload documents</Button>
@@ -305,7 +337,7 @@ const BookPage: React.FC = () => {
                     <div className="text-sm text-text-700">Department: {service.department}</div>
                     <div className="text-sm text-text-700">Office: {office.name}, {office.city}</div>
                     <div className="text-sm text-text-700">Date & time: {formatDateISO(date)} at {time} ({tz})</div>
-                    <div className="text-sm text-text-700">Your details: {fullName} • {nic} • {email} • {phone}</div>
+                    <div className="text-sm text-text-700">Your details: {fullName} • {nic} • {email} • {phone}{altPhone ? ` • Alt: ${altPhone}` : ''}</div>
                   </Card>
                   <Card className="p-4">
                     <div className="font-semibold text-text-900 mb-2">Reschedule and cancel policy</div>

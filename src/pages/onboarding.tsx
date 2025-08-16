@@ -1,9 +1,12 @@
 import React from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
+import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
+import { Container } from '@/components/ui/Container';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
+import { CameraIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 
 type Step = 1 | 2 | 3;
 
@@ -30,6 +33,7 @@ export default function OnboardingPage() {
   const [capturing, setCapturing] = React.useState(false);
   const videoRef = React.useRef<HTMLVideoElement | null>(null);
   const streamRef = React.useRef<MediaStream | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const [secureOk, setSecureOk] = React.useState(true);
   const [cams, setCams] = React.useState<MediaDeviceInfo[]>([]);
   const [selectedCamId, setSelectedCamId] = React.useState<string>('');
@@ -276,174 +280,428 @@ export default function OnboardingPage() {
 
   return (
     <>
-      <Head><title>Complete your profile</title></Head>
-      <div className="min-h-screen bg-bg-100 flex items-center justify-center p-4">
-        <div className="w-full max-w-2xl bg-white border border-border rounded-lg p-5 shadow-card">
-          <header className="mb-4">
-            <h1 className="text-xl font-semibold">{isNew ? 'Create your account' : 'Complete your profile'}</h1>
-            <p className="text-sm text-text-600">Required fields are marked with *</p>
-          </header>
-
-          {/* Step indicator */}
-          <ol className="flex items-center gap-2 mb-5" aria-label="Progress">
-            {['Basic details', 'Account & photo', 'Review'].map((label, i) => {
-              const idx = (i + 1) as Step;
-              const active = idx === step;
-              const done = idx < step;
-              return (
-                <li key={label} className="flex-1">
-                  <div className={`flex items-center gap-2 ${active ? 'text-primary-700' : done ? 'text-green-700' : 'text-text-500'}`}>
-                    <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-semibold border ${active ? 'bg-primary-50 border-primary-200' : done ? 'bg-green-50 border-green-200' : 'bg-bg-100 border-border'}`}>{i + 1}</span>
-                    <span className="text-xs sm:text-sm">{label}</span>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
-
-          {/* Steps */}
-          {step === 1 && (
-            <section>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium mb-1">Full name *</label>
-                  <input className="w-full border border-border rounded-md px-3 py-2" value={fullName} onChange={(e) => setFullName(e.target.value)} />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">NIC *</label>
-                  <input className={`w-full border rounded-md px-3 py-2 ${nic && !isValidNIC(nic) ? 'border-red-300' : 'border-border'}`} value={nic} onChange={(e) => setNic(e.target.value)} placeholder="12 digits or 9 digits + V/X" />
-                  {nic && !isValidNIC(nic) && <p className="text-xs text-red-600 mt-1">Invalid NIC format</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Phone (for reminders) *</label>
-                  <input className={`w-full border rounded-md px-3 py-2 ${phone && !isValidPhone(phone) ? 'border-red-300' : 'border-border'}`} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="07XXXXXXXX" inputMode="tel" />
-                  {phone && !isValidPhone(phone) && <p className="text-xs text-red-600 mt-1">Enter a 10-digit mobile starting with 07</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Date of birth *</label>
-                  <input type="date" className={`w-full border rounded-md px-3 py-2 ${!isValidDOB(dob) || !isAdult(dob) ? 'border-red-300' : 'border-border'}`} value={dob} onChange={(e) => setDob(e.target.value)} />
-                  {!isAdult(dob) && <p className="text-xs text-red-600 mt-1">You must be at least 16 years old</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Preferred language *</label>
-                  <select className="w-full border border-border rounded-md px-3 py-2" value={preferredLanguage} onChange={(e) => setPreferredLanguage(e.target.value)}>
-                    <option value="en">English</option>
-                    <option value="si">සිංහල</option>
-                    <option value="ta">தமிழ்</option>
-                  </select>
-                </div>
+      <Head>
+        <title>Complete Profile - Sri Lanka Citizen Services</title>
+        <meta name="description" content="Complete your profile to access Sri Lankan government services online" />
+      </Head>
+      
+      {/* Header with branding */}
+      <div className="bg-white border-b border-border">
+        <Container className="max-w-[1200px] px-6">
+          <div className="flex items-center justify-between h-16">
+            <Link href="/" className="flex items-center gap-3">
+              <img src="/logo.svg" alt="Sri Lanka Coat of Arms" className="h-9 w-auto" />
+              <div className="leading-tight">
+                <div className="text-[14px] font-semibold text-[#163B8F]">Government of Sri Lanka</div>
+                <div className="text-[12px] font-medium text-[#4B5563]">Citizen Services Portal</div>
               </div>
-              {error && <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded p-2 mt-3">{error}</div>}
-              <div className="flex justify-end gap-2 mt-4">
-                <Button onClick={next} disabled={!step1Valid}>Continue</Button>
+            </Link>
+            <div className="text-sm text-text-600">
+              Step {step} of 3
+            </div>
+          </div>
+        </Container>
+      </div>
+
+      {/* Main content */}
+      <div className="min-h-screen bg-bg-100">
+        <Container className="max-w-3xl py-8 sm:py-12">
+          <div className="bg-white border border-border rounded-lg shadow-card overflow-hidden">
+            {/* Header section */}
+            <div className="bg-gradient-to-r from-blue-900 to-blue-800 text-white p-6 sm:p-8">
+              <div className="mb-4">
+                <h1 className="text-xl sm:text-2xl font-bold">
+                  {isNew ? 'Welcome to Citizen Services' : 'Complete Your Profile'}
+                </h1>
+                <p className="text-blue-100 text-sm">
+                  {isNew ? 'Let\'s set up your account to access government services' : 'Update your profile information'}
+                </p>
               </div>
-            </section>
-          )}
-
-          {step === 2 && (
-            <section>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium mb-1">Email</label>
-                  <input className="w-full border border-border rounded-md px-3 py-2 bg-bg-100 text-text-600" value={email} readOnly disabled placeholder="you@example.com" />
-                  <p className="text-[11px] text-text-500 mt-1">Email is set from your sign-in and cannot be changed here.</p>
-                </div>
+              
+              {/* Progress indicator */}
+              <div className="flex items-center gap-4 text-sm">
+                {['Basic Details', 'Verification', 'Review'].map((label, i) => {
+                  const idx = (i + 1) as Step;
+                  const active = idx === step;
+                  const done = idx < step;
+                  return (
+                    <React.Fragment key={label}>
+                      <div className={`flex items-center gap-2 ${active ? 'text-white' : done ? 'text-blue-200' : 'text-blue-300'}`}>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
+                          active ? 'bg-white text-blue-900' : done ? 'bg-blue-600' : 'bg-blue-700'
+                        }`}>
+                          {done ? <CheckCircleIcon className="w-4 h-4" /> : idx}
+                        </div>
+                        <span className="hidden sm:inline">{label}</span>
+                      </div>
+                      {i < 2 && <div className="flex-1 h-px bg-blue-700 min-w-8"></div>}
+                    </React.Fragment>
+                  );
+                })}
               </div>
+            </div>
 
-              {/* Verification photo */}
-              <div className="mt-5 border-t border-border pt-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-sm font-semibold">Verification photo (optional)</h2>
-                  {photoPreview && (
-                    <button className="text-xs text-red-600 hover:underline" onClick={() => { setPhotoFile(null); if (photoPreview) URL.revokeObjectURL(photoPreview); setPhotoPreview(null); }}>Remove</button>
-                  )}
-                </div>
-                {photoPreview ? (
-                  <div className="flex items-center gap-3">
-                    <img src={photoPreview} alt="Selected profile" className="w-24 h-24 object-cover rounded-md border border-border" />
-                    <div className="flex gap-2">
-                      <Button variant="outline" onClick={() => setPhotoPreview(photoPreview)}>Preview</Button>
-                      <label className="inline-flex">
-                        <input type="file" accept="image/*" className="hidden" onChange={onFileSelect} />
-                        <span className="btn inline-flex items-center justify-center h-9 px-3 rounded-md border border-border text-sm">Choose different</span>
-                      </label>
-                    </div>
+            {/* Form content */}
+            <div className="p-6 sm:p-8">
+              {step === 1 && (
+                <div className="space-y-6">
+                  <div className="mb-6">
+                    <h2 className="text-lg font-semibold text-text-900 mb-2">Personal Information</h2>
+                    <p className="text-sm text-text-600">Please provide your basic details. Required fields are marked with *</p>
                   </div>
-                ) : (
-                  <div className="flex flex-wrap items-center gap-3">
-                    <label className="inline-flex">
-                      <input type="file" accept="image/*" capture="user" className="hidden" onChange={onFileSelect} />
-                      <span className="btn inline-flex items-center justify-center h-9 px-3 rounded-md border border-border text-sm">Upload image</span>
-                    </label>
-                    <Button variant="outline" onClick={startCamera}>Take a photo</Button>
-                    {cams.length > 1 && (
-                      <select
-                        className="h-9 border border-border rounded-md text-sm px-2"
-                        value={selectedCamId}
-                        onChange={(e) => { setSelectedCamId(e.target.value); startCamera(); }}
-                        title="Select camera"
-                      >
-                        {cams.map((c, idx) => (
-                          <option key={c.deviceId || idx} value={c.deviceId}>{c.label || `Camera ${idx + 1}`}</option>
-                        ))}
-                      </select>
-                    )}
-                  </div>
-                )}
 
-                {capturing && (
-                  <div className="mt-3">
-                    <div className="relative w-full max-w-sm aspect-video bg-black rounded-md overflow-hidden">
-                      <video ref={videoRef} className="w-full h-full object-cover" playsInline muted />
+                  <div className="grid gap-6 sm:grid-cols-2">
+                    <div className="sm:col-span-2">
+                      <label className="block text-sm font-medium text-text-700 mb-2">Full name *</label>
+                      <input
+                        type="text"
+                        className="w-full border border-border rounded-md px-3 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        placeholder="Enter your full name as per NIC"
+                        value={fullName}
+                        onChange={e => setFullName(e.target.value)}
+                        required
+                      />
                     </div>
-                    <div className="flex gap-2 mt-2">
-                      <Button onClick={captureSnapshot}>Capture</Button>
-                      <Button variant="outline" onClick={stopCamera}>Cancel</Button>
-                    </div>
-                  </div>
-                )}
-                <p className="text-[11px] text-text-500 mt-2">Max 5MB. Face clearly visible. Avoid backlight.</p>
-                {!secureOk && <p className="text-xs text-red-600 mt-2">Tip: Use HTTPS or http://localhost for camera access.</p>}
-                {permState === 'denied' && (
-                  <div className="text-xs text-red-600 mt-1">
-                    <p>Camera permission is blocked. Enable camera for this site in your browser settings and try again.</p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Button size="sm" variant="outline" onClick={startCamera}>Try again</Button>
-                      {settingsUrl && (
-                        <a href={settingsUrl} target="_blank" rel="noreferrer" className="underline text-red-700">Open camera settings</a>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-text-700 mb-2">NIC number *</label>
+                      <input
+                        type="text"
+                        className={`w-full border rounded-md px-3 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${nic && !isValidNIC(nic) ? 'border-red-300' : 'border-border'}`}
+                        placeholder="200012345678 or 200012345V"
+                        value={nic}
+                        onChange={e => setNic(e.target.value)}
+                        required
+                      />
+                      {nic && !isValidNIC(nic) && (
+                        <p className="text-xs text-red-600 mt-1">Please enter a valid NIC (12 digits or 9 digits + V/X)</p>
                       )}
                     </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-text-700 mb-2">Phone (for reminders) *</label>
+                      <input
+                        type="tel"
+                        inputMode="tel"
+                        className={`w-full border rounded-md px-3 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${phone && !isValidPhone(phone) ? 'border-red-300' : 'border-border'}`}
+                        placeholder="07XXXXXXXX"
+                        value={phone}
+                        onChange={e => setPhone(e.target.value)}
+                        required
+                      />
+                      {phone && !isValidPhone(phone) && (
+                        <p className="text-xs text-red-600 mt-1">Enter a 10-digit mobile starting with 07</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-text-700 mb-2">Date of birth *</label>
+                      <input
+                        type="date"
+                        className={`w-full border rounded-md px-3 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${!isValidDOB(dob) || !isAdult(dob) ? 'border-red-300' : 'border-border'}`}
+                        value={dob}
+                        onChange={e => setDob(e.target.value)}
+                        required
+                      />
+                      {!isAdult(dob) && (
+                        <p className="text-xs text-red-600 mt-1">You must be at least 16 years old</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-text-700 mb-2">Preferred language *</label>
+                      <select
+                        className="w-full border border-border rounded-md px-3 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        value={preferredLanguage}
+                        onChange={e => setPreferredLanguage(e.target.value)}
+                      >
+                        <option value="en">English</option>
+                        <option value="si">සිංහල</option>
+                        <option value="ta">தமிழ்</option>
+                      </select>
+                    </div>
                   </div>
-                )}
-              </div>
-              {error && <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded p-2 mt-3">{error}</div>}
-              <div className="flex justify-between gap-2 mt-4">
-                <Button variant="outline" onClick={back}>Back</Button>
-                <Button onClick={next} disabled={!step2Valid}>Continue</Button>
-              </div>
-            </section>
-          )}
-
-          {step === 3 && (
-            <section>
-              <div className="border border-border rounded-md p-3 text-sm">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div><span className="text-text-500">Full name</span><div className="font-medium">{fullName || '-'}</div></div>
-                  <div><span className="text-text-500">NIC</span><div className="font-medium">{nicNorm(nic) || '-'}</div></div>
-                  <div><span className="text-text-500">Phone</span><div className="font-medium">{phoneNorm(phone) || '-'}</div></div>
-                  <div><span className="text-text-500">Preferred language</span><div className="font-medium">{preferredLanguage.toUpperCase()}</div></div>
-                  <div><span className="text-text-500">Email</span><div className="font-medium">{email || '-'}</div></div>
-                  <div><span className="text-text-500">Date of birth</span><div className="font-medium">{dob || '-'}</div></div>
+                  
+                  {error && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                      <p className="text-sm text-red-700">{error}</p>
+                    </div>
+                  )}
+                  
+                  <div className="flex justify-end">
+                    <Button onClick={next} disabled={!step1Valid} className="px-8">
+                      Continue to verification
+                    </Button>
+                  </div>
                 </div>
-              </div>
-              {error && <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded p-2 mt-3">{error}</div>}
-              <div className="flex justify-between gap-2 mt-4">
-                <Button variant="outline" onClick={back}>Back</Button>
-                <Button onClick={submit} disabled={loading}>{loading ? 'Saving…' : 'Save & continue'}</Button>
-              </div>
-            </section>
-          )}
-        </div>
+              )}
+
+              {step === 2 && (
+                <div className="space-y-6">
+                  <div className="mb-6">
+                    <h2 className="text-lg font-semibold text-text-900 mb-2">Account Verification</h2>
+                    <p className="text-sm text-text-600">Verify your email and optionally add a profile photo for enhanced security</p>
+                  </div>
+
+                  {/* Email verification */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex gap-3">
+                      <CheckCircleIcon className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <h3 className="font-medium text-blue-900 mb-1">Email Verified</h3>
+                        <p className="text-sm text-blue-700 mb-2">Your email <span className="font-medium">{email}</span> has been verified</p>
+                        <p className="text-xs text-blue-600">This email will be used for service notifications and account recovery</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Profile photo section */}
+                  <div className="border border-border rounded-lg p-6">
+                    {/* shared hidden input for uploads */}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      capture="user"
+                      className="hidden"
+                      onChange={onFileSelect}
+                    />
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                          <CameraIcon className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-text-900">Profile Photo</h3>
+                          <p className="text-sm text-text-600">Optional verification photo</p>
+                        </div>
+                      </div>
+                      {photoPreview && (
+                        <button 
+                          className="text-sm text-red-600 hover:text-red-700 hover:underline" 
+                          onClick={() => { 
+                            setPhotoFile(null); 
+                            if (photoPreview) URL.revokeObjectURL(photoPreview); 
+                            setPhotoPreview(null); 
+                          }}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+
+                    {photoPreview ? (
+                      <div className="flex flex-col sm:flex-row items-start gap-4">
+                        <img src={photoPreview} alt="Selected profile" className="w-32 h-32 object-cover rounded-lg border border-border" />
+                        <div className="space-y-3">
+                          <p className="text-sm text-text-600">Photo uploaded successfully</p>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => fileInputRef.current?.click()}
+                            >
+                              Choose different
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={startCamera}>
+                              Take new photo
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 border-2 border-dashed border-border rounded-lg">
+                        <CameraIcon className="w-12 h-12 text-text-400 mx-auto mb-3" />
+                        <h4 className="font-medium text-text-900 mb-2">Add a verification photo</h4>
+                        <p className="text-sm text-text-600 mb-4">This helps us verify your identity for enhanced security</p>
+                        <div className="flex flex-wrap items-center justify-center gap-3">
+                          <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+                            Upload from device
+                          </Button>
+                          <Button variant="outline" onClick={startCamera}>
+                            Take photo
+                          </Button>
+                        </div>
+                        {cams.length > 1 && (
+                          <div className="mt-3">
+                            <select
+                              className="border border-border rounded-md text-sm px-3 py-2"
+                              value={selectedCamId}
+                              onChange={(e) => { setSelectedCamId(e.target.value); startCamera(); }}
+                              title="Select camera"
+                            >
+                              <option value="">Default camera</option>
+                              {cams.map((c, idx) => (
+                                <option key={c.deviceId || idx} value={c.deviceId}>
+                                  {c.label || `Camera ${idx + 1}`}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {capturing && (
+                      <div className="mt-4 p-4 bg-bg-50 rounded-lg">
+                        <div className="flex flex-col items-center">
+                          <div className="relative w-full max-w-xs aspect-video bg-black rounded-lg overflow-hidden mb-3">
+                            <video ref={videoRef} className="w-full h-full object-cover" playsInline muted />
+                          </div>
+                          <div className="flex gap-3">
+                            <Button onClick={captureSnapshot}>Capture Photo</Button>
+                            <Button variant="outline" onClick={stopCamera}>Cancel</Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="mt-4 text-xs text-text-500">
+                      <p>• Maximum file size: 5MB</p>
+                      <p>• Ensure your face is clearly visible</p>
+                      <p>• Avoid backlighting or shadows</p>
+                    </div>
+
+                    {!secureOk && (
+                      <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-md">
+                        <p className="text-sm text-amber-700">Camera requires HTTPS or localhost for security</p>
+                      </div>
+                    )}
+
+                    {permState === 'denied' && (
+                      <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
+                        <p className="text-sm text-red-700 mb-2">Camera permission is blocked. Please enable camera access in your browser settings.</p>
+                        <div className="flex flex-wrap gap-2">
+                          <Button size="sm" variant="outline" onClick={startCamera}>Try again</Button>
+                          {settingsUrl && (
+                            <a 
+                              href={settingsUrl} 
+                              target="_blank" 
+                              rel="noreferrer" 
+                              className="text-sm text-red-600 hover:text-red-700 underline"
+                            >
+                              Open camera settings
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {error && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                      <p className="text-sm text-red-700">{error}</p>
+                    </div>
+                  )}
+                  
+                  <div className="flex justify-between">
+                    <Button variant="outline" onClick={back} className="px-8">
+                      Back
+                    </Button>
+                    <Button onClick={next} disabled={!step2Valid} className="px-8">
+                      Continue to review
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {step === 3 && (
+                <div className="space-y-6">
+                  <div className="mb-6">
+                    <h2 className="text-lg font-semibold text-text-900 mb-2">Review Your Information</h2>
+                    <p className="text-sm text-text-600">Please review your details before completing registration</p>
+                  </div>
+
+                  <div className="border border-border rounded-lg p-6">
+                    <h3 className="font-medium text-text-900 mb-4">Personal Details</h3>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-1">
+                        <span className="text-sm text-text-500">Full name</span>
+                        <div className="font-medium text-text-900">{fullName || '-'}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-sm text-text-500">NIC number</span>
+                        <div className="font-medium text-text-900">{nicNorm(nic) || '-'}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-sm text-text-500">Date of birth</span>
+                        <div className="font-medium text-text-900">{dob || '-'}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-sm text-text-500">Phone number</span>
+                        <div className="font-medium text-text-900">{phoneNorm(phone) || '-'}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-sm text-text-500">Email address</span>
+                        <div className="font-medium text-text-900">{email || '-'}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-sm text-text-500">Preferred language</span>
+                        <div className="font-medium text-text-900">
+                          {preferredLanguage === 'en' ? 'English' : 
+                           preferredLanguage === 'si' ? 'සිංහල' : 
+                           preferredLanguage === 'ta' ? 'தமிழ்' : preferredLanguage.toUpperCase()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {photoPreview && (
+                    <div className="border border-border rounded-lg p-6">
+                      <h3 className="font-medium text-text-900 mb-4">Profile Photo</h3>
+                      <div className="flex items-center gap-4">
+                        <img src={photoPreview} alt="Profile preview" className="w-20 h-20 object-cover rounded-lg border border-border" />
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium text-text-900">Verification photo uploaded</p>
+                          <p className="text-sm text-text-600">This photo will help verify your identity</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex gap-3">
+                      <CheckCircleIcon className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <div className="text-sm">
+                        <p className="font-medium text-blue-900 mb-1">Ready to Complete Registration</p>
+                        <p className="text-blue-700">
+                          By continuing, you agree to create your citizen services account with the information provided. 
+                          You can update most details later from your profile settings.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {error && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                      <p className="text-sm text-red-700">{error}</p>
+                    </div>
+                  )}
+                  
+                  <div className="flex justify-between">
+                    <Button variant="outline" onClick={back} className="px-8">
+                      Back to edit
+                    </Button>
+                    <Button onClick={submit} disabled={loading} className="px-8">
+                      {loading ? 'Creating account...' : 'Complete registration'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Footer links */}
+          <div className="mt-8 text-center">
+            <div className="flex items-center justify-center gap-6 text-sm text-text-600">
+              <Link href="/help" className="hover:text-primary-700">Help Center</Link>
+              <span>•</span>
+              <Link href="/contact" className="hover:text-primary-700">Contact Support</Link>
+              <span>•</span>
+              <Link href="/privacy" className="hover:text-primary-700">Privacy Policy</Link>
+            </div>
+          </div>
+        </Container>
       </div>
     </>
   );

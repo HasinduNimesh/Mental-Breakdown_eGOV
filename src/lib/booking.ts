@@ -54,6 +54,7 @@ export type BookingDraft = {
   nic: string;
   email: string;
   phone: string;
+  altPhone?: string;
   documents: Array<{ name: string; size: number; status: 'Pending review' | 'Needs fix' | 'Pre-checked' }>;
   createdAt: number;
   status: 'Scheduled' | 'Checked-in' | 'Completed' | 'Cancelled';

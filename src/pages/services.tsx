@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { track, getExperimentVariant } from '@/lib/analytics';
+import { fetchServices, ServiceRow } from '@/lib/servicesApi';
 import {
   DocumentTextIcon,
   UserIcon,
@@ -29,7 +30,6 @@ import {
   FunnelIcon,
   StarIcon,
 } from '@heroicons/react/24/outline';
-
 interface Service {
   id: string;
   title: string;
@@ -40,7 +40,6 @@ interface Service {
   processingTime: string;
   fee: string;
   popularity: 'high' | 'medium' | 'low';
-  icon: React.ElementType;
   href: string;
   isOnline: boolean;
   requirements: string[];
@@ -48,7 +47,9 @@ interface Service {
   updatedAt: string; // ISO date string for "Recently updated"
 }
 
-const ServicesPage: React.FC = () => {
+type Props = { initialServices: Service[] };
+
+const ServicesPage: React.FC<Props> = ({ initialServices }) => {
   const { t } = useTranslation('common');
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -66,6 +67,7 @@ const ServicesPage: React.FC = () => {
   const [filterTime, setFilterTime] = React.useState<string[]>([]);
   const [filterDepartments, setFilterDepartments] = React.useState<string[]>([]);
   const [filterLocations, setFilterLocations] = React.useState<string[]>([]);
+  const searchRef = React.useRef<HTMLInputElement>(null);
 
   // Sync incoming ?query from header search deep links
   React.useEffect(() => {
@@ -93,216 +95,21 @@ const ServicesPage: React.FC = () => {
     { id: 'health', name: 'Health & Social', count: 2, icon: HeartIcon },
   ];
 
-  const services: Service[] = [
-    // Documents & Certificates
-    {
-      id: 'passport-application',
-      title: 'Passport Application',
-      description: 'Apply for new passport or renew existing passport with expedited processing options.',
-      category: 'immigration',
-  department: 'Department of Immigration & Emigration',
-  location: 'Colombo',
-      processingTime: '7-14 days',
-      fee: 'LKR 3,500 - 9,000',
-      popularity: 'high',
-      icon: DocumentTextIcon,
-      href: '/book?service=passport',
-      isOnline: true,
-      requirements: ['National ID', 'Birth Certificate', 'Photographs', 'Application Form'],
-  nextAvailableDays: 2,
-  updatedAt: '2025-07-30',
-    },
-    {
-      id: 'driving-license',
-      title: 'Driving License Services',
-      description: 'Apply for new driving license, renewal, duplicate, or international driving permit.',
-      category: 'transport',
-  department: 'Department of Motor Traffic',
-  location: 'Werahera',
-      processingTime: '1-3 days',
-      fee: 'LKR 500 - 2,500',
-      popularity: 'high',
-      icon: TruckIcon,
-      href: '/book?service=license',
-      isOnline: true,
-      requirements: ['Medical Certificate', 'National ID', 'Previous License (for renewal)'],
-  nextAvailableDays: 1,
-  updatedAt: '2025-07-28',
-    },
-    {
-      id: 'birth-certificate',
-      title: 'Birth Certificate',
-      description: 'Obtain certified copies of birth certificates for official purposes.',
-      category: 'documents',
-  department: 'Registrar General Department',
-  location: 'Nationwide',
-      processingTime: '2-5 days',
-      fee: 'LKR 100 - 500',
-      popularity: 'high',
-      icon: DocumentTextIcon,
-      href: '/book?service=birth-cert',
-      isOnline: true,
-      requirements: ['Application Form', 'Parent\'s ID', 'Hospital Records'],
-  nextAvailableDays: 3,
-  updatedAt: '2025-07-20',
-    },
-    {
-      id: 'marriage-certificate',
-      title: 'Marriage Certificate',
-      description: 'Register marriage and obtain certified marriage certificates.',
-      category: 'documents',
-  department: 'Registrar General Department',
-  location: 'Nationwide',
-      processingTime: '1-3 days',
-      fee: 'LKR 100 - 500',
-      popularity: 'medium',
-      icon: DocumentTextIcon,
-      href: '/book?service=marriage-cert',
-      isOnline: true,
-      requirements: ['Marriage Registration', 'Both Parties\' ID', 'Witnesses\' Details'],
-  nextAvailableDays: 4,
-  updatedAt: '2025-07-15',
-    },
-    {
-      id: 'police-clearance',
-      title: 'Police Clearance Certificate',
-      description: 'Obtain police clearance certificate for employment, visa, or immigration purposes.',
-      category: 'documents',
-  department: 'Sri Lanka Police',
-  location: 'Colombo',
-      processingTime: '7-14 days',
-      fee: 'LKR 500 - 1,000',
-      popularity: 'high',
-      icon: ShieldCheckIcon,
-      href: '/book?service=police-clearance',
-      isOnline: true,
-      requirements: ['National ID', 'Fingerprints', 'Purpose Declaration', 'Application Form'],
-  nextAvailableDays: 5,
-  updatedAt: '2025-07-22',
-    },
-    {
-      id: 'vehicle-registration',
-      title: 'Vehicle Registration',
-      description: 'Register new vehicles, transfer ownership, or update registration details.',
-      category: 'transport',
-  department: 'Department of Motor Traffic',
-  location: 'Nationwide',
-      processingTime: '3-7 days',
-      fee: 'LKR 1,000 - 15,000',
-      popularity: 'medium',
-      icon: TruckIcon,
-      href: '/book?service=vehicle-reg',
-      isOnline: true,
-      requirements: ['Import Permit', 'Insurance', 'Revenue License', 'Technical Inspection'],
-  nextAvailableDays: 6,
-  updatedAt: '2025-07-10',
-    },
-    {
-      id: 'business-registration',
-      title: 'Business Registration',
-      description: 'Register new business, company incorporation, or business name reservation.',
-      category: 'business',
-  department: 'Registrar of Companies',
-  location: 'Colombo',
-      processingTime: '5-10 days',
-      fee: 'LKR 2,000 - 25,000',
-      popularity: 'medium',
-      icon: BuildingOfficeIcon,
-      href: '/book?service=business-reg',
-      isOnline: true,
-      requirements: ['Business Plan', 'Director Details', 'Registered Address', 'Articles of Association'],
-  nextAvailableDays: 7,
-  updatedAt: '2025-07-26',
-    },
-    {
-      id: 'consular-services',
-      title: 'Consular Services',
-      description: 'Document attestation, visa assistance, and consular support services.',
-      category: 'immigration',
-  department: 'Ministry of Foreign Affairs',
-  location: 'Colombo',
-      processingTime: '3-7 days',
-      fee: 'LKR 1,500 - 5,000',
-      popularity: 'medium',
-      icon: GlobeAltIcon,
-      href: '/book?service=consular',
-      isOnline: true,
-      requirements: ['Original Documents', 'Application Form', 'Purpose Declaration'],
-  nextAvailableDays: 2,
-  updatedAt: '2025-07-18',
-    },
-    {
-      id: 'education-certificates',
-      title: 'Education Certificates',
-      description: 'Verification and certification of educational qualifications and transcripts.',
-      category: 'education',
-  department: 'Ministry of Education',
-  location: 'Nationwide',
-      processingTime: '5-10 days',
-      fee: 'LKR 200 - 1,000',
-      popularity: 'medium',
-      icon: AcademicCapIcon,
-      href: '/book?service=education-cert',
-      isOnline: true,
-      requirements: ['Original Certificates', 'Application Form', 'Student ID'],
-  nextAvailableDays: 9,
-  updatedAt: '2025-07-12',
-    },
-    {
-      id: 'health-services',
-      title: 'Health Services',
-      description: 'Medical certificates, vaccination records, and health department services.',
-      category: 'health',
-  department: 'Ministry of Health',
-  location: 'Nationwide',
-      processingTime: '1-3 days',
-      fee: 'LKR 100 - 2,000',
-      popularity: 'low',
-      icon: HeartIcon,
-      href: '/book?service=health',
-      isOnline: true,
-      requirements: ['Medical Records', 'National ID', 'Doctor\'s Recommendation'],
-  nextAvailableDays: 8,
-  updatedAt: '2025-07-08',
-    },
-    {
-      id: 'tax-services',
-      title: 'Tax & Revenue Services',
-      description: 'Tax registration, clearance certificates, and revenue department services.',
-      category: 'business',
-  department: 'Department of Inland Revenue',
-  location: 'Colombo',
-      processingTime: '3-7 days',
-      fee: 'LKR 500 - 2,000',
-      popularity: 'medium',
-      icon: CurrencyDollarIcon,
-      href: '/book?service=tax',
-      isOnline: true,
-      requirements: ['Business Registration', 'Financial Records', 'Tax ID', 'Application Form'],
-  nextAvailableDays: 12,
-  updatedAt: '2025-07-16',
-    },
-    {
-      id: 'land-registration',
-      title: 'Land & Property Services',
-      description: 'Land registration, property transfers, and survey department services.',
-      category: 'documents',
-      department: 'Survey Department',
-      location: 'District Offices',
-      processingTime: '10-21 days',
-      fee: 'LKR 2,000 - 50,000',
-      popularity: 'low',
-      icon: MapPinIcon,
-      href: '/book?service=land',
-      isOnline: false,
-      requirements: ['Title Deeds', 'Survey Reports', 'Tax Clearance', 'Legal Documentation'],
-      nextAvailableDays: 14,
-      updatedAt: '2025-07-01',
-    },
-  ];
+  const services = React.useMemo(() => initialServices, [initialServices]);
+  const iconForCategory = (category: string): React.ElementType => {
+    switch (category) {
+      case 'documents': return DocumentTextIcon;
+      case 'transport': return TruckIcon;
+      case 'immigration': return UserIcon;
+      case 'business': return BuildingOfficeIcon;
+      case 'education': return AcademicCapIcon;
+      case 'health': return HeartIcon;
+      default: return DocumentTextIcon;
+    }
+  };
 
-  const allDepartments = Array.from(new Set(services.map(s => s.department))).sort();
-  const allLocations = Array.from(new Set(services.map(s => s.location))).sort();
+  const allDepartments = React.useMemo(() => Array.from(new Set(services.map(s => s.department))).sort(), [services]);
+  const allLocations = React.useMemo(() => Array.from(new Set(services.map(s => s.location))).sort(), [services]);
 
   // Helper to parse min processing days
   const getMinDays = (s: Service) => {
@@ -424,10 +231,11 @@ const ServicesPage: React.FC = () => {
 
               {/* Search Bar */}
               <div className="max-w-xl mb-6 sm:mb-8">
-                <div className="relative">
+        <div className="relative">
                   <MagnifyingGlassIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-blue-200" aria-hidden />
-                  <input
-                    type="text"
+          <input
+          ref={searchRef}
+          type="text"
                     placeholder="Search services, departments, or documents..."
                     className="w-full pl-12 pr-4 py-4 rounded-xl text-text-900 placeholder-text-500 border border-white/20 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent"
                     value={searchQuery}
@@ -441,10 +249,10 @@ const ServicesPage: React.FC = () => {
                 {/* Experiment: single vs dual CTA */}
                 {!authLoading && user ? (
                   getExperimentVariant('services_hero_cta', ['single','dual']) === 'single' ? (
-                    <Button href="/book" size="lg" variant="secondary">Book Appointment</Button>
+                    <Button size="lg" variant="secondary" onClick={() => { searchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); searchRef.current?.focus(); }}>Search</Button>
                   ) : (
                     <>
-                      <Button href="/book" size="lg" variant="secondary">Book Appointment</Button>
+                      <Button size="lg" variant="secondary" onClick={() => { searchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); searchRef.current?.focus(); }}>Search</Button>
                       <Button href="/help" size="lg" variant="outline" className="border-white text-white hover:text-blue-900">Service Guide</Button>
                     </>
                   )
@@ -494,7 +302,7 @@ const ServicesPage: React.FC = () => {
                 <div key={service.id} className="group cursor-pointer">
                   <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-bg-100 transition-colors">
                     <div className="flex-shrink-0">
-                      <service.icon className="w-8 h-8 text-primary-600" />
+                      {React.createElement(iconForCategory(service.category), { className: 'w-8 h-8 text-primary-600' })}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-sm text-text-900 group-hover:text-primary-700 transition-colors truncate">
@@ -627,7 +435,7 @@ const ServicesPage: React.FC = () => {
                     <div className="flex items-start gap-4">
                       <div className="flex-shrink-0">
                         <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
-                          <service.icon className="w-6 h-6 text-primary-600" />
+                          {React.createElement(iconForCategory(service.category), { className: 'w-6 h-6 text-primary-600' })}
                         </div>
                       </div>
                       <div className="flex-1 min-w-0">
@@ -735,11 +543,57 @@ const ServicesPage: React.FC = () => {
 };
 
 export const getStaticProps: GetStaticProps = async ({ locale }) => {
-  return {
-    props: {
-      ...(await serverSideTranslations(locale ?? 'en', ['common'])),
-    },
-  };
+  try {
+    const rows = await fetchServices();
+    const formatDays = (min: number | null, max: number | null) => {
+      if (min == null && max == null) return 'Varies';
+      if (min != null && max != null) return `${min}-${max} days`;
+      const d = (min ?? max) as number;
+      if (d === 0) return 'Same-day';
+      return `${d} day${d === 1 ? '' : 's'}`;
+    };
+
+    const formatFee = (min: number | null, max: number | null) => {
+      if (min == null && max == null) return 'N/A';
+      if (min != null && max != null) return `LKR ${min.toLocaleString()} - ${max.toLocaleString()}`;
+      const v = (min ?? max) as number;
+      return `LKR ${v.toLocaleString()}`;
+    };
+
+  const initialServices: Service[] = rows.map((r) => ({
+      id: r.slug,
+      title: r.title,
+      description: r.short_description ?? '',
+      category: r.category,
+      department: r.department ?? '—',
+      location: r.default_location ?? 'Nationwide',
+      processingTime: formatDays(r.processing_time_days_min, r.processing_time_days_max),
+      fee: formatFee(r.fee_min, r.fee_max),
+      popularity: r.popularity,
+      href: `/book?service=${encodeURIComponent(r.slug)}`,
+      isOnline: r.is_online,
+      requirements: [],
+      nextAvailableDays: 7,
+      updatedAt: r.updated_at,
+    }));
+
+    return {
+      props: {
+        ...(await serverSideTranslations(locale ?? 'en', ['common'])),
+        initialServices,
+      },
+      revalidate: 60,
+    };
+  } catch (e) {
+    console.error('Failed to fetch services', e);
+    return {
+      props: {
+        ...(await serverSideTranslations(locale ?? 'en', ['common'])),
+        initialServices: [],
+      },
+      revalidate: 60,
+    };
+  }
 };
 
 export default ServicesPage;
