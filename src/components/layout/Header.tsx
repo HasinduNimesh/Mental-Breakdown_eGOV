@@ -5,36 +5,44 @@ import { useUIStore } from '@/stores';
 import { Container } from '@/components/ui/Container';
 import { Button } from '@/components/ui/Button';
 import { LanguageSwitcher } from './LanguageSwitcher';
-import { Bars3Icon, XMarkIcon, PhoneIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import {
+  Bars3Icon,
+  XMarkIcon,
+  PhoneIcon,
+  MagnifyingGlassIcon,
+} from '@heroicons/react/24/outline';
 import { useTranslation } from 'next-i18next';
 import { useAuth } from '@/contexts/AuthContext';
-// Using dedicated /signin and /signup pages
 
+// Using dedicated /signin and /signup pages
 export const Header: React.FC = () => {
   const router = useRouter();
   const { isMobileMenuOpen, setMobileMenuOpen } = useUIStore();
   const { t } = useTranslation('common');
   const { user, signOut, loading } = useAuth();
-  // const [showSignIn, setShowSignIn] = React.useState(false);
+
   const [profileOpen, setProfileOpen] = React.useState(false);
   const profileRef = React.useRef<HTMLDivElement>(null);
 
-  const navigation = [
-    { name: 'Home', href: '/' },
-    { name: 'Services', href: '/services' },
-    { name: 'Service Guide', href: '/help' },
-    { name: 'News', href: '/news' },
-    { name: 'About Us', href: '/about' },
-    { name: 'Contact', href: '/contact' },
-  ];
+const navigation = [
+  { name: 'Home', href: '/' },
+  { name: 'Services', href: '/services' },
+  //{ name: 'Tax Services', href: '/tax' }, // ← added
+  { name: 'Service Guide', href: '/help' },
+  { name: 'News', href: '/news' },
+  { name: 'About Us', href: '/about' },
+  { name: 'Contact', href: '/contact' },
+];
+
 
   const [showSearch, setShowSearch] = React.useState(false);
   const searchRef = React.useRef<HTMLInputElement>(null);
+
   React.useEffect(() => {
     if (showSearch) searchRef.current?.focus();
   }, [showSearch]);
 
-  // shrink header on scroll
+  // Shrink header on scroll
   const [scrolled, setScrolled] = React.useState(false);
   React.useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 4);
@@ -46,16 +54,20 @@ export const Header: React.FC = () => {
   // Close profile menu on outside click or Escape
   React.useEffect(() => {
     if (!profileOpen) return;
+
     const onDocClick = (e: MouseEvent) => {
       if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
         setProfileOpen(false);
       }
     };
+
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setProfileOpen(false);
     };
+
     document.addEventListener('mousedown', onDocClick);
     document.addEventListener('keydown', onKey);
+
     return () => {
       document.removeEventListener('mousedown', onDocClick);
       document.removeEventListener('keydown', onKey);
@@ -85,8 +97,13 @@ export const Header: React.FC = () => {
         <Container className="max-w-[1200px] px-6 flex justify-end items-center">
           <div className="flex items-center gap-4">
             <LanguageSwitcher />
-            <span className="hidden sm:flex items-center gap-1"><PhoneIcon className="w-3 h-3" /><span>1919</span></span>
-            <Link href="/sitemap" className="hover:underline hidden sm:inline">Site Map</Link>
+            <span className="hidden sm:flex items-center gap-1">
+              <PhoneIcon className="w-3 h-3" />
+              <span>1919</span>
+            </span>
+            <Link href="/sitemap" className="hover:underline hidden sm:inline">
+              Site Map
+            </Link>
           </div>
         </Container>
       </div>
@@ -94,15 +111,29 @@ export const Header: React.FC = () => {
       {/* Main nav */}
       <header className="bg-white border-b border-border sticky top-0 z-40">
         <Container className="relative max-w-[1200px] px-6">
-          <div className={`flex items-center justify-between ${scrolled ? 'h-14' : 'h-16'} transition-[height] duration-200`}>
+          <div
+            className={`flex items-center justify-between ${
+              scrolled ? 'h-14' : 'h-16'
+            } transition-[height] duration-200`}
+          >
             {/* Left branding: crest + wordmark stack */}
             <Link href="/" aria-label="Home" className="flex items-center gap-3">
-              <img src="/logo.svg" alt={t('logo_alt', 'Sri Lanka Coat of Arms')} className="h-9 w-auto" />
+              <img
+                src="/logo.svg"
+                alt={t('logo_alt', 'Sri Lanka Coat of Arms')}
+                className="h-9 w-auto"
+              />
               <div className="leading-tight hidden md:block">
-                <div className="text-[14px] font-semibold text-[#163B8F]">Government of Sri Lanka</div>
-                <div className="text-[12px] font-medium text-[#4B5563]">Citizen Services Portal</div>
+                <div className="text-[14px] font-semibold text-[#163B8F]">
+                  Government of Sri Lanka
+                </div>
+                <div className="text-[12px] font-medium text-[#4B5563]">
+                  Citizen Services Portal
+                </div>
               </div>
-              <div className="md:hidden text-[14px] font-semibold text-[#163B8F]">Citizen Services</div>
+              <div className="md:hidden text-[14px] font-semibold text-[#163B8F]">
+                Citizen Services
+              </div>
             </Link>
 
             {/* Desktop Navigation */}
@@ -114,11 +145,18 @@ export const Header: React.FC = () => {
                     key={item.name}
                     href={item.href}
                     aria-current={router.pathname === item.href ? 'page' : undefined}
-                    className={`px-1 py-2 text-[16px] font-medium transition-colors relative ${router.pathname === item.href ? 'text-primary-700' : 'text-text-700 hover:text-primary-700'}`}
+                    className={`px-1 py-2 text-[16px] font-medium transition-colors relative ${
+                      router.pathname === item.href
+                        ? 'text-primary-700'
+                        : 'text-text-700 hover:text-primary-700'
+                    }`}
                   >
                     {item.name}
                     {router.pathname === item.href && (
-                      <span className="absolute -bottom-0.5 left-0 right-0 h-0.5 bg-[#2D5BFF]" aria-hidden />
+                      <span
+                        className="absolute -bottom-0.5 left-0 right-0 h-0.5 bg-[#2D5BFF]"
+                        aria-hidden
+                      />
                     )}
                   </Link>
                 ))}
@@ -128,7 +166,12 @@ export const Header: React.FC = () => {
               <div className="flex items-center gap-4 ml-6">
                 {/* Search icon toggles input */}
                 <div className="relative">
-                  <button className="p-2 rounded-md hover:bg-bg-100 focus:outline-none focus:ring-2 focus:ring-[#93B4FF]" aria-label="Open search" aria-expanded={showSearch} onClick={() => setShowSearch((v) => !v)}>
+                  <button
+                    className="p-2 rounded-md hover:bg-bg-100 focus:outline-none focus:ring-2 focus:ring-[#93B4FF]"
+                    aria-label="Open search"
+                    aria-expanded={showSearch}
+                    onClick={() => setShowSearch((v) => !v)}
+                  >
                     <MagnifyingGlassIcon className="w-5 h-5" />
                   </button>
                   {showSearch && (
@@ -155,17 +198,28 @@ export const Header: React.FC = () => {
                     </div>
                   )}
                 </div>
+
                 {/* Primary CTA */}
                 {user && (
-                  <Button href="/book" size="md" className="h-10 px-4 rounded-lg bg-[#2D5BFF] text-white hover:bg-[#224BE6] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">
+                  <Button
+                    href="/book"
+                    size="md"
+                    className="h-10 px-4 rounded-lg bg-[#2D5BFF] text-white hover:bg-[#224BE6] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]"
+                  >
                     Book appointment
                   </Button>
                 )}
                 {user && (
-                  <Button href="/appointments" variant="outline" size="md" className="h-10 px-3 rounded-lg border border-[#2D5BFF] text-[#2D5BFF] hover:bg-[#EEF3FF] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">
+                  <Button
+                    href="/appointments"
+                    variant="outline"
+                    size="md"
+                    className="h-10 px-3 rounded-lg border border-[#2D5BFF] text-[#2D5BFF] hover:bg-[#EEF3FF] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]"
+                  >
                     My appointments
                   </Button>
                 )}
+
                 {/* Profile avatar */}
                 {user ? (
                   <div className="relative" ref={profileRef}>
@@ -179,30 +233,72 @@ export const Header: React.FC = () => {
                     >
                       {initialsFromEmail(user.email)}
                     </button>
+
                     {profileOpen && (
                       <div
                         id="profile-menu"
                         role="menu"
                         className="absolute right-0 mt-2 w-56 bg-white text-text-900 border border-border rounded-[10px] shadow-2xl"
                       >
-                        <Link href="/appointments" className="block px-3 py-2 text-[13px] hover:bg-bg-100" role="menuitem">My appointments</Link>
-                        <Link href="/documents" className="block px-3 py-2 text-[13px] hover:bg-bg-100" role="menuitem">Upload documents</Link>
-                        <Link href="/track" className="block px-3 py-2 text-[13px] hover:bg-bg-100" role="menuitem">Track booking</Link>
-                        <Link href="/profile" className="block px-3 py-2 text-[13px] hover:bg-bg-100" role="menuitem">Profile</Link>
-                        <button className="w-full text-left px-3 py-2 text-[13px] hover:bg-bg-100" onClick={() => signOut()} role="menuitem">Sign out</button>
+                        <Link
+                          href="/appointments"
+                          className="block px-3 py-2 text-[13px] hover:bg-bg-100"
+                          role="menuitem"
+                        >
+                          My appointments
+                        </Link>
+                        <Link
+                          href="/documents"
+                          className="block px-3 py-2 text-[13px] hover:bg-bg-100"
+                          role="menuitem"
+                        >
+                          Upload documents
+                        </Link>
+                        <Link
+                          href="/track"
+                          className="block px-3 py-2 text-[13px] hover:bg-bg-100"
+                          role="menuitem"
+                        >
+                          Track booking
+                        </Link>
+                        <Link
+                          href="/profile"
+                          className="block px-3 py-2 text-[13px] hover:bg-bg-100"
+                          role="menuitem"
+                        >
+                          Profile
+                        </Link>
+                        <button
+                          className="w-full text-left px-3 py-2 text-[13px] hover:bg-bg-100"
+                          onClick={() => signOut()}
+                          role="menuitem"
+                        >
+                          Sign out
+                        </button>
                       </div>
                     )}
                   </div>
+                ) : loading ? (
+                  <div
+                    className="h-10 w-[172px] rounded-lg bg-bg-100 border border-border animate-pulse"
+                    aria-hidden
+                  />
                 ) : (
-                  // Avoid flashing a Sign in button while auth is initializing
-                  loading ? (
-                    <div className="h-10 w-[172px] rounded-lg bg-bg-100 border border-border animate-pulse" aria-hidden />
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Link href="/signin" className="btn-signin-arrow h-10 px-4">Sign in<span className="arrow-wrapper"><span className="arrow" /></span></Link>
-                      <Button href="/signup" size="md" className="h-10 px-4 rounded-lg bg-[#2D5BFF] text-white hover:bg-[#224BE6] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">Sign up</Button>
-                    </div>
-                  )
+                  <div className="flex items-center gap-2">
+                    <Link href="/signin" className="btn-signin-arrow h-10 px-4">
+                      Sign in
+                      <span className="arrow-wrapper">
+                        <span className="arrow" />
+                      </span>
+                    </Link>
+                    <Button
+                      href="/signup"
+                      size="md"
+                      className="h-10 px-4 rounded-lg bg-[#2D5BFF] text-white hover:bg-[#224BE6] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]"
+                    >
+                      Sign up
+                    </Button>
+                  </div>
                 )}
               </div>
             </nav>
@@ -210,7 +306,10 @@ export const Header: React.FC = () => {
             {/* Mobile actions: Book, Search, Menu */}
             <div className="md:hidden flex items-center gap-2">
               {user && (
-                <Link href="/book" className="inline-flex items-center justify-center h-9 px-3 rounded-lg bg-[#2D5BFF] text-white text-sm font-semibold hover:bg-[#224BE6] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">
+                <Link
+                  href="/book"
+                  className="inline-flex items-center justify-center h-9 px-3 rounded-lg bg-[#2D5BFF] text-white text-sm font-semibold hover:bg-[#224BE6] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]"
+                >
                   Book
                 </Link>
               )}
@@ -219,15 +318,25 @@ export const Header: React.FC = () => {
                 className="p-2 rounded-md text-text-700 hover:bg-bg-100 focus:outline-none focus:ring-2 focus:ring-[#93B4FF]"
                 aria-label="Open search"
                 aria-expanded={showSearch}
-                onClick={() => { setShowSearch((v) => !v); if (isMobileMenuOpen) setMobileMenuOpen(false); }}
+                onClick={() => {
+                  setShowSearch((v) => !v);
+                  if (isMobileMenuOpen) setMobileMenuOpen(false);
+                }}
               >
                 <MagnifyingGlassIcon className="w-6 h-6" />
               </button>
               <button
                 type="button"
                 className="p-2 rounded-md text-text-700 hover:text-primary-700"
-                onClick={() => { setMobileMenuOpen(!isMobileMenuOpen); if (showSearch) setShowSearch(false); }}
-                aria-label={isMobileMenuOpen ? t('close_menu', 'Close menu') : t('open_menu', 'Open menu')}
+                onClick={() => {
+                  setMobileMenuOpen(!isMobileMenuOpen);
+                  if (showSearch) setShowSearch(false);
+                }}
+                aria-label={
+                  isMobileMenuOpen
+                    ? t('close_menu', 'Close menu')
+                    : t('open_menu', 'Open menu')
+                }
               >
                 {isMobileMenuOpen ? (
                   <XMarkIcon className="w-6 h-6" />
@@ -281,39 +390,67 @@ export const Header: React.FC = () => {
                     {item.name}
                   </Link>
                 ))}
-                {/* Search field removed; use header icon overlay */}
+
                 {/* Language and Hotline */}
                 <div className="px-3 py-2 flex items-center justify-between">
                   <LanguageSwitcher />
-                  <span className="flex items-center gap-1 text-text-600"><PhoneIcon className="w-4 h-4" />1919</span>
+                  <span className="flex items-center gap-1 text-text-600">
+                    <PhoneIcon className="w-4 h-4" />
+                    1919
+                  </span>
                 </div>
+
                 {user && (
-                  <Button href="/book" className="mx-3 my-2 w-[calc(100%-1.5rem)] justify-center" onClick={() => setMobileMenuOpen(false)}>
-                    Book appointment
-                  </Button>
+                  <>
+                    <Button
+                      href="/book"
+                      className="mx-3 my-2 w-[calc(100%-1.5rem)] justify-center"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Book appointment
+                    </Button>
+                    <Button
+                      href="/appointments"
+                      variant="outline"
+                      className="mx-3 mb-2 w-[calc(100%-1.5rem)] justify-center"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      My appointments
+                    </Button>
+                  </>
                 )}
-                {user && (
-                  <Button href="/appointments" variant="outline" className="mx-3 mb-2 w-[calc(100%-1.5rem)] justify-center" onClick={() => setMobileMenuOpen(false)}>
-                    My appointments
-                  </Button>
-                )}
-                {!user && (
-                  loading ? (
-                    <div className="mx-3 mb-3 w-[calc(100%-1.5rem)] h-10 rounded-lg bg-bg-100 border border-border animate-pulse" aria-hidden />
+
+                {!user &&
+                  (loading ? (
+                    <div
+                      className="mx-3 mb-3 w-[calc(100%-1.5rem)] h-10 rounded-lg bg-bg-100 border border-border animate-pulse"
+                      aria-hidden
+                    />
                   ) : (
                     <div className="mx-3 mb-3 flex gap-2">
-                      <Link href="/signin" className="btn-signin-arrow flex-1 h-10 justify-center">Sign in<span className="arrow-wrapper"><span className="arrow" /></span></Link>
-                      <Link href="/signup" className="inline-flex items-center justify-center h-10 px-3 rounded-lg bg-[#2D5BFF] text-white text-sm font-semibold hover:bg-[#224BE6] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">Sign up</Link>
+                      <Link
+                        href="/signin"
+                        className="btn-signin-arrow flex-1 h-10 justify-center"
+                      >
+                        Sign in
+                        <span className="arrow-wrapper">
+                          <span className="arrow" />
+                        </span>
+                      </Link>
+                      <Link
+                        href="/signup"
+                        className="inline-flex items-center justify-center h-10 px-3 rounded-lg bg-[#2D5BFF] text-white text-sm font-semibold hover:bg-[#224BE6] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]"
+                      >
+                        Sign up
+                      </Link>
                     </div>
-                  )
-                )}
+                  ))}
               </div>
             </div>
           )}
         </Container>
-
       </header>
-  {/* auth modal removed */}
+      {/* auth modal removed */}
     </>
   );
 };
