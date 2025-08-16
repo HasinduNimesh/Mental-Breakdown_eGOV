@@ -278,7 +278,8 @@ const BookPage: React.FC = () => {
       altPhone: altPhone || undefined,
       documents: docs.map(d => ({ name: d.file.name, size: d.file.size, status: d.status })),
       createdAt: Date.now(),
-      status: 'Scheduled',
+  status: 'Scheduled',
+  is_reminder_sent: false,
     };
     setBookingBusy(true);
     try {
