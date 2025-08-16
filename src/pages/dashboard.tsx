@@ -191,7 +191,7 @@ export default function Dashboard() {
   };
 
   return (
-    <Layout title={title}>
+    <Layout dept={dept}>
       <Container className="py-8 space-y-8">
         {/* Header row */}
         <div className="flex items-center justify-between">
