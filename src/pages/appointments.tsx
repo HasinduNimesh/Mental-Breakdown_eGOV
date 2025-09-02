@@ -59,25 +59,36 @@ const AppointmentsPage: React.FC = () => {
 
     // Try DB first
     try {
-      const { data, error } = await supabase
+      // First try selecting with the optional is_reminder_sent column
+      let query = supabase
         .from('bookings')
-        // Your select statement is here, including 'is_reminder_sent'
         .select('booking_code, service_id, office_id, slot_date, slot_time, full_name, nic, email, phone, alt_phone, status, is_reminder_sent')
         .eq('user_id', user.id)
         .order('slot_date', { ascending: false })
         .limit(50);
+      let { data, error } = await query;
 
-      if (error) {
-        // If there's an error, log it and proceed to the fallback
+      // If the column doesn't exist in this environment, retry without it
+      if (error && (String(error.message).includes('is_reminder_sent') || String(error.code) === '42703')) {
+        const retry = await supabase
+          .from('bookings')
+          .select('booking_code, service_id, office_id, slot_date, slot_time, full_name, nic, email, phone, alt_phone, status')
+          .eq('user_id', user.id)
+          .order('slot_date', { ascending: false })
+          .limit(50);
+        data = retry.data as any[] | null;
+        error = retry.error as any;
+      }
+
+    if (error) {
         console.error("Error fetching from Supabase, falling back to local:", error);
-      } else if (data) {
-        // Map the data from the database
+    } else if (data && data.length > 0) {
         const mapped: BookingDraft[] = (data as any[]).map(r => ({
           id: r.booking_code,
           serviceId: r.service_id,
           officeId: r.office_id,
-          dateISO: r.slot_date,
-          time: r.slot_time.slice(0, 5),
+      dateISO: r.slot_date,
+      time: (r.slot_time || '').slice(0, 5),
           fullName: r.full_name || '',
           nic: r.nic || '',
           email: r.email || '',
@@ -86,13 +97,13 @@ const AppointmentsPage: React.FC = () => {
           documents: [],
           createdAt: 0,
           status: (r.status || 'Scheduled') as BookingDraft['status'],
-          is_reminder_sent: r.is_reminder_sent || false,
+          is_reminder_sent: (r as any).is_reminder_sent || false,
         }));
 
         if (!cancelled) {
           setList(mapped);
         }
-        return; 
+        return;
       }
     } catch (e) {
       console.error("Exception fetching from Supabase, falling back to local:", e);
@@ -100,7 +111,7 @@ const AppointmentsPage: React.FC = () => {
     
     try {
       console.log("Using fallback: fetching bookings from local storage.");
-      const localBookings = await getBookings(); // Use 'await' here
+  const localBookings = await getBookings();
       if (!cancelled) {
         setList(localBookings);
       }
@@ -160,10 +171,16 @@ export const getStaticProps: GetStaticProps = async ({ locale }) => {
 };
 
 function AppointmentRow({ b, user, onReminderSent }: { b: BookingDraft, user: any, onReminderSent: (bookingId: string) => void }) {
-  const svc = SERVICES.find(s => s.id === b.serviceId)!;
-  const off = OFFICES.find(o => o.id === b.officeId)!;
+  const svc = SERVICES.find(s => s.id === b.serviceId) || ({ id: b.serviceId, title: b.serviceId, department: '—' } as any);
+  const off = OFFICES.find(o => o.id === b.officeId) || ({ id: b.officeId, name: 'Office', city: '', timezone: 'Asia/Colombo' } as any);
   const countdown = useTimeUntil(b.dateISO, b.time);
   const [qrDataUrl, setQrDataUrl] = React.useState<string | null>(null);
+  const [sending, setSending] = React.useState(false);
+  const [sendError, setSendError] = React.useState<string | null>(null);
+
+  const appointmentMs = React.useMemo(() => new Date(`${b.dateISO}T${b.time}:00+05:30`).getTime(), [b.dateISO, b.time]);
+  const reminderWindowMs = 48 * 60 * 60 * 1000; // 48h window
+  const withinReminderWindow = React.useMemo(() => (appointmentMs - Date.now()) <= reminderWindowMs, [appointmentMs]);
 
   React.useEffect(() => {
     async function checkAndSendReminder() {
@@ -171,12 +188,16 @@ function AppointmentRow({ b, user, onReminderSent }: { b: BookingDraft, user: an
         return;
       }
 
-      const appointmentDateTime = new Date(`${b.dateISO}T${b.time}:00+05:30`).getTime();
-      const now = Date.now();
-      const twentyFourHoursInMillis = 48 * 60 * 60 * 1000;
+      // Local per-device fallback: skip if we've already sent a reminder for this booking on this device
+      try {
+        const k = 'egov_reminders_v1';
+        const raw = typeof window !== 'undefined' ? localStorage.getItem(k) : null;
+        const set = new Set<string>(raw ? JSON.parse(raw) : []);
+        if (set.has(b.id)) return;
+      } catch {}
 
-      // 2. Check time and user
-      if (user && (appointmentDateTime - now <= twentyFourHoursInMillis)) {
+  // 2. Check time and user
+  if (user && withinReminderWindow) {
         try {
           // 3. Send email and wait for it
           await sendEmailReminder(b, user);
@@ -190,10 +211,24 @@ function AppointmentRow({ b, user, onReminderSent }: { b: BookingDraft, user: an
             .select(); // Assuming 'id' is your primary key for bookings
 
           if (updateError) {
-            console.error('Failed to update reminder status in DB:', updateError);
+            // If column doesn't exist yet, treat as best-effort success and fall back to local flag
+            if (
+              String(updateError.message).includes('is_reminder_sent') || String(updateError.code) === '42703' ||
+              String(updateError.message).toLowerCase().includes('permission denied') || String(updateError.code) === '42501'
+            ) {
+              try {
+                const k = 'egov_reminders_v1';
+                const raw = typeof window !== 'undefined' ? localStorage.getItem(k) : null;
+                const set = new Set<string>(raw ? JSON.parse(raw) : []);
+                set.add(b.id);
+                if (typeof window !== 'undefined') localStorage.setItem(k, JSON.stringify(Array.from(set)));
+              } catch {}
+              onReminderSent(b.id);
+            } else {
+              console.error('Failed to update reminder status in DB:', updateError);
+            }
           } else {
             console.log(`Successfully updated DB for booking ${b.id}`);
-            // --- CALL THE PARENT'S FUNCTION TO UPDATE THE UI ---
             onReminderSent(b.id);
           }
         } catch (error) {
@@ -204,6 +239,39 @@ function AppointmentRow({ b, user, onReminderSent }: { b: BookingDraft, user: an
 
     checkAndSendReminder();
   }, [b, user, onReminderSent]);
+
+  async function sendNow() {
+    if (!user || sending) return;
+    setSending(true);
+    setSendError(null);
+    try {
+      await sendEmailReminder(b, user);
+      const { error: updateError } = await supabase
+        .from('bookings')
+        .update({ is_reminder_sent: true })
+        .eq('booking_code', b.id);
+      if (updateError) {
+        const colMissing = String(updateError.message).includes('is_reminder_sent') || String(updateError.code) === '42703';
+        const permDenied = String(updateError.message).toLowerCase().includes('permission denied') || String(updateError.code) === '42501';
+        if (!(colMissing || permDenied)) {
+          throw updateError;
+        }
+      }
+      // Local fallback mark
+      try {
+        const k = 'egov_reminders_v1';
+        const raw = typeof window !== 'undefined' ? localStorage.getItem(k) : null;
+        const set = new Set<string>(raw ? JSON.parse(raw) : []);
+        set.add(b.id);
+        if (typeof window !== 'undefined') localStorage.setItem(k, JSON.stringify(Array.from(set)));
+      } catch {}
+      onReminderSent(b.id);
+    } catch (e: any) {
+      setSendError(e?.message || 'Failed to send reminder');
+    } finally {
+      setSending(false);
+    }
+  }
 
   React.useEffect(() => {
     let cancelled = false;
@@ -256,6 +324,15 @@ function AppointmentRow({ b, user, onReminderSent }: { b: BookingDraft, user: an
           ) : (
             <div className="w-14 h-14 sm:w-16 sm:h-16 grid place-items-center rounded border border-border bg-bg-50 text-[10px] text-text-500 shrink-0">QR…</div>
           )}
+          {withinReminderWindow && (
+            b.is_reminder_sent ? (
+              <Badge tone="success" className="hidden sm:inline-flex">Reminder sent</Badge>
+            ) : (
+              <Button variant="outline" className="hidden sm:inline-flex" disabled={sending} onClick={sendNow}>
+                {sending ? 'Sending…' : 'Send reminder'}
+              </Button>
+            )
+          )}
           <Button
             variant="outline"
             className="hidden sm:inline-flex"
@@ -265,6 +342,9 @@ function AppointmentRow({ b, user, onReminderSent }: { b: BookingDraft, user: an
           </Button>
         </div>
       </div>
+      {sendError && (
+        <div className="mt-2 text-xs text-red-600">{sendError}</div>
+      )}
       {/* Mobile action button full width */}
       <div className="mt-3 sm:hidden">
         <Button
@@ -274,6 +354,13 @@ function AppointmentRow({ b, user, onReminderSent }: { b: BookingDraft, user: an
         >
           Download PDF
         </Button>
+        {withinReminderWindow && (
+          b.is_reminder_sent ? (
+            <div className="mt-2"><Badge tone="success">Reminder sent</Badge></div>
+          ) : (
+            <div className="mt-2"><Button variant="outline" className="w-full" disabled={sending} onClick={sendNow}>{sending ? 'Sending…' : 'Send reminder'}</Button></div>
+          )
+        )}
       </div>
     </Card>
   );

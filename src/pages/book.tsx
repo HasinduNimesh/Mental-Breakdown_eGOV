@@ -27,6 +27,8 @@ const BookPage: React.FC = () => {
   const { user } = useAuth();
   const [step, setStep] = React.useState<Step>(1);
   const [serviceId, setServiceId] = React.useState(SERVICES[0].id);
+  // If user arrived from Services with a DB-backed slug (not in our local SERVICES), hold it here for display
+  const [externalService, setExternalService] = React.useState<null | { slug: string; title: string; department: string }>(null);
   const [serverSlotTimes, setServerSlotTimes] = React.useState<Array<{ time: string; available: boolean; period: 'morning'|'afternoon' }>>([]);
   const [loadingSlots, setLoadingSlots] = React.useState(false);
   const [bookingBusy, setBookingBusy] = React.useState(false);
@@ -52,8 +54,18 @@ const BookPage: React.FC = () => {
   const [uploadError, setUploadError] = React.useState<string | null>(null);
   const [showSignIn, setShowSignIn] = React.useState(false);
   const [qrDataUrl, setQrDataUrl] = React.useState<string | null>(null);
+  // Payment state
+  const [paymentOpen, setPaymentOpen] = React.useState(false);
+  const [paymentBusy, setPaymentBusy] = React.useState(false);
+  const [paymentInfo, setPaymentInfo] = React.useState<null | { txnId: string; method: string; amount: number }>(null);
+  // Real services list from DB for unlocked dropdown
+  const [dbServices, setDbServices] = React.useState<Array<{ slug: string; title: string | null; department: string }>>([]);
+  const [dbServicesLoading, setDbServicesLoading] = React.useState(false);
 
   const service = SERVICES.find(s => s.id === serviceId)!;
+  const serviceTitle = externalService?.title ?? service.title;
+  const serviceDepartment = externalService?.department ?? service.department;
+  const effectiveServiceId = React.useMemo(() => externalService?.slug ?? serviceId, [externalService?.slug, serviceId]);
   // Map booking serviceId -> ServiceDetail to list requirements
   const serviceDetail: ServiceDetail | undefined = React.useMemo(() => {
     const map: Record<string, string> = {
@@ -66,6 +78,16 @@ const BookPage: React.FC = () => {
     return SERVICES_DETAILS.find(d => d.id === detailId);
   }, [serviceId]);
   const office = OFFICES.find(o => o.id === officeId)!;
+  const paymentAmount = React.useMemo(() => {
+    const map: Record<string, number> = {
+      'passport': 5000,
+      'license': 3000,
+      'birth-cert': 1500,
+      'police-clearance': 2000,
+    };
+    const key = externalService?.slug ?? serviceId;
+    return map[key] ?? 2500; // default for unknown services
+  }, [externalService?.slug, serviceId]);
   const slots = React.useMemo(() => {
     // Prefer server-provided slots if available, otherwise use local generator
     if (serverSlotTimes.length) return serverSlotTimes;
@@ -111,12 +133,62 @@ const BookPage: React.FC = () => {
   // Set initial service based on query param and lock the selector
   React.useEffect(() => {
     if (!router.isReady) return;
-    const fromQuery = normalizeService(router.query.service);
+    const q = router.query.service;
+    const fromQuery = normalizeService(q);
     if (fromQuery && SERVICES.some(s => s.id === fromQuery)) {
       setServiceId(fromQuery);
       setServiceLocked(true);
+      setExternalService(null);
+      return;
+    }
+    // If not a known local key but a slug is present, try fetching real service for display
+    const raw = Array.isArray(q) ? q[0] : (q || '');
+    const slug = raw.trim();
+    if (slug && !fromQuery) {
+      (async () => {
+        try {
+          const { data, error } = await supabase
+            .from('services')
+            .select('slug, title, departments(name)')
+            .eq('slug', slug)
+            .maybeSingle();
+          if (!error && data) {
+            const dept = Array.isArray((data as any).departments) ? (data as any).departments[0]?.name : (data as any).departments?.name;
+            setExternalService({ slug, title: (data as any).title ?? slug, department: dept ?? '—' });
+            setServiceLocked(true);
+          }
+        } catch {
+          // ignore; fallback stays on local list
+        }
+      })();
     }
   }, [router.isReady, router.query.service]);
+
+  // Load real services from DB for the dropdown when user allows changing
+  React.useEffect(() => {
+    let cancelled = false;
+    async function loadServices() {
+      setDbServicesLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('services')
+          .select('slug, title, departments(name)')
+          .order('title', { ascending: true });
+        if (!error && data && !cancelled) {
+          const list = (data as any[]).map((row) => {
+            const dept = Array.isArray(row.departments) ? row.departments[0]?.name : row.departments?.name;
+            return { slug: row.slug as string, title: (row.title as string) ?? null, department: dept ?? '—' };
+          });
+          setDbServices(list);
+        }
+      } catch {}
+      finally {
+        if (!cancelled) setDbServicesLoading(false);
+      }
+    }
+    loadServices();
+    return () => { cancelled = true; };
+  }, []);
 
   // Try to load availability for the visible month and specific service/office via DB; fallback handled in UI
   React.useEffect(() => {
@@ -128,7 +200,7 @@ const BookPage: React.FC = () => {
         const { data, error } = await supabase
           .from('slots')
           .select('slot_date, remaining')
-          .eq('service_id', serviceId)
+          .eq('service_id', effectiveServiceId)
           .eq('office_id', officeId)
           .gte('slot_date', formatDateISO(start))
           .lte('slot_date', formatDateISO(end));
@@ -147,7 +219,7 @@ const BookPage: React.FC = () => {
     fetchMonthAvailability();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [monthView, serviceId, officeId]);
+  }, [monthView, effectiveServiceId, officeId]);
 
   // Try to load per-day slot list from DB when date/service/office changes
   React.useEffect(() => {
@@ -159,7 +231,7 @@ const BookPage: React.FC = () => {
         const { data, error } = await supabase
           .from('slots')
           .select('slot_time, remaining')
-          .eq('service_id', serviceId)
+          .eq('service_id', effectiveServiceId)
           .eq('office_id', officeId)
           .eq('slot_date', formatDateISO(date))
           .order('slot_time', { ascending: true });
@@ -179,7 +251,7 @@ const BookPage: React.FC = () => {
     }
     fetchDaySlots();
     return () => { cancelled = true; };
-  }, [serviceId, officeId, date]);
+  }, [effectiveServiceId, officeId, date]);
 
   // Prefill user details from profile when signed in
   React.useEffect(() => {
@@ -269,7 +341,7 @@ const BookPage: React.FC = () => {
   async function confirm() {
     const localBooking: BookingDraft = {
       id: generateBookingCode(),
-      serviceId,
+  serviceId: effectiveServiceId,
       officeId,
       dateISO: formatDateISO(date),
       time,
@@ -287,7 +359,7 @@ const BookPage: React.FC = () => {
     try {
       // Try server-side atomic booking via RPC (if schema is installed)
       const { data: rpcData, error: rpcError } = await supabase.rpc('book_appointment', {
-        p_service_id: serviceId,
+        p_service_id: effectiveServiceId,
         p_office_id: officeId,
         p_slot_date: localBooking.dateISO,
         p_slot_time: localBooking.time,
@@ -323,13 +395,13 @@ const BookPage: React.FC = () => {
         }
         // Persist QR payload details into DB (image generated client-side here)
         try {
-          const payload = { id: bookingCode, serviceId, officeId, date: localBooking.dateISO, time: localBooking.time };
+          const payload = { id: bookingCode, serviceId: effectiveServiceId, officeId, date: localBooking.dateISO, time: localBooking.time };
           const url = await QRCode.toDataURL(JSON.stringify(payload), { width: 240, margin: 1, color: { dark: '#1f2937', light: '#ffffff' }, errorCorrectionLevel: 'M' });
           await supabase.from('bookings').update({ qr_payload: payload as any, qr_data_url: url }).eq('booking_code', bookingCode);
           setQrDataUrl(url);
         } catch {}
         const confirmed: BookingDraft = { ...localBooking, id: bookingCode };
-        track('booking_completed', { serviceId, officeId, date: confirmed.dateISO, time: confirmed.time });
+        track('booking_completed', { serviceId: effectiveServiceId, officeId, date: confirmed.dateISO, time: confirmed.time });
         setConfirmed(confirmed);
         setStep(5);
         return;
@@ -356,7 +428,7 @@ const BookPage: React.FC = () => {
           }
         } catch {}
       }
-      track('booking_completed', { serviceId, officeId, date: localBooking.dateISO, time: localBooking.time });
+  track('booking_completed', { serviceId: effectiveServiceId, officeId, date: localBooking.dateISO, time: localBooking.time });
       setConfirmed(localBooking);
       setStep(5);
     } finally {
@@ -446,10 +518,54 @@ const BookPage: React.FC = () => {
                       Allow changing
                     </label>
                   </div>
-                  <select className="w-full border border-border rounded-md px-3 py-2" value={serviceId} onChange={(e) => setServiceId(e.target.value)} disabled={serviceLocked}>
-                    {SERVICES.map(s => (<option key={s.id} value={s.id}>{s.title}</option>))}
-                  </select>
-                  <div className="mt-2 text-xs text-text-600">Department: {service.department}{serviceLocked && ' • locked from previous selection'}</div>
+                  {externalService && serviceLocked ? (
+                    <input className="w-full border border-border rounded-md px-3 py-2 bg-bg-50" value={serviceTitle} disabled />
+                  ) : (
+                    <select
+                      className="w-full border border-border rounded-md px-3 py-2"
+                      value={externalService ? externalService.slug : serviceId}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        const fromDb = dbServices.find(d => d.slug === v);
+                        if (fromDb) {
+                          setExternalService({ slug: fromDb.slug, title: fromDb.title ?? fromDb.slug, department: fromDb.department });
+                          // If DB slug maps to a known local service, sync serviceId for requirement hints
+                          const map: Record<string, string> = {
+                            'passport': 'passport',
+                            'passport-application': 'passport',
+                            'driving-license': 'license',
+                            'license': 'license',
+                            'birth-cert': 'birth-cert',
+                            'birth-certificate': 'birth-cert',
+                            'police-clearance': 'police-clearance',
+                          };
+                          if (map[fromDb.slug]) setServiceId(map[fromDb.slug]);
+                        } else {
+                          setExternalService(null);
+                          setServiceId(v);
+                        }
+                      }}
+                      disabled={serviceLocked}
+                    >
+                      {dbServicesLoading ? (
+                        <option value={externalService ? externalService.slug : serviceId}>
+                          Loading services…
+                        </option>
+                      ) : dbServices.length > 0 ? (
+                        dbServices.map(s => (
+                          <option key={s.slug} value={s.slug}>{s.title || `Service ${s.slug}`}</option>
+                        ))
+                      ) : (
+                        (<>
+                          {externalService ? (
+                            <option key={externalService.slug} value={externalService.slug}>{externalService.title}</option>
+                          ) : null}
+                          {SERVICES.map(s => (<option key={s.id} value={s.id}>{s.title}</option>))}
+                        </>)
+                      )}
+                    </select>
+                  )}
+                  <div className="mt-2 text-xs text-text-600">Department: {serviceDepartment}{serviceLocked && ' • locked from previous selection'}</div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-text-900 mb-1">Office</label>
@@ -459,7 +575,7 @@ const BookPage: React.FC = () => {
                   <div className="mt-2 text-xs text-text-600 flex items-center gap-1"><MapPinIcon className="w-4 h-4" /> Local timezone: {tz}</div>
                 </div>
                 <div className="md:col-span-2">
-                  <Button onClick={() => { if (!user) { setShowSignIn(true); return; } setStep(2); track('booking_started', { serviceId, officeId }); }} className="mt-2" disabled={!user}>Pick date and time</Button>
+                  <Button onClick={() => { if (!user) { setShowSignIn(true); return; } setStep(2); track('booking_started', { serviceId: effectiveServiceId, officeId }); }} className="mt-2" disabled={!user}>Pick date and time</Button>
                 </div>
               </div>
             )}
@@ -559,7 +675,7 @@ const BookPage: React.FC = () => {
                 {/* Required documents for this service */}
                 {serviceDetail?.requirements?.length ? (
                   <div className="mb-4">
-                    <div className="font-medium text-text-900 mb-2">Required for {service.title}</div>
+                    <div className="font-medium text-text-900 mb-2">Required for {serviceTitle}</div>
                     <ul className="list-disc pl-5 text-sm text-text-700 space-y-1">
                       {serviceDetail.requirements.map((r, i) => (
                         <li key={i}><span className="font-medium">{r.label}</span>{r.example ? <span className="text-text-600"> — {r.example}</span> : null}</li>
@@ -709,11 +825,16 @@ const BookPage: React.FC = () => {
                 <div className="lg:col-span-2 space-y-4">
                   <Card className="p-4">
                     <div className="font-semibold text-text-900 mb-2">Appointment summary</div>
-                    <div className="text-sm text-text-700">Service: {service.title}</div>
-                    <div className="text-sm text-text-700">Department: {service.department}</div>
+                    <div className="text-sm text-text-700">Service: {serviceTitle}</div>
+                    <div className="text-sm text-text-700">Department: {serviceDepartment}</div>
                     <div className="text-sm text-text-700">Office: {office.name}, {office.city}</div>
                     <div className="text-sm text-text-700">Date & time: {formatDateISO(date)} at {time} ({tz})</div>
                     <div className="text-sm text-text-700">Your details: {fullName} • {nic} • {email} • {phone}{altPhone ? ` • Alt: ${altPhone}` : ''}</div>
+                    <div className="mt-2 inline-flex items-center gap-2 px-2 py-1 rounded bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm">
+                      <span>Payment amount:</span>
+                      <span className="font-semibold">LKR {paymentAmount.toLocaleString('en-LK')}</span>
+                      {paymentInfo && <span className="ml-2 text-xs text-emerald-700">Paid via {paymentInfo.method} • Txn {paymentInfo.txnId}</span>}
+                    </div>
                   </Card>
                   <Card className="p-4">
                     <div className="font-semibold text-text-900 mb-2">Reschedule and cancel policy</div>
@@ -731,20 +852,33 @@ const BookPage: React.FC = () => {
                     </ul>
                   </Card>
           <div className="flex items-center gap-3">
-            {!confirmed && <Button onClick={confirm} disabled={bookingBusy}>{bookingBusy ? 'Confirming…' : 'Confirm booking'}</Button>}
+            {!confirmed && (
+              <Button
+                onClick={() => setPaymentOpen(true)}
+                disabled={bookingBusy || paymentBusy}
+              >
+                {paymentBusy ? 'Processing payment…' : `Pay LKR ${paymentAmount.toLocaleString('en-LK')} and confirm`}
+              </Button>
+            )}
                     {confirmed && (
                       <>
-                        <Button href={buildICS(confirmed, service, office)} download={`appointment-${confirmed.id}.ics`} variant="outline">Add to calendar</Button>
+                        {(() => {
+                          const serviceForICS = { id: effectiveServiceId, title: serviceTitle, department: serviceDepartment } as any;
+                          return (
+                            <Button href={buildICS(confirmed, serviceForICS, office)} download={`appointment-${confirmed.id}.ics`} variant="outline">Add to calendar</Button>
+                          );
+                        })()}
                         <Button
                           variant="outline"
                           onClick={() => {
                             if (!confirmed) return;
                             downloadBookingPDF({
                               booking: confirmed,
-                              service,
+                              service: { id: effectiveServiceId, title: serviceTitle, department: serviceDepartment } as any,
                               office,
                               tz,
                               qrDataUrl,
+                              payment: paymentInfo ? { amount: paymentInfo.amount, method: paymentInfo.method, txnId: paymentInfo.txnId, status: 'Paid' } : { amount: paymentAmount, status: 'Unpaid' },
                             });
                           }}
                         >
@@ -780,11 +914,11 @@ const BookPage: React.FC = () => {
                     <div className="flex flex-col gap-2">
                       <Button variant="outline" onClick={() => {
                         const reason = window.prompt('Why are you rescheduling? (optional)') || '';
-                        track('reschedule_reason', { reason, serviceId });
+                        track('reschedule_reason', { reason, serviceId: effectiveServiceId });
                       }}>Reschedule</Button>
                       <Button variant="outline" onClick={() => {
                         const reason = window.prompt('Why are you canceling? (optional)') || '';
-                        track('cancel_reason', { reason, serviceId });
+                        track('cancel_reason', { reason, serviceId: effectiveServiceId });
                       }}>Cancel</Button>
                     </div>
                   </Card>
@@ -796,6 +930,24 @@ const BookPage: React.FC = () => {
       </section>
   </Layout>
   <SignInModal open={showSignIn} onClose={() => setShowSignIn(false)} context="review" emailPrefill={email} afterSignIn={() => setStep(5)} />
+  <DemoPaymentModal
+    open={paymentOpen}
+    amount={paymentAmount}
+    onCancel={() => setPaymentOpen(false)}
+    onConfirm={async (method) => {
+      setPaymentBusy(true);
+      try {
+        // Simulate gateway processing
+        await new Promise(res => setTimeout(res, 1200));
+        const txn = `TXN-${Math.random().toString(36).slice(2,8).toUpperCase()}`;
+        setPaymentInfo({ txnId: txn, method, amount: paymentAmount });
+        setPaymentOpen(false);
+        await confirm();
+      } finally {
+        setPaymentBusy(false);
+      }
+    }}
+  />
   </>
   );
 };
@@ -809,3 +961,35 @@ export const getStaticProps: GetStaticProps = async ({ locale }) => {
     },
   };
 };
+
+// Simple demo payment modal (mock gateway)
+function DemoPaymentModal({ open, amount, onCancel, onConfirm }: { open: boolean; amount: number; onCancel: () => void; onConfirm: (method: 'Card' | 'DemoPay') => void; }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/40" onClick={onCancel} />
+      <div className="relative bg-white rounded-lg shadow-xl border border-border w-[92vw] max-w-md p-4">
+        <div className="text-base font-semibold text-text-900 mb-1">Checkout</div>
+        <div className="text-sm text-text-700 mb-4">You are paying <span className="font-semibold">LKR {amount.toLocaleString('en-LK')}</span> for your appointment.</div>
+        <div className="space-y-2">
+          <button
+            className="w-full px-3 py-2 rounded-md border border-border hover:border-primary-300 text-text-800"
+            onClick={() => onConfirm('Card')}
+          >
+            Pay with Card (Demo)
+          </button>
+          <button
+            className="w-full px-3 py-2 rounded-md border border-border hover:border-primary-300 text-text-800"
+            onClick={() => onConfirm('DemoPay')}
+          >
+            Pay with DemoPay Wallet
+          </button>
+        </div>
+        <div className="mt-4 text-xs text-text-600">This is a demo payment. No real charges will be made.</div>
+        <div className="mt-3 flex items-center justify-end gap-2">
+          <Button variant="outline" onClick={onCancel}>Cancel</Button>
+        </div>
+      </div>
+    </div>
+  );
+}

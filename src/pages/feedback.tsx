@@ -1,4 +1,5 @@
 import React from 'react';
+import { supabase } from '@/lib/supabaseClient';
 import { GetStaticProps } from 'next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useTranslation } from 'next-i18next';
@@ -8,22 +9,135 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { StarIcon } from '@heroicons/react/24/outline';
 
+type FeedbackItem = {
+  id: string;
+  rating: number;
+  text: string;
+  createdAt: string; // ISO string
+};
+
 const FeedbackPage: React.FC = () => {
   const { t } = useTranslation('common');
 
   const [rating, setRating] = React.useState(0);
   const [hoverRating, setHoverRating] = React.useState(0);
   const [feedback, setFeedback] = React.useState('');
+  const [feedbacks, setFeedbacks] = React.useState<FeedbackItem[]>([]);
 
   const stars = [1, 2, 3, 4, 5];
   const ratingLabels = ['Very Poor', 'Poor', 'Average', 'Good', 'Excellent'];
 
-  const handleSubmit = () => {
-    console.log('Rating:', rating);
-    console.log('Feedback:', feedback);
+  // Load persisted feedbacks (local browser) and seed with a few examples
+  React.useEffect(() => {
+    (async () => {
+      // Try Supabase first
+      try {
+        const { data, error } = await supabase
+          .from('feedbacks')
+          .select('id, rating, message, created_at')
+          .eq('is_public', true)
+          .order('created_at', { ascending: false })
+          .limit(30);
+
+        if (!error && data && data.length > 0) {
+          const mapped: FeedbackItem[] = data.map((r: any) => ({
+            id: String(r.id),
+            rating: r.rating ?? 0,
+            text: r.message ?? '',
+            createdAt: r.created_at ?? new Date().toISOString(),
+          }));
+          setFeedbacks(mapped);
+          return;
+        }
+      } catch {
+        // fall through to local
+      }
+
+      // Local fallback
+      try {
+        const raw = typeof window !== 'undefined' ? localStorage.getItem('egov_feedbacks_v1') : null;
+        const parsed: FeedbackItem[] = raw ? JSON.parse(raw) : [];
+        if (parsed.length > 0) {
+          setFeedbacks(parsed);
+        } else {
+          const seed: FeedbackItem[] = [
+            { id: 's1', rating: 5, text: 'Quick booking process and helpful reminders. Great experience!', createdAt: new Date().toISOString() },
+            { id: 's2', rating: 4, text: 'Got my appointment without any hassle. UI is clean and simple.', createdAt: new Date().toISOString() },
+            { id: 's3', rating: 5, text: 'Love the confirmation PDF and calendar add feature.', createdAt: new Date().toISOString() },
+            { id: 's4', rating: 4, text: 'Document upload was smooth. Keep it up!', createdAt: new Date().toISOString() },
+          ];
+          setFeedbacks(seed);
+        }
+      } catch {
+        // ignore
+      }
+    })();
+  }, []);
+
+  const persistFeedbacks = (items: FeedbackItem[]) => {
+    setFeedbacks(items);
+    try {
+      if (typeof window !== 'undefined') localStorage.setItem('egov_feedbacks_v1', JSON.stringify(items));
+    } catch {
+      // ignore storage errors
+    }
+  };
+
+  const handleSubmit = async () => {
+    const newItem: FeedbackItem = {
+      id: `f_${Date.now()}`,
+      rating,
+      text: feedback.trim(),
+      createdAt: new Date().toISOString(),
+    };
+    if (!newItem.text && newItem.rating === 0) return;
+
+    // Try Supabase insert
+    let saved = false;
+    try {
+      const { data, error } = await supabase
+        .from('feedbacks')
+        .insert({ rating: newItem.rating, message: newItem.text, is_public: true, locale: (typeof navigator !== 'undefined' ? navigator.language : 'en') })
+        .select('id, created_at')
+        .single();
+      if (!error && data) {
+        const persisted: FeedbackItem = {
+          ...newItem,
+          id: String(data.id ?? newItem.id),
+          createdAt: data.created_at ?? newItem.createdAt,
+        };
+        setFeedbacks([persisted, ...feedbacks].slice(0, 50));
+        saved = true;
+      }
+    } catch {
+      // ignore and fallback
+    }
+
+    if (!saved) {
+      const next = [newItem, ...feedbacks].slice(0, 50); // keep last 50
+      persistFeedbacks(next);
+    }
+
     alert('Thank you for your feedback!');
     setRating(0);
     setFeedback('');
+  };
+
+  const displayName = (f: FeedbackItem) => {
+    const suffix = f.id?.slice(-4) || '';
+    return `Citizen${suffix ? ' ' + suffix : ''}`;
+  };
+
+  const displayDate = (f: FeedbackItem) => {
+    try {
+      return new Date(f.createdAt).toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+    } catch {
+      return '';
+    }
   };
 
   return (
@@ -70,6 +184,48 @@ const FeedbackPage: React.FC = () => {
           </div>
         </Container>
       </section>
+
+      {/* Recent feedback ticker */}
+      {feedbacks.length > 0 && (
+        <section className="py-8 bg-white border-y border-border/50">
+          <Container>
+            <div className="mb-3 text-sm font-medium text-text-700">Recent feedback</div>
+            <div className="group relative overflow-hidden">
+              {/* gradient edges */}
+              <div className="pointer-events-none absolute left-0 top-0 h-full w-12 bg-gradient-to-r from-white to-transparent"/>
+              <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-gradient-to-l from-white to-transparent"/>
+
+              <div className="flex whitespace-nowrap will-change-transform animate-marquee-ltr" aria-live="polite">
+                {[...feedbacks, ...feedbacks].map((f, idx) => (
+                  <div key={`${f.id}-${idx}`} className="mr-4 inline-flex">
+                    <article className="rounded-xl border border-border bg-white px-4 py-3 shadow-sm hover:shadow-md transition-shadow min-w-[260px] max-w-[420px]">
+                      <div className="flex items-start gap-3">
+                        <div className="mt-0.5 h-8 w-8 shrink-0 rounded-full bg-primary-50 text-primary-700 flex items-center justify-center font-semibold">
+                          {displayName(f).slice(0,1)}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 text-amber-500 mb-1">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              <svg key={i} className={`h-4 w-4 ${i < f.rating ? 'fill-current' : 'text-amber-300'}`} viewBox="0 0 20 20">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.801 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                              </svg>
+                            ))}
+                          </div>
+                          <p className="clamp-2 text-sm text-text-700">{f.text || '—'}</p>
+                          <div className="mt-2 flex items-center justify-between text-xs text-text-500">
+                            <span className="truncate max-w-[16ch]">{displayName(f)}</span>
+                            <time title={f.createdAt}>{displayDate(f)}</time>
+                          </div>
+                        </div>
+                      </div>
+                    </article>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Container>
+        </section>
+      )}
 
       {/* Feedback Form Section */}
       <section className="py-16 bg-bg-100">
@@ -121,6 +277,22 @@ const FeedbackPage: React.FC = () => {
 
       {/* Floating animation styles */}
       <style jsx>{`
+        @keyframes marquee-ltr {
+          0% { transform: translateX(-50%); }
+          100% { transform: translateX(0%); }
+        }
+        .animate-marquee-ltr {
+          animation: marquee-ltr 30s linear infinite;
+        }
+          /* Pause marquee on hover */
+          .group:hover .animate-marquee-ltr { animation-play-state: paused; }
+          /* Multi-line clamp utility */
+          .clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+          }
         @keyframes float1 {
           0%, 100% { transform: rotate(6deg) translateY(0px); }
           50% { transform: rotate(6deg) translateY(-10px); }
