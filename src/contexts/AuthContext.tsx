@@ -7,6 +7,7 @@ type AuthContextType = {
   session: Session | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  signOutAll: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -80,24 +81,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               body: JSON.stringify({ deviceId: getDeviceId() })
             });
             if (resp.status === 409) {
-              // Offer to sign out the other device by force-claiming the lock
-              const confirmTakeover = typeof window !== 'undefined' && window.confirm('You are signed in on another device. Do you want to sign out the other device and continue here?');
-              if (confirmTakeover) {
-                try {
-                  const forceResp = await fetch('/api/session-claim', {
-                    method: 'POST',
-                    headers: { 'content-type': 'application/json', Authorization: `Bearer ${token}` },
-                    body: JSON.stringify({ deviceId: getDeviceId(), force: true })
-                  });
-                  if (!forceResp.ok) {
-                    await supabase.auth.signOut();
-                    alert('Could not take over the session. Please try again later.');
-                  }
-                } catch {
-                  await supabase.auth.signOut();
+              // Auto sign out other device by force-claiming the lock to this device
+              try {
+                const forceResp = await fetch('/api/session-claim', {
+                  method: 'POST',
+                  headers: { 'content-type': 'application/json', Authorization: `Bearer ${token}` },
+                  body: JSON.stringify({ deviceId: getDeviceId(), force: true })
+                });
+                if (!forceResp.ok) {
+                  // Delete all sessions (server-side revoke) so the next login starts clean
+                  try { await (supabase.auth.signOut as any)({ scope: 'global' }); } catch {}
+                  alert('Could not take over the session. Please try again later.');
                 }
-              } else {
-                await supabase.auth.signOut();
+              } catch {
+                try { await (supabase.auth.signOut as any)({ scope: 'global' }); } catch { await supabase.auth.signOut(); }
               }
             }
           }
@@ -115,6 +112,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     session,
     loading,
     signOut: async () => { await supabase.auth.signOut(); },
+    signOutAll: async () => {
+      try {
+        // Invalidate all refresh tokens for this user across devices
+        // If the type defs complain, we cast as any to allow the supported runtime option
+        await (supabase.auth.signOut as any)({ scope: 'global' });
+      } catch {
+        // fallback to local sign out
+        await supabase.auth.signOut();
+      }
+    },
   }), [user, session, loading]);
 
   return (
