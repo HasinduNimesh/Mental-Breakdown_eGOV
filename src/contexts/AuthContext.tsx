@@ -61,9 +61,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
-        // create stub profile if needed (fire and forget)
+        // create stub profile if needed via server API proxy (avoids CORS/preflight issues)
         try {
-          await supabase.functions.invoke('profile-upsert', { body: {} });
+          const token = s.access_token;
+          await fetch('/api/profile-upsert', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({}),
+          });
         } catch {}
         // Claim single-device session lock
         try {

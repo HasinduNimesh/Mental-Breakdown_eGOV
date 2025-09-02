@@ -145,8 +145,8 @@ export default function ChooseLanguage() {
           {/* Middle: Globe icon */}
           <div className="flex-1 w-full max-w-4xl mx-auto flex flex-col items-center justify-center">
             <div className="mt-6 sm:mt-8">
-              <div className="opacity-90 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 lg:w-[28rem] lg:h-[28rem] drop-shadow-2xl">
-                <Globe size={320} />
+              <div className="opacity-90 w-80 h-80 sm:w-96 sm:h-96 md:w-[28rem] md:h-[28rem] lg:w-[32rem] lg:h-[32rem] xl:w-[36rem] xl:h-[36rem] drop-shadow-2xl">
+                <Globe size={500} />
               </div>
             </div>
           </div>

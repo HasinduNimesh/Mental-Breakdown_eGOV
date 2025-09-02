@@ -1,0 +1,152 @@
+eGOV Citizen Portal – Project Overview
+
+Purpose
+- A modern, citizen-facing web portal for Sri Lanka’s eGOV services with appointment booking, profile documents, and multi-language support. Includes an admin app and analytics dashboard in the monorepo.
+
+Top-level architecture
+- Monorepo: Next.js apps + shared packages via workspaces (Turborepo)
+  - Citizen portal (root, Next.js Pages Router)
+  - Admin app: apps/admin (Next.js)
+  - Analytics dashboard: apps/analytics_dashboard (Next.js)
+  - Shared packages: packages/ui (design system components), packages/types (shared TS types)
+- Backend: Supabase (Postgres + Auth + Storage + Edge Functions + RLS policies)
+- Styling: TailwindCSS utility-first with small UI component library
+- State: Local component state + React Context for auth + Zustand for lightweight UI state
+- i18n: next-i18next for English/Sinhala/Tamil
+- Build & tooling: TypeScript, ESLint, Turbo, Docker Compose for dev
+
+Key technology choices and why
+- Next.js (v15): modern React framework with SSR/SSG, good DX, file-based routing, easy deployment. Pages Router is fine and stable here; app complexity fits it well.
+- Supabase: managed Postgres with Auth & Storage and serverless functions; fast to build secure data flows with RLS, SQL RPCs, and storage buckets; free tier-friendly.
+- TailwindCSS: keeps styling consistent, responsive, and fast. Utility classes reduce context switching.
+- next-i18next: production-grade i18n with locale routing, translation JSONs, and SSR support.
+- Turborepo workspaces: speeds multi-app development, shared code in packages, parallel dev scripts.
+- pdf-lib + qrcode: client-side PDF and QR generation to give users receipts without server round-trips.
+- framer-motion + cobe: lightweight globe animation for a modern hero visual without heavy 3D.
+
+Data model (Supabase / Postgres)
+- Tables (citizen side):
+  - services: catalog of public services (id text, title, department)
+  - offices: offices with city and timezone
+  - slots: capacity for service at an office for a date+time
+    - Unique (service_id, office_id, slot_date, slot_time)
+    - remaining decremented atomically when booking
+  - bookings: citizen appointments (booking_code unique, user_id, service/office/date/time, contact details)
+    - Composite FK to slots: (service_id, office_id, slot_date, slot_time) → slots
+    - qr_payload/qr_data_url for check-in UX
+  - appointment_documents: links profile documents to a booking_code
+- Views:
+  - daily_availability: aggregates remaining/capacity per (service_id, office_id, slot_date)
+- RPC:
+  - book_appointment: atomic decrement of slots.remaining and insert booking; returns booking_code
+- RLS:
+  - Slots/offices readable publicly (can be restricted later)
+  - Bookings readable/updatable by owner (auth.uid())
+  - Appointment documents insert/select only if booking belongs to auth.uid()
+
+Seeding and schema patches (db/)
+- schema.sql: authoritative basic citizen-side schema (tables, view, RPC, RLS)
+- dummy_seed.sql: large, randomized seed for departments/offices/services (skips user/appointment data)
+- seed_slots.sql: generates slots across services/offices for next 14 days with randomized capacity
+- patch_citizen_schema.sql: safety patch aligning bookings↔slots FKs and indices, enforces slots uniqueness
+
+Frontend structure and flows
+- Routing & locale guard (middleware.ts):
+  - If path lacks a supported locale and no cookie, redirect to /choose-language
+  - If a NEXT_LOCALE cookie exists, prefix the locale and continue
+  - Skips assets, _next, api routes
+- i18n (next-i18next.config.js): defaultLocale=en; locales=en, si, ta; localeDetection disabled to rely on chooser/middleware
+- Global config (next.config.js): CSP, headers, image domains, transpile shared packages, env TIMEZONE
+- Auth (src/contexts/AuthContext.tsx):
+  - Wraps app and exposes user/session/loading + signOut
+  - onAuthStateChange: ensures profile stub creation via Supabase function profile-upsert
+  - Optional device lock: POST /api/session-claim to enforce single-device session (prevents multi-login)
+- Layout (src/components/layout):
+  - Header: top bar with language switcher, hotline; sticky nav with sign-in/up or account menu, quick “Book” and “My Appointments” actions; responsive mobile menu
+  - Footer: animated decorative arcs, organization details, quick nav, hotline, legal links
+  - Layout hides header/footer on choose-language page for clean onboarding screen
+- Choose language (src/pages/choose-language.tsx):
+  - Fullscreen, non-scroll layout with large animated globe hero and bottom fixed compact language buttons; safe-area paddings; sets cookie via next-i18next
+- Services catalogue (src/lib/servicesData.ts, src/lib/servicesApi.ts):
+  - Static rich content used for service detail pages
+  - DB-backed list available via servicesApi: joins departments name, sorts by popularity/updated_at
+- Booking flow (src/pages/book.tsx):
+  - Steps: select service → select office/date → select time → attach documents → confirm
+  - Availability:
+    - Month heatmap: pre-computed client-side by default; if slots table present, queries Supabase slots per month
+    - Day slot list: queries Supabase slots for given (service, office, date)
+  - Profile prefill: fetches full_name/nic/phone from profiles when signed in
+  - Documents:
+    - Can upload to profile (Supabase Storage bucket user-docs) and reuse saved docs per booking
+    - On confirm, selected profile docs copied into appointment_documents with booking_code
+  - Confirm action:
+    - First attempts RPC book_appointment for atomic decrement and booking insert
+    - If RPC unavailable, falls back to a simple client insert to bookings
+    - Generates QR payload and stores qr_data_url in bookings for check-in UX
+    - Generates client-side PDF receipt with qr code (pdf-lib)
+- Appointments list (src/pages/appointments.tsx):
+  - Fetches bookings for current user from DB; falls back to local storage if needed
+  - Shows status badge and countdown, QR preview, Download PDF action
+  - Sends automatic email reminders when within 48h window; sets bookings.is_reminder_sent to true
+- Sign in (src/pages/signin.tsx):
+  - Two-step: verify password, then emails a magic link and signs the session out; only after link click user is fully signed in (defense-in-depth)
+- Documents manager (src/lib/documents.ts):
+  - Uploads to Storage bucket user-docs; writes metadata to profile_documents table; list/remove APIs
+- PDF generation (src/lib/pdf.ts):
+  - Builds an A4 receipt with branding, booking details, QR image; graceful fallback if QR not provided
+- UI building blocks (src/components/ui):
+  - Button, Card, Container, Badge, Breadcrumbs, etc. to keep a consistent style
+- Visual polish (src/components/magicui/globe.tsx):
+  - cobe-based animated globe with pointer-driven rotation spring and auto spin; sized via props
+
+Admin app (apps/admin)
+- Next.js app with its own layout and UI pieces
+- Components for dashboards, health panels, calendar views
+- Intended to manage slots, review appointment documents, and monitor booking metrics (backend policies to be tightened for admin roles)
+
+Analytics dashboard (apps/analytics_dashboard)
+- Next.js app with charts and visualizations (skeleton provided)
+- Can connect to Supabase or exported metrics for traffic/booking trends
+
+Security model
+- Supabase Auth: email/password + optional OTP link flow; session stored in secure cookies
+- Row Level Security (RLS): ensures users can only read/update their own bookings and appointment docs
+- RPC book_appointment runs SECURITY DEFINER to handle atomic writes while respecting business constraints
+- Next.js headers add defense-in-depth: CSP, HSTS, X-Frame-Options, Referrer-Policy, etc.
+- Device session lock (optional): prevents concurrent logins by claiming a server-side lock per device
+
+Performance & reliability
+- Read paths: slots/daily availability have indexes; aggregate view for month rendering
+- Client precomputation fallback ensures the booking UI remains usable even if DB isn’t available
+- Turborepo speeds local dev; apps can run independently for faster iteration
+- Static assets and minimal client bundles for core pages; globe is progressive enhancement
+
+How things work together (end-to-end example)
+1) A new user lands at /; middleware redirects to /choose-language if no NEXT_LOCALE cookie.
+2) The user selects a language; cookie is set; subsequent navigation is locale-prefixed.
+3) The user signs in via two-step flow: password then magic link from email.
+4) On /book, they choose a service/office/date/time. The app queries Supabase slots for availability.
+5) On confirm, the app calls book_appointment RPC. The DB decrements the slot and inserts a booking row.
+6) The app stores QR payload and renders a PDF receipt the user can download or print.
+7) Closer to the appointment date, the app sends an email reminder and flags is_reminder_sent in bookings.
+8) On /appointments, the user sees upcoming bookings, can download PDFs, and show the QR at check-in.
+
+Developer operations
+- Local run: npm install; npm run repo:dev (or run apps individually)
+- Env: set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local
+- DB setup: apply db/schema.sql in Supabase SQL editor; then run db/dummy_seed.sql and db/seed_slots.sql as needed; patch with db/patch_citizen_schema.sql when aligning an existing DB
+- Docker: docker compose up --build to run all apps in dev mode
+
+Extensibility and next steps
+- Add admin role policies and admin-specific RPCs for slot management and document review
+- Add reschedule/cancel RPCs with capacity adjustments and audit logging
+- Add notifications (email/SMS) via Edge Functions on triggers
+- Add rate limits and stricter RLS on slots/offices for production
+- Implement check-in kiosk that verifies QR and updates status to Checked-in/Completed
+- Add end-to-end tests for booking flow and i18n routes
+
+Notes and caveats
+- Keep service-role keys server-only; never put them in NEXT_PUBLIC envs
+- RLS policies here are permissive for prototype; harden before production
+- Daily availability view security_invoker may be ignored on older Postgres; harmless
+- If RPCs are missing, the UI falls back to client inserts which are not atomic; recommended to use RPCs in production
