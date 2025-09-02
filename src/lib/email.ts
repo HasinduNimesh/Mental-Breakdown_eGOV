@@ -37,7 +37,8 @@ export const sendEmailReminder = async (booking: BookingDraft, user: any) => {
       const body = await res.text().catch(() => '');
       throw new Error(`Email API failed: ${res.status} ${body}`);
     }
-    console.log('SUCCESS! Email reminder sent (stub).');
+    const data = await res.json().catch(() => ({} as any));
+    console.log(`SUCCESS! Email reminder sent via ${data?.provider || 'unknown'}.`);
   } catch (err) {
     console.error('FAILED to send email reminder.', err);
     // Re-throw the error so the calling function knows it failed
