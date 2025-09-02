@@ -15,16 +15,20 @@ import SignInModal from '@/components/auth/SignInModal';
 import QRCode from 'qrcode';
 import { sendEmailReminder } from '@/lib/email';
 
-function useTimeUntil(dateISO: string, time: string) {
-  const [value, setValue] = React.useState<string>('');
+type TimeState = { label: string; state: 'future' | 'now' | 'past' };
+function useTimeUntil(dateISO: string, time: string): TimeState {
+  const [value, setValue] = React.useState<TimeState>({ label: '', state: 'future' });
   React.useEffect(() => {
-    const calc = () => {
+    const calc = (): TimeState => {
       const dt = new Date(`${dateISO}T${time}:00+05:30`);
       const ms = dt.getTime() - Date.now();
-      if (ms <= 0) return 'Now';
-      const h = Math.floor(ms / 3600000);
-      const m = Math.floor((ms % 3600000) / 60000);
-      return `${h}h ${m}m`;
+      const abs = Math.abs(ms);
+      const h = Math.floor(abs / 3600000);
+      const m = Math.floor((abs % 3600000) / 60000);
+      if (ms > 0) return { label: `${h}h ${m}m`, state: 'future' };
+      // Consider the appointment "now" for a short window (30 min) around the start
+      if (ms > -30 * 60 * 1000) return { label: 'now', state: 'now' };
+      return { label: `${h}h ${m}m`, state: 'past' };
     };
     setValue(calc());
     const id = window.setInterval(() => setValue(calc()), 30000);
@@ -173,14 +177,25 @@ export const getStaticProps: GetStaticProps = async ({ locale }) => {
 function AppointmentRow({ b, user, onReminderSent }: { b: BookingDraft, user: any, onReminderSent: (bookingId: string) => void }) {
   const svc = SERVICES.find(s => s.id === b.serviceId) || ({ id: b.serviceId, title: b.serviceId, department: '—' } as any);
   const off = OFFICES.find(o => o.id === b.officeId) || ({ id: b.officeId, name: 'Office', city: '', timezone: 'Asia/Colombo' } as any);
-  const countdown = useTimeUntil(b.dateISO, b.time);
+  const timeInfo = useTimeUntil(b.dateISO, b.time);
   const [qrDataUrl, setQrDataUrl] = React.useState<string | null>(null);
   const [sending, setSending] = React.useState(false);
   const [sendError, setSendError] = React.useState<string | null>(null);
 
   const appointmentMs = React.useMemo(() => new Date(`${b.dateISO}T${b.time}:00+05:30`).getTime(), [b.dateISO, b.time]);
   const reminderWindowMs = 48 * 60 * 60 * 1000; // 48h window
-  const withinReminderWindow = React.useMemo(() => (appointmentMs - Date.now()) <= reminderWindowMs, [appointmentMs]);
+  const withinReminderWindow = React.useMemo(() => {
+    const diff = appointmentMs - Date.now();
+    return diff > 0 && diff <= reminderWindowMs; // future only, within window
+  }, [appointmentMs]);
+
+  const displayStatus = React.useMemo<BookingDraft['status'] | 'Ongoing' | 'Completed'>(() => {
+    if (b.status === 'Scheduled') {
+      if (timeInfo.state === 'past') return 'Completed';
+      if (timeInfo.state === 'now') return 'Ongoing' as const;
+    }
+    return b.status;
+  }, [b.status, timeInfo.state]);
 
   React.useEffect(() => {
     async function checkAndSendReminder() {
@@ -308,16 +323,24 @@ function AppointmentRow({ b, user, onReminderSent }: { b: BookingDraft, user: an
           <div className="text-sm text-text-700">{b.dateISO} at {b.time}</div>
           {/* Badges inline on mobile */}
           <div className="mt-2 flex items-center gap-2 flex-wrap sm:hidden">
-            <Badge tone={b.status === 'Scheduled' ? 'warning' : 'neutral'}>{b.status}</Badge>
-            <Badge tone="neutral">Starts in {countdown || '—'}</Badge>
+            <Badge tone={displayStatus === 'Completed' ? 'success' : displayStatus === 'Scheduled' || displayStatus === 'Ongoing' ? 'warning' : 'neutral'}>
+              {displayStatus}
+            </Badge>
+            <Badge tone="neutral">
+              {timeInfo.state === 'future' ? `Starts in ${timeInfo.label}` : timeInfo.state === 'now' ? 'Happening now' : `Ended ${timeInfo.label} ago`}
+            </Badge>
           </div>
         </div>
 
         {/* Right side: badges (hidden on mobile), QR and actions */}
         <div className="flex items-center justify-start sm:justify-end gap-3">
           <div className="hidden sm:flex items-center gap-2">
-            <Badge tone={b.status === 'Scheduled' ? 'warning' : 'neutral'}>{b.status}</Badge>
-            <Badge tone="neutral">Starts in {countdown || '—'}</Badge>
+            <Badge tone={displayStatus === 'Completed' ? 'success' : displayStatus === 'Scheduled' || displayStatus === 'Ongoing' ? 'warning' : 'neutral'}>
+              {displayStatus}
+            </Badge>
+            <Badge tone="neutral">
+              {timeInfo.state === 'future' ? `Starts in ${timeInfo.label}` : timeInfo.state === 'now' ? 'Happening now' : `Ended ${timeInfo.label} ago`}
+            </Badge>
           </div>
           {qrDataUrl ? (
             <img src={qrDataUrl} alt={`QR for ${b.id}`} className="w-14 h-14 sm:w-16 sm:h-16 rounded border border-border bg-white p-0.5 shrink-0" />
