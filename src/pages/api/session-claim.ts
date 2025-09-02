@@ -5,7 +5,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method !== 'POST') return res.status(405).end();
   const authHeader = req.headers.authorization as string | undefined;
   if (!authHeader) return res.status(401).json({ error: 'UNAUTHENTICATED' });
-  const { deviceId } = (req.body ?? {}) as { deviceId?: string };
+  const { deviceId, force } = (req.body ?? {}) as { deviceId?: string; force?: boolean };
   if (!deviceId) return res.status(400).json({ error: 'MISSING_DEVICE' });
 
   const supabase = createClient(
@@ -23,11 +23,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: 'MISSING_TABLE', message: 'Table session_locks does not exist. Run the latest migration.' });
   }
   if (lock && lock.device_id !== deviceId) {
-    return res.status(409).json({ error: 'SESSION_TAKEN', holder: lock.device_id });
+    if (!force) {
+      return res.status(409).json({ error: 'SESSION_TAKEN', holder: lock.device_id });
+    }
+    // Force-claim: override the lock to this device
   }
 
   // Upsert lock to this device
   const { error } = await supabase.from('session_locks').upsert({ user_id: udata.user.id, device_id: deviceId, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
   if (error) return res.status(400).json({ error: error.code || 'LOCK_FAILED', message: error.message });
-  return res.status(200).json({ ok: true });
+  return res.status(200).json({ ok: true, forced: !!force });
 }
