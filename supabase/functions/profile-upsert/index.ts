@@ -7,11 +7,12 @@ serve(async (req: Request) => {
     'Access-Control-Allow-Origin': req.headers.get('origin') ?? '*',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Max-Age': '86400',
     'Vary': 'Origin',
   } as const;
 
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+  return new Response(null, { status: 204, headers: corsHeaders });
   }
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
     global: { headers: { Authorization: req.headers.get("Authorization")! } },

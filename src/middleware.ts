@@ -4,13 +4,12 @@ import { NextResponse } from 'next/server';
 export function middleware(req: NextRequest) {
   const hasLocale = req.cookies.get('NEXT_LOCALE')?.value;
   const { pathname } = req.nextUrl;
-  console.log('[middleware:src] path=', pathname, 'hasLocale=', Boolean(hasLocale));
 
   if (pathname === '/') {
     if (!hasLocale) {
       const url = req.nextUrl.clone();
       url.pathname = '/choose-language';
-      console.log('[middleware:src] redirect -> /choose-language (first-time root)');
+  // redirect first-time visitors to language chooser
       return NextResponse.redirect(url);
     }
     return NextResponse.next();
@@ -19,7 +18,7 @@ export function middleware(req: NextRequest) {
   if (!hasLocale) {
     const url = req.nextUrl.clone();
     url.pathname = '/choose-language';
-    console.log('[middleware:src] redirect -> /choose-language (first-time visitor)');
+  // ensure language selection
     return NextResponse.redirect(url);
   }
 
@@ -29,6 +28,7 @@ export function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     '/',
-    '/((?!_next|api|favicon.ico|robots.txt|sitemap.xml|choose-language|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml|json)).*)',
+  // Exclude Next internals, APIs, static assets, and i18n JSON data files
+  '/((?!_next|api|favicon.ico|robots.txt|sitemap.xml|choose-language|locales|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml|json)).*)',
   ],
 };

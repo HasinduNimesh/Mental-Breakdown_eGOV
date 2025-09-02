@@ -6,15 +6,8 @@ export default function Document() {
     <Html>
       <Head>
         <meta name="theme-color" content="#1E3A8A" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Sri Lanka Gov Services" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link 
-          href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&family=Roboto:wght@400;500;600;700&display=swap" 
-          rel="stylesheet" 
-        />
+  <meta name="apple-mobile-web-app-title" content="Sri Lanka Gov Services" />
+  {/** Fonts are loaded via next/font in _app to avoid external CSS and CSP issues */}
       </Head>
       <body>
         <Main />

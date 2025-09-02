@@ -31,10 +31,21 @@ export async function getMyProfile() {
 }
 
 export async function upsertProfile(fields: Partial<Profile>) {
-  const { error, data } = await supabase.functions.invoke('profile-upsert', { body: fields });
-  if (error) throw error;
+  const { data: { session } } = await supabase.auth.getSession();
+  const resp = await fetch('/api/profile-upsert', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+    },
+    body: JSON.stringify(fields),
+  });
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '');
+    throw new Error(text || 'Failed to update profile');
+  }
   track('filter_change', { kind: 'profile_updated', fields: Object.keys(fields) });
-  return data as { ok: true };
+  return (await resp.json()) as { ok: true };
 }
 
 export async function listSavedForms() {

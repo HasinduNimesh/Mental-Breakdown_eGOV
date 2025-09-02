@@ -23,7 +23,11 @@ export async function fetchServices(): Promise<ServiceRow[]> {
     .select('id, slug, title, short_description, category, is_online, processing_time_days_min, processing_time_days_max, fee_min, fee_max, popularity, default_location, updated_at, departments(name)')
     .order('popularity', { ascending: false })
     .order('updated_at', { ascending: false });
-  if (error) throw error;
+  if (error) {
+    // Surface specific permission error so callers can handle gracefully
+    (error as any).handled = true;
+    throw error;
+  }
   return (data ?? []).map((row: any) => ({
     id: row.id,
     slug: row.slug,

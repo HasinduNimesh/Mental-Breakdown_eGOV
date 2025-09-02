@@ -40,8 +40,8 @@ module.exports = {
         },
       },
       fontFamily: {
-        heading: ['Rubik', 'Noto Sans Sinhala', 'Noto Sans Tamil', 'sans-serif'],
-        body: ['Roboto', 'Noto Sans Sinhala', 'Noto Sans Tamil', 'sans-serif'],
+  heading: ['var(--font-rubik)', 'Noto Sans Sinhala', 'Noto Sans Tamil', 'sans-serif'],
+  body: ['var(--font-roboto)', 'Noto Sans Sinhala', 'Noto Sans Tamil', 'sans-serif'],
       },
       fontSize: {
         display: ['2.5rem', { lineHeight: '1.2', fontWeight: '700' }],
