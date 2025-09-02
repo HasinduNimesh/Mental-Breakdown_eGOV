@@ -1,11 +1,6 @@
 // src/lib/email.ts
 
-import emailjs from '@emailjs/browser';
-import { BookingDraft } from '@/lib/booking'; // We'll get this type from the booking file
-
-const SERVICE_ID = 'service_mentalbreakdowns';
-const TEMPLATE_ID = 'template_wfr19rr';
-const PUBLIC_KEY = '_aGANrA6o2EiXtOqa';
+import { BookingDraft } from '@/lib/booking';
 
 // Change the function to be 'async'
 export const sendEmailReminder = async (booking: BookingDraft, user: any) => {
@@ -27,12 +22,25 @@ export const sendEmailReminder = async (booking: BookingDraft, user: any) => {
   };
 
   try {
-    // Use await to wait for the send operation to complete
-    const response = await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams, { publicKey: PUBLIC_KEY });
-    console.log('SUCCESS! Email reminder sent.', response.status, response.text);
+    // Call our local API route to avoid client-side CORS/AV proxy blocks
+    const res = await fetch('/api/email/reminder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to: user.email,
+        subject: 'Appointment Reminder',
+        templateParams,
+        booking,
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      throw new Error(`Email API failed: ${res.status} ${body}`);
+    }
+    console.log('SUCCESS! Email reminder sent (stub).');
   } catch (err) {
     console.error('FAILED to send email reminder.', err);
     // Re-throw the error so the calling function knows it failed
-    throw err;
+    throw err as any;
   }
 };

@@ -8,9 +8,19 @@ type PdfArgs = {
   office: Office;
   tz: string;
   qrDataUrl?: string | null; // if missing, we won't embed QR
+  payment?: {
+    amount: number;
+    method?: string;
+    txnId?: string;
+    status?: 'Paid' | 'Unpaid';
+  };
+  // Optional: adjust the government logo width in the PDF header (pixels). Height scales equally.
+  logoWidth?: number; // default 48
+  // Optional: custom logo asset path (defaults to '/logo.svg'). You can pass a PNG/SVG path in /public.
+  logoSrc?: string;
 };
 
-export async function buildBookingPDF({ booking, service, office, tz, qrDataUrl }: PdfArgs): Promise<Blob> {
+export async function buildBookingPDF({ booking, service, office, tz, qrDataUrl, payment, logoWidth, logoSrc }: PdfArgs): Promise<Blob> {
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([595, 842]); // A4 portrait (72dpi)
 
@@ -27,14 +37,18 @@ export async function buildBookingPDF({ booking, service, office, tz, qrDataUrl 
     return out;
   };
 
-  const svgToPngBytes = async (url: string, w: number, h: number): Promise<Uint8Array | null> => {
+  const loadImageToPngBytes = async (url: string, w: number, h: number): Promise<Uint8Array | null> => {
     try {
-      const res = await fetch(url);
-      if (!res.ok) return null;
-      const svg = await res.text();
-      const svgUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+      let src = url;
+      if (url.toLowerCase().endsWith('.svg')) {
+        const res = await fetch(url);
+        if (!res.ok) return null;
+        const svg = await res.text();
+        src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+      }
       const pngDataUrl = await new Promise<string>((resolve, reject) => {
         const img = new Image();
+        img.crossOrigin = 'anonymous';
         img.onload = () => {
           try {
             const canvas = document.createElement('canvas');
@@ -43,10 +57,10 @@ export async function buildBookingPDF({ booking, service, office, tz, qrDataUrl 
             if (!ctx) { reject(new Error('no-ctx')); return; }
             ctx.drawImage(img, 0, 0, w, h);
             resolve(canvas.toDataURL('image/png'));
-          } catch (e) { reject(e); }
+          } catch (e) { reject(e as any); }
         };
         img.onerror = () => reject(new Error('logo-load-failed'));
-        img.src = svgUrl;
+        img.src = src;
       });
       return dataUrlToBytes(pngDataUrl);
     } catch { return null; }
@@ -58,10 +72,23 @@ export async function buildBookingPDF({ booking, service, office, tz, qrDataUrl 
   page.drawRectangle({ x: 0, y: 842 - headerH, width: pageWidth, height: headerH, color: rgb(0.97, 0.98, 0.99) });
   // Try to embed logo (optional)
   try {
-    const logoBytes = await svgToPngBytes('/logo.svg', 60, 60);
+    // Adjustable logo size with safe bounds (min 24, max 96)
+    const LOGO_W = Math.min(96, Math.max(24, logoWidth ?? 48));
+    const LOGO_H = LOGO_W; // keep square for crest
+    const logoUrl = logoSrc || '/logo.svg';
+    const logoBytes = await loadImageToPngBytes(logoUrl, LOGO_W, LOGO_H);
     if (logoBytes) {
       const logo = await pdfDoc.embedPng(logoBytes);
-      page.drawImage(logo, { x: 50, y: 842 - headerH + (headerH - 60) / 2, width: 60, height: 60 });
+      const logoX = 50;
+      const logoY = 842 - headerH + (headerH - LOGO_H) / 2;
+      page.drawImage(logo, { x: logoX, y: logoY, width: LOGO_W, height: LOGO_H });
+
+      // Blue color box under the logo area (brand accent)
+      const brandBlue = rgb(0.16, 0.38, 0.69);
+      const underlineH = 8;
+      // Place near bottom of header, aligned with logo
+      const underlineY = (842 - headerH) + 8;
+      page.drawRectangle({ x: logoX, y: underlineY, width: LOGO_W, height: underlineH, color: brandBlue });
     }
   } catch {}
 
@@ -96,6 +123,15 @@ export async function buildBookingPDF({ booking, service, office, tz, qrDataUrl 
   label('Office'); value(`${office.name}, ${office.city}`);
   label('Date & Time'); value(`${booking.dateISO} at ${booking.time} (${tz})`);
   label('Status'); value(booking.status);
+  // Payment information (if provided)
+  if (payment) {
+    const parts: string[] = [];
+    if (typeof payment.amount === 'number') parts.push(`LKR ${payment.amount.toLocaleString('en-LK')}`);
+    if (payment.method) parts.push(payment.method);
+    if (payment.txnId) parts.push(`Txn ${payment.txnId}`);
+    const statusText = payment.status ? ` (${payment.status})` : '';
+    label('Payment'); value((parts.join(' • ') || '—') + statusText);
+  }
 
   // Person
   y -= 6; page.drawText('Your Details', { x: 50, y, size: 12, font: fontBold }); y -= lineGap;

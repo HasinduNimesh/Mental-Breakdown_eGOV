@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { getAllServiceIds, getServiceById, ServiceDetail } from '@/lib/servicesData';
+import { supabase } from '@/lib/supabaseClient';
 import { BuildingOfficeIcon, ClockIcon, CurrencyDollarIcon, DocumentTextIcon, TruckIcon, ShieldCheckIcon, GlobeAltIcon, AcademicCapIcon, HeartIcon, MapPinIcon } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleIcon20 } from '@heroicons/react/20/solid';
 
@@ -185,23 +186,95 @@ export const getStaticPaths: GetStaticPaths = async () => {
   const ids = getAllServiceIds();
   return {
     paths: ids.map(id => ({ params: { id } })),
-    fallback: false,
+    // Allow on-demand generation for slugs coming from the database
+    fallback: 'blocking',
   };
 };
 
 export const getStaticProps: GetStaticProps = async ({ params, locale }) => {
   const id = params?.id as string;
-  const service = getServiceById(id);
-  if (!service) {
-    return { notFound: true };
+  // Try static details first
+  const staticSvc = getServiceById(id);
+  if (staticSvc) {
+    const { icon, ...plainService } = staticSvc as ServiceDetail & { icon?: unknown };
+    return {
+      props: {
+        ...(await serverSideTranslations(locale ?? 'en', ['common'])),
+        service: plainService,
+      },
+      // Revalidate occasionally to keep i18n resources fresh
+      revalidate: 60,
+    };
   }
-  // Remove non-serializable fields (like React components) before returning props
-  const { icon, ...plainService } = service as ServiceDetail & { icon?: unknown };
+
+  // Fallback to DB by slug (id) for dynamic services not baked into static data
+  const { data: svc, error } = await supabase
+    .from('services')
+    .select('id, slug, title, short_description, category, processing_time_days_min, processing_time_days_max, fee_min, fee_max, default_location, departments(name)')
+    .eq('slug', id)
+    .maybeSingle();
+
+  if (error) {
+    // Log on server and return 404 to avoid leaking details
+    console.error('service detail fetch failed', { id, error });
+    return { notFound: true, revalidate: 30 };
+  }
+  if (!svc) {
+    return { notFound: true, revalidate: 30 };
+  }
+
+  // Optionally fetch requirements and FAQs if available
+  let requirements: { label: string; example?: string }[] = [];
+  let faqs: { q: string; a: string }[] = [];
+  try {
+    const [{ data: reqs }, { data: faqRows }] = await Promise.all([
+      supabase.from('service_requirements').select('label, example').eq('service_id', svc.id),
+      supabase.from('service_faqs').select('question, answer').eq('service_id', svc.id),
+    ]);
+    requirements = (reqs ?? []).map(r => ({ label: r.label, example: r.example ?? undefined }));
+    faqs = (faqRows ?? []).map(f => ({ q: f.question, a: f.answer }));
+  } catch (e) {
+    console.warn('optional requirements/faqs fetch failed', e);
+  }
+
+  const formatDays = (min: number | null, max: number | null) => {
+    if (min == null && max == null) return 'Varies';
+    if (min != null && max != null) return `${min}-${max} days`;
+    const d = (min ?? max) as number;
+    if (d === 0) return 'Same-day';
+    return `${d} day${d === 1 ? '' : 's'}`;
+  };
+  const formatFee = (min: number | null, max: number | null) => {
+    if (min == null && max == null) return 'N/A';
+    if (min != null && max != null) return `LKR ${Number(min).toLocaleString()} - LKR ${Number(max).toLocaleString()}`;
+    const v = (min ?? max) as number;
+    return `LKR ${Number(v).toLocaleString()}`;
+  };
+
+  const deptName = Array.isArray((svc as any).departments)
+    ? (svc as any).departments[0]?.name
+    : (svc as any).departments?.name;
+  const dynamicService: Omit<ServiceDetail, 'icon'> = {
+    id,
+    title: svc.title,
+    department: deptName ?? '—',
+    purpose: svc.short_description ?? 'Service details will be available soon.',
+    eligibility: [],
+    requirements,
+    fee: formatFee(svc.fee_min as any, svc.fee_max as any),
+    time: formatDays(svc.processing_time_days_min as any, svc.processing_time_days_max as any),
+    locations: [{ name: svc.default_location ?? 'Nationwide' }],
+    faqs,
+    bookHref: `/book?service=${encodeURIComponent(id)}`,
+  };
+
   return {
     props: {
       ...(await serverSideTranslations(locale ?? 'en', ['common'])),
-      service: plainService,
+      service: dynamicService,
     },
+    // Regenerate on demand
+    revalidate: 60,
   };
 };
 
