@@ -511,7 +511,8 @@ const BookPage: React.FC = () => {
                     </div>
                     <div className="mt-4 flex items-center gap-3">
                       <Button onClick={() => setStep(1)} variant="outline">Back</Button>
-                        <Button onClick={() => { if (!user) { setShowSignIn(true); return; } setStep(3); }} disabled={!time || !user || loadingSlots}>Enter your details</Button>
+                      {/* Do not block progression on loadingSlots; network hiccups shouldn't freeze the flow once a time is chosen */}
+                      <Button onClick={() => { if (!user) { setShowSignIn(true); return; } setStep(3); }} disabled={!time}>Enter your details</Button>
                     </div>
                   </div>
                 </div>
