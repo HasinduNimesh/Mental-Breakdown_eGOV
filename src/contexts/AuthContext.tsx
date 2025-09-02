@@ -78,7 +78,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const resp = await fetch('/api/session-claim', {
               method: 'POST',
               headers: { 'content-type': 'application/json', Authorization: `Bearer ${token}` },
-              body: JSON.stringify({ deviceId: getDeviceId() })
+              // Send force: true initially to avoid transient 409 logs and stale locks
+              body: JSON.stringify({ deviceId: getDeviceId(), force: true })
             });
             if (resp.status === 409) {
               // Auto sign out other device by force-claiming the lock to this device
