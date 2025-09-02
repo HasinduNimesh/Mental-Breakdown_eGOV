@@ -175,6 +175,12 @@ function AppointmentRow({ b, user, onReminderSent }: { b: BookingDraft, user: an
   const off = OFFICES.find(o => o.id === b.officeId) || ({ id: b.officeId, name: 'Office', city: '', timezone: 'Asia/Colombo' } as any);
   const countdown = useTimeUntil(b.dateISO, b.time);
   const [qrDataUrl, setQrDataUrl] = React.useState<string | null>(null);
+  const [sending, setSending] = React.useState(false);
+  const [sendError, setSendError] = React.useState<string | null>(null);
+
+  const appointmentMs = React.useMemo(() => new Date(`${b.dateISO}T${b.time}:00+05:30`).getTime(), [b.dateISO, b.time]);
+  const reminderWindowMs = 48 * 60 * 60 * 1000; // 48h window
+  const withinReminderWindow = React.useMemo(() => (appointmentMs - Date.now()) <= reminderWindowMs, [appointmentMs]);
 
   React.useEffect(() => {
     async function checkAndSendReminder() {
@@ -190,12 +196,8 @@ function AppointmentRow({ b, user, onReminderSent }: { b: BookingDraft, user: an
         if (set.has(b.id)) return;
       } catch {}
 
-      const appointmentDateTime = new Date(`${b.dateISO}T${b.time}:00+05:30`).getTime();
-      const now = Date.now();
-      const twentyFourHoursInMillis = 48 * 60 * 60 * 1000;
-
-      // 2. Check time and user
-      if (user && (appointmentDateTime - now <= twentyFourHoursInMillis)) {
+  // 2. Check time and user
+  if (user && withinReminderWindow) {
         try {
           // 3. Send email and wait for it
           await sendEmailReminder(b, user);
@@ -210,7 +212,10 @@ function AppointmentRow({ b, user, onReminderSent }: { b: BookingDraft, user: an
 
           if (updateError) {
             // If column doesn't exist yet, treat as best-effort success and fall back to local flag
-            if (String(updateError.message).includes('is_reminder_sent') || String(updateError.code) === '42703') {
+            if (
+              String(updateError.message).includes('is_reminder_sent') || String(updateError.code) === '42703' ||
+              String(updateError.message).toLowerCase().includes('permission denied') || String(updateError.code) === '42501'
+            ) {
               try {
                 const k = 'egov_reminders_v1';
                 const raw = typeof window !== 'undefined' ? localStorage.getItem(k) : null;
@@ -234,6 +239,39 @@ function AppointmentRow({ b, user, onReminderSent }: { b: BookingDraft, user: an
 
     checkAndSendReminder();
   }, [b, user, onReminderSent]);
+
+  async function sendNow() {
+    if (!user || sending) return;
+    setSending(true);
+    setSendError(null);
+    try {
+      await sendEmailReminder(b, user);
+      const { error: updateError } = await supabase
+        .from('bookings')
+        .update({ is_reminder_sent: true })
+        .eq('booking_code', b.id);
+      if (updateError) {
+        const colMissing = String(updateError.message).includes('is_reminder_sent') || String(updateError.code) === '42703';
+        const permDenied = String(updateError.message).toLowerCase().includes('permission denied') || String(updateError.code) === '42501';
+        if (!(colMissing || permDenied)) {
+          throw updateError;
+        }
+      }
+      // Local fallback mark
+      try {
+        const k = 'egov_reminders_v1';
+        const raw = typeof window !== 'undefined' ? localStorage.getItem(k) : null;
+        const set = new Set<string>(raw ? JSON.parse(raw) : []);
+        set.add(b.id);
+        if (typeof window !== 'undefined') localStorage.setItem(k, JSON.stringify(Array.from(set)));
+      } catch {}
+      onReminderSent(b.id);
+    } catch (e: any) {
+      setSendError(e?.message || 'Failed to send reminder');
+    } finally {
+      setSending(false);
+    }
+  }
 
   React.useEffect(() => {
     let cancelled = false;
@@ -286,6 +324,15 @@ function AppointmentRow({ b, user, onReminderSent }: { b: BookingDraft, user: an
           ) : (
             <div className="w-14 h-14 sm:w-16 sm:h-16 grid place-items-center rounded border border-border bg-bg-50 text-[10px] text-text-500 shrink-0">QR…</div>
           )}
+          {withinReminderWindow && (
+            b.is_reminder_sent ? (
+              <Badge tone="success" className="hidden sm:inline-flex">Reminder sent</Badge>
+            ) : (
+              <Button variant="outline" className="hidden sm:inline-flex" disabled={sending} onClick={sendNow}>
+                {sending ? 'Sending…' : 'Send reminder'}
+              </Button>
+            )
+          )}
           <Button
             variant="outline"
             className="hidden sm:inline-flex"
@@ -295,6 +342,9 @@ function AppointmentRow({ b, user, onReminderSent }: { b: BookingDraft, user: an
           </Button>
         </div>
       </div>
+      {sendError && (
+        <div className="mt-2 text-xs text-red-600">{sendError}</div>
+      )}
       {/* Mobile action button full width */}
       <div className="mt-3 sm:hidden">
         <Button
@@ -304,6 +354,13 @@ function AppointmentRow({ b, user, onReminderSent }: { b: BookingDraft, user: an
         >
           Download PDF
         </Button>
+        {withinReminderWindow && (
+          b.is_reminder_sent ? (
+            <div className="mt-2"><Badge tone="success">Reminder sent</Badge></div>
+          ) : (
+            <div className="mt-2"><Button variant="outline" className="w-full" disabled={sending} onClick={sendNow}>{sending ? 'Sending…' : 'Send reminder'}</Button></div>
+          )
+        )}
       </div>
     </Card>
   );
