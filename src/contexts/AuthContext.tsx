@@ -80,9 +80,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               body: JSON.stringify({ deviceId: getDeviceId() })
             });
             if (resp.status === 409) {
-              // Another device holds the lock—sign out here
-              await supabase.auth.signOut();
-              alert('You are signed in on another device. Please sign out there or try again.');
+              // Offer to sign out the other device by force-claiming the lock
+              const confirmTakeover = typeof window !== 'undefined' && window.confirm('You are signed in on another device. Do you want to sign out the other device and continue here?');
+              if (confirmTakeover) {
+                try {
+                  const forceResp = await fetch('/api/session-claim', {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json', Authorization: `Bearer ${token}` },
+                    body: JSON.stringify({ deviceId: getDeviceId(), force: true })
+                  });
+                  if (!forceResp.ok) {
+                    await supabase.auth.signOut();
+                    alert('Could not take over the session. Please try again later.');
+                  }
+                } catch {
+                  await supabase.auth.signOut();
+                }
+              } else {
+                await supabase.auth.signOut();
+              }
             }
           }
         } catch {}
