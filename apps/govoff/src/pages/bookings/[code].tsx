@@ -1,7 +1,6 @@
 import React from 'react'
 import { useRouter } from 'next/router'
 import { Layout } from '@/components/Layout'
-import { getSupabase } from '@/lib/supabaseClient'
 
 type Booking = {
   booking_code: string
@@ -27,7 +26,6 @@ type Doc = {
 export default function BookingDetail() {
   const router = useRouter()
   const code = String(router.query.code||'')
-  const supabase = React.useMemo(()=>getSupabase(),[])
   const [booking, setBooking] = React.useState<Booking | null>(null)
   const [docs, setDocs] = React.useState<Doc[]>([])
   const [loading, setLoading] = React.useState(true)
@@ -40,33 +38,35 @@ export default function BookingDetail() {
     async function load(){
       setLoading(true)
       try {
-  const { data: b } = await supabase
-          .from('bookings')
-          .select('booking_code, full_name, email, service_id, office_id, slot_date, slot_time, status')
-          .eq('booking_code', code)
-          .maybeSingle()
-  const { data: d } = await supabase
-          .from('appointment_documents')
-          .select('id, booking_code, original_name, object_key, mime_type, size_bytes, status')
-          .eq('booking_code', code)
-          .order('id', { ascending: true })
-  if (!cancelled) { setBooking((b as unknown as Booking) ?? null); setDocs((d as unknown as Doc[]) || []) }
+        const resp = await fetch(`/api/officer/booking-detail?code=${encodeURIComponent(code)}`, { headers: { 'Accept': 'application/json' } })
+        if (!resp.ok) { setBooking(null); setDocs([]); return }
+        const json = await resp.json()
+        if (!cancelled) { setBooking(json.booking as Booking); setDocs((json.docs as Doc[]) || []) }
       } finally { if (!cancelled) setLoading(false) }
     }
     load(); return ()=>{ cancelled = true }
-  },[code, supabase])
+  },[code])
 
   async function markCorrection() {
     if (!booking || busy) return
     setBusy(true)
     try {
-      // Update document statuses to Needs fix
+      // Update document statuses to Needs fix via server-side privileged update endpoint (fallback to anon if RLS allows)
       const ids = docs.map(d=>d.id)
       if (ids.length) {
-        await supabase.from('appointment_documents').update({ status: 'Needs fix' }).in('id', ids)
+        await fetch('/api/officer/update-doc-status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids, status: 'Needs fix' }) })
       }
-      // Optional: send an email to the citizen using Resend through main app API
-      await fetch('/api/email/reminder', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to: booking.email, subject: 'Document correction needed', templateParams: { note }, booking: { id: booking.booking_code, dateISO: booking.slot_date, time: (booking.slot_time||'').slice(0,5) } }) })
+      // Notify citizen with correction note via GovOff notify endpoint
+      await fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: booking.email,
+          kind: 'correction',
+          note,
+          booking: { id: booking.booking_code, dateISO: booking.slot_date, time: (booking.slot_time||'').slice(0,5) }
+        })
+      })
       alert('Marked and notified citizen')
     } finally { setBusy(false) }
   }
@@ -74,7 +74,10 @@ export default function BookingDetail() {
   async function setStatus(newStatus: string) {
     if (!booking) return
     setBusy(true)
-    try { await supabase.from('bookings').update({ status: newStatus }).eq('booking_code', booking.booking_code); setBooking({ ...booking, status: newStatus }) } finally { setBusy(false) }
+    try {
+      await fetch('/api/officer/update-booking-status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: booking.booking_code, status: newStatus }) })
+      setBooking({ ...booking, status: newStatus })
+    } finally { setBusy(false) }
   }
 
   return (

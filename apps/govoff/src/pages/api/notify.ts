@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { Resend } from 'resend'
 
-type NotifyKind = 'confirmation' | 'reminder' | 'status'
+type NotifyKind = 'confirmation' | 'reminder' | 'status' | 'correction'
 type NotifyBody = {
   to: string
   kind: NotifyKind
@@ -23,21 +23,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
   }
   const resend = new Resend(apiKey)
 
-  const subjects: Record<string,string> = {
+  const subjects: Record<string, string> = {
     confirmation: `Appointment confirmed: ${booking?.id}`,
     reminder: `Reminder: your appointment ${booking?.dateISO} ${booking?.time}`,
     status: `Update for your appointment ${booking?.id}`,
+    correction: `Corrections required for your appointment ${booking?.id}`,
   }
+
+  const intro =
+    kind === 'correction'
+      ? 'An officer reviewed your documents and requested some corrections:'
+      : kind === 'status'
+      ? 'There is an update from the officer.'
+      : kind === 'reminder'
+      ? 'This is a reminder for your upcoming appointment.'
+      : 'Your appointment is confirmed.'
+
   const html = `
-    <div style="font-family:system-ui">
+    <div style="font-family:system-ui;line-height:1.5;color:#111">
       <p>Dear citizen,</p>
-      <p>${kind === 'status' ? 'There is an update from the officer.' : kind === 'reminder' ? 'This is a reminder for your upcoming appointment.' : 'Your appointment is confirmed.'}</p>
-      ${note ? `<p><strong>Note:</strong> ${String(note)}</p>` : ''}
+      <p>${intro}</p>
+      ${note ? `<blockquote style="margin:8px 0;padding:8px 12px;border-left:3px solid #4f46e5;background:#f8f8ff">${String(
+        note
+      )}</blockquote>` : ''}
+      <p><strong>Appointment details</strong></p>
       <ul>
         <li><b>Code:</b> ${booking?.id}</li>
-        <li><b>Date:</b> ${booking?.dateISO}</li>
-        <li><b>Time:</b> ${booking?.time}</li>
+        <li><b>Date:</b> ${booking?.dateISO || '-'}</li>
+        <li><b>Time:</b> ${booking?.time || '-'}</li>
       </ul>
+      <p style="margin-top:12px">Thank you,<br/>Officer Console</p>
     </div>
   `
   const resp = await resend.emails.send({ from, to, subject: subjects[kind] || 'Appointment update', html })
