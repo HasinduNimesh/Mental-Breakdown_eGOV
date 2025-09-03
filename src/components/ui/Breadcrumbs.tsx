@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { ChevronRightIcon, HomeIcon } from '@heroicons/react/24/outline';
+import { useTranslation } from 'next-i18next';
 
 export interface Crumb {
   label: string;
@@ -10,6 +11,7 @@ export interface Crumb {
 type BreadcrumbsProps = { items: Crumb[]; className?: string; tone?: 'default' | 'light' };
 
 export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ items, className = '', tone = 'default' }) => {
+  const { t } = useTranslation();
   if (!items || items.length === 0) return null;
   const first = items[0];
   const rest = items.slice(1);
@@ -20,7 +22,7 @@ export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ items, className = '',
         <li className="flex items-center gap-1">
           <Link href={first.href || '/'} className={`inline-flex items-center gap-1 ${isLight ? 'text-white hover:text-white' : 'hover:text-primary-700'}`}>
             <HomeIcon className={`w-4 h-4 ${isLight ? 'text-white' : ''}`} />
-            <span>Home</span>
+            <span>{t('nav_home', 'Home')}</span>
           </Link>
         </li>
         {rest.map((it, idx) => (

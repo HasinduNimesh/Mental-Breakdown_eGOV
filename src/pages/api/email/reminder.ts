@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { Resend } from 'resend';
 
 // Reminder email endpoint.
 // Behavior:
@@ -25,31 +26,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const builtText = text || buildReminderText(templateParams, booking);
 
     const apiKey = process.env.RESEND_API_KEY;
-    const from = process.env.RESEND_FROM;
-
-    if (apiKey && from) {
-      const sendRes = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from,
-          to: Array.isArray(recipient) ? recipient : [recipient],
-          subject: subj,
-          html: builtHtml,
-          text: builtText,
-        }),
+    if (apiKey) {
+      const resend = new Resend(apiKey);
+      const from = process.env.RESEND_FROM || 'onboarding@resend.dev';
+      const sendRes = await resend.emails.send({
+        from,
+        to: Array.isArray(recipient) ? recipient : [recipient],
+        subject: subj,
+        html: builtHtml,
+        text: builtText,
       });
-      if (!sendRes.ok) {
-        const msg = await sendRes.text().catch(() => '');
-        console.error('[email] Resend failed', sendRes.status, msg);
+      if (sendRes.error) {
+        console.error('[email] Resend failed', sendRes.error);
         return res.status(502).json({ ok: false, error: 'Email provider failed' });
       }
-      const data = await sendRes.json().catch(() => ({}));
-      console.log('[email] Sent via Resend', { id: data?.id, to: recipient, bookingId: booking?.id });
-      return res.status(200).json({ ok: true, provider: 'resend', id: data?.id });
+      console.log('[email] Sent via Resend', { id: (sendRes.data as any)?.id, to: recipient, bookingId: booking?.id });
+      return res.status(200).json({ ok: true, provider: 'resend', id: (sendRes.data as any)?.id });
     }
 
     // Fallback: stub mode

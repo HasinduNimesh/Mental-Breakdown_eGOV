@@ -19,6 +19,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/router';
 import { listProfileDocuments, uploadProfileDocument, type ProfileDoc } from '@/lib/documents';
 import { downloadBookingPDF } from '@/lib/pdf';
+import { sendBookingConfirmation } from '@/lib/email';
 
 type Step = 1 | 2 | 3 | 4 | 5;
 
@@ -28,7 +29,7 @@ const BookPage: React.FC = () => {
   const [step, setStep] = React.useState<Step>(1);
   const [serviceId, setServiceId] = React.useState(SERVICES[0].id);
   // If user arrived from Services with a DB-backed slug (not in our local SERVICES), hold it here for display
-  const [externalService, setExternalService] = React.useState<null | { slug: string; title: string; department: string }>(null);
+  const [externalService, setExternalService] = React.useState<null | { id: string; slug: string; title: string; department: string }>(null);
   const [serverSlotTimes, setServerSlotTimes] = React.useState<Array<{ time: string; available: boolean; period: 'morning'|'afternoon' }>>([]);
   const [loadingSlots, setLoadingSlots] = React.useState(false);
   const [bookingBusy, setBookingBusy] = React.useState(false);
@@ -59,13 +60,31 @@ const BookPage: React.FC = () => {
   const [paymentBusy, setPaymentBusy] = React.useState(false);
   const [paymentInfo, setPaymentInfo] = React.useState<null | { txnId: string; method: string; amount: number }>(null);
   // Real services list from DB for unlocked dropdown
-  const [dbServices, setDbServices] = React.useState<Array<{ slug: string; title: string | null; department: string }>>([]);
+  const [dbServices, setDbServices] = React.useState<Array<{ id: string; slug: string; title: string | null; department: string }>>([]);
   const [dbServicesLoading, setDbServicesLoading] = React.useState(false);
 
   const service = SERVICES.find(s => s.id === serviceId)!;
   const serviceTitle = externalService?.title ?? service.title;
   const serviceDepartment = externalService?.department ?? service.department;
-  const effectiveServiceId = React.useMemo(() => externalService?.slug ?? serviceId, [externalService?.slug, serviceId]);
+  // Always use canonical service IDs for DB (map known slugs to local IDs)
+  const effectiveServiceId = React.useMemo(() => {
+    // Prefer the actual DB service id when available (e.g., 'svc_…')
+    if (externalService?.id) return externalService.id;
+    const slug = externalService?.slug;
+    if (slug) {
+      const map: Record<string, string> = {
+        'passport': 'passport',
+        'passport-application': 'passport',
+        'driving-license': 'license',
+        'license': 'license',
+        'birth-cert': 'birth-cert',
+        'birth-certificate': 'birth-cert',
+        'police-clearance': 'police-clearance',
+      };
+      return map[slug] ?? serviceId;
+    }
+    return serviceId;
+  }, [externalService?.slug, serviceId]);
   // Map booking serviceId -> ServiceDetail to list requirements
   const serviceDetail: ServiceDetail | undefined = React.useMemo(() => {
     const map: Record<string, string> = {
@@ -133,7 +152,7 @@ const BookPage: React.FC = () => {
   // Set initial service based on query param and lock the selector
   React.useEffect(() => {
     if (!router.isReady) return;
-    const q = router.query.service;
+  const q = router.query.service;
     const fromQuery = normalizeService(q);
     if (fromQuery && SERVICES.some(s => s.id === fromQuery)) {
       setServiceId(fromQuery);
@@ -142,19 +161,25 @@ const BookPage: React.FC = () => {
       return;
     }
     // If not a known local key but a slug is present, try fetching real service for display
-    const raw = Array.isArray(q) ? q[0] : (q || '');
-    const slug = raw.trim();
+  const raw = Array.isArray(q) ? q[0] : (q || '');
+  // Decode URL-encoded slug like 'service-%20%20872' -> 'service-  872'
+  let slug = raw;
+  try { slug = decodeURIComponent(raw); } catch {}
+  slug = slug.trim();
     if (slug && !fromQuery) {
+      // Optimistic placeholder so UI shows immediately
+      setExternalService({ id: '', slug, title: slug, department: '—' });
+      setServiceLocked(true);
       (async () => {
         try {
           const { data, error } = await supabase
-            .from('services')
-            .select('slug, title, departments(name)')
+      .from('services')
+      .select('id, slug, title, departments(name)')
             .eq('slug', slug)
             .maybeSingle();
           if (!error && data) {
-            const dept = Array.isArray((data as any).departments) ? (data as any).departments[0]?.name : (data as any).departments?.name;
-            setExternalService({ slug, title: (data as any).title ?? slug, department: dept ?? '—' });
+      const dept = Array.isArray((data as any).departments) ? (data as any).departments[0]?.name : (data as any).departments?.name;
+      setExternalService({ id: (data as any).id as string, slug, title: (data as any).title ?? slug, department: dept ?? '—' });
             setServiceLocked(true);
           }
         } catch {
@@ -172,12 +197,12 @@ const BookPage: React.FC = () => {
       try {
         const { data, error } = await supabase
           .from('services')
-          .select('slug, title, departments(name)')
+          .select('id, slug, title, departments(name)')
           .order('title', { ascending: true });
         if (!error && data && !cancelled) {
           const list = (data as any[]).map((row) => {
             const dept = Array.isArray(row.departments) ? row.departments[0]?.name : row.departments?.name;
-            return { slug: row.slug as string, title: (row.title as string) ?? null, department: dept ?? '—' };
+            return { id: row.id as string, slug: row.slug as string, title: (row.title as string) ?? null, department: dept ?? '—' };
           });
           setDbServices(list);
         }
@@ -404,6 +429,16 @@ const BookPage: React.FC = () => {
         track('booking_completed', { serviceId: effectiveServiceId, officeId, date: confirmed.dateISO, time: confirmed.time });
         setConfirmed(confirmed);
         setStep(5);
+        // Best-effort confirmation email (non-blocking)
+        try {
+          await sendBookingConfirmation({
+            to: email,
+            booking: confirmed,
+            service: { title: serviceTitle, department: serviceDepartment },
+            office: { name: office.name, city: office.city },
+            tz,
+          });
+        } catch {}
         return;
       }
       // Fallback to local-only booking if RPC not available
@@ -431,6 +466,16 @@ const BookPage: React.FC = () => {
   track('booking_completed', { serviceId: effectiveServiceId, officeId, date: localBooking.dateISO, time: localBooking.time });
       setConfirmed(localBooking);
       setStep(5);
+      // Best-effort confirmation email (non-blocking)
+      try {
+        await sendBookingConfirmation({
+          to: email,
+          booking: localBooking,
+          service: { title: serviceTitle, department: serviceDepartment },
+          office: { name: office.name, city: office.city },
+          tz,
+        });
+      } catch {}
     } finally {
       setBookingBusy(false);
     }
@@ -528,7 +573,7 @@ const BookPage: React.FC = () => {
                         const v = e.target.value;
                         const fromDb = dbServices.find(d => d.slug === v);
                         if (fromDb) {
-                          setExternalService({ slug: fromDb.slug, title: fromDb.title ?? fromDb.slug, department: fromDb.department });
+                          setExternalService({ id: fromDb.id, slug: fromDb.slug, title: fromDb.title ?? fromDb.slug, department: fromDb.department });
                           // If DB slug maps to a known local service, sync serviceId for requirement hints
                           const map: Record<string, string> = {
                             'passport': 'passport',

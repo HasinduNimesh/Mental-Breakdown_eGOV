@@ -79,14 +79,14 @@ export default function Dashboard() {
         const todayStr = toYMD(new Date());
         const nextWeek = toYMD(addDays(new Date(), 7));
         const list = await listBookings(todayStr, nextWeek);
-        const mapped: AppointmentRow[] = list.map((b) => ({
+        const mapped: AppointmentRow[] = (list as any[]).map((b) => ({
           id: b.booking_code,
-          department: b.service_id, // If you want names, join services and map id->title
+          department: b?.services?.title || b.service_id,
           date: b.slot_date,
           time: (b.slot_time || '').slice(0,5),
           status: b.status as AppointmentStatus,
           patientName: b.full_name,
-          room: b.office_id,
+          room: b?.offices?.name || b.office_id,
         }));
         if (mapped.length) setRows(mapped);
       } catch (e) {

@@ -85,18 +85,33 @@ export function AppointmentTable({ rows, searchable = true, onChangeStatus }: Pr
       "Scheduled","In progress","Completed","Cancelled","No-show","Delayed","On hold"
     ];
 
+  function exportCSV() {
+    const headers = ['Appointment','Date','Time','Department','Status'];
+    const lines = [headers.join(',')].concat(
+      filtered.map(r => [r.id, r.date, r.time, r.department, r.status].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','))
+    );
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'appointments.csv'; a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="rounded-2xl border bg-white shadow-sm">
       <div className="flex items-center justify-between px-4 py-3">
         <h2 className="font-semibold">Appointments</h2>
-        {searchable && (
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search…"
-            className="h-9 w-56 rounded-lg border px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        )}
+        <div className="flex items-center gap-2">
+          {searchable && (
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search…"
+              className="h-9 w-56 rounded-lg border px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          )}
+          <button onClick={exportCSV} className="h-9 rounded-lg border px-3 text-sm hover:bg-gray-50">Export CSV</button>
+        </div>
       </div>
 
       <div className="overflow-x-auto">

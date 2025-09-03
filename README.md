@@ -124,6 +124,10 @@ Upload to Drive/Supabase Storage and share a link.
 - Supabase env missing: the apps will run, but data calls return empty structures (Analytics falls back gracefully).
 - SQL errors: run `db/used_schema.sql` in order; fix any legacy non-UUID IDs as noted in comments.
 
+Admin API 500 on /api/bookings:
+- Ensure `apps/admin/.env.local` contains SUPABASE_SERVICE_ROLE_KEY along with NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.
+- If your schema doesn’t have relationships from bookings -> services/offices, the API auto-falls back to a flat select. Apply `db/used_schema.sql` to get the expected shape.
+
 ---
 
 Happy hacking! PRs welcome.

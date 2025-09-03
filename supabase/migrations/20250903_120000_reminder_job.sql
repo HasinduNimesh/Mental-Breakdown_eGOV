@@ -1,0 +1,24 @@
+-- 24h Reminder job (concept):
+-- Create a function to select bookings occurring in the next 24 hours that have not been reminded,
+-- and enqueue an HTTP call to your /api/email/reminder for each.
+-- You can run this via pg_cron or Supabase Scheduled Functions.
+
+-- Example outline (adjust to your schema/policies):
+-- create or replace function notify_upcoming_bookings() returns void as $$
+-- declare
+--   r record;
+-- begin
+--   for r in (
+--     select booking_code, email, slot_date, slot_time
+--     from bookings
+--     where (timestamp with time zone (slot_date || ' ' || slot_time)) between now() and now() + interval '24 hours'
+--       and coalesce(is_reminder_sent, false) = false
+--   ) loop
+--     -- call http to your edge function or API route (requires http extension or edge function)
+--     -- select net.http_post('https://your.site/api/email/reminder', json_build_object(...));
+--   end loop;
+-- end;
+-- $$ language plpgsql security definer;
+
+-- Then schedule with pg_cron:
+-- select cron.schedule('reminders-24h', '*/15 * * * *', $$select notify_upcoming_bookings();$$);
