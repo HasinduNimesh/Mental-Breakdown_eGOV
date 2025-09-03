@@ -8,14 +8,15 @@ import { Bars3Icon, XMarkIcon, PhoneIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from 'next-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 
-const navigation = [
-  { name: 'nav_home', href: '/' },
-  { name: 'nav_about', href: '/about' },
-  { name: 'nav_services', href: '/services' },
-  { name: 'nav_news', href: '/news' },
-  { name: 'nav_contact', href: '/contact' },
-  { name: 'nav_help', href: '/help' },
-  { name: 'nav_feedback', href: '/feedback' },
+type NavItem = { name: string; href: string; label: string };
+const navigation: NavItem[] = [
+  { name: 'nav_home', href: '/', label: 'Home' },
+  { name: 'nav_about', href: '/about', label: 'About' },
+  { name: 'nav_services', href: '/services', label: 'Services' },
+  { name: 'nav_news', href: '/news', label: 'News' },
+  { name: 'nav_contact', href: '/contact', label: 'Contact' },
+  { name: 'nav_help', href: '/help', label: 'Help' },
+  { name: 'nav_feedback', href: '/feedback', label: 'Feedback' },
 ];
 
 export const Header: React.FC = () => {
@@ -95,7 +96,7 @@ export const Header: React.FC = () => {
                     aria-current={router.pathname === item.href ? 'page' : undefined}
                     className={`px-1 py-2 text-[16px] font-medium transition-colors relative ${router.pathname === item.href ? 'text-primary-700' : 'text-text-700 hover:text-primary-700'}`}
                   >
-          {t(item.name)}
+          {t(item.name, item.label)}
                     {router.pathname === item.href && (
                       <span className="absolute -bottom-0.5 left-0 right-0 h-0.5 bg-[#2D5BFF]" aria-hidden />
                     )}
@@ -106,12 +107,12 @@ export const Header: React.FC = () => {
               <div className="flex items-center gap-4 ml-6">
         {user && (
                   <Button href="/services" size="md" className="h-10 px-4 rounded-lg bg-[#2D5BFF] text-white hover:bg-[#224BE6] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">
-          {t('cta_book')}
+          {t('cta_book', 'Book service')}
                   </Button>
                 )}
         {user && (
                   <Button href="/appointments" variant="outline" size="md" className="h-10 px-3 rounded-lg border border-[#2D5BFF] text-[#2D5BFF] hover:bg-[#EEF3FF] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">
-          {t('cta_my_appointments')}
+          {t('cta_my_appointments', 'My appointments')}
                   </Button>
                 )}
                 {user ? (
@@ -128,11 +129,11 @@ export const Header: React.FC = () => {
                     </button>
                     {profileOpen && (
                       <div id="profile-menu" role="menu" className="absolute right-0 mt-2 w-56 bg-white text-text-900 border border-border rounded-[10px] shadow-2xl">
-                        <Link href="/appointments" className="block px-3 py-2 text-[13px] hover:bg-bg-100" role="menuitem">{t('nav_my_appointments')}</Link>
-                        <Link href="/documents" className="block px-3 py-2 text-[13px] hover:bg-bg-100" role="menuitem">{t('nav_upload_docs')}</Link>
-                        <Link href="/track" className="block px-3 py-2 text-[13px] hover:bg-bg-100" role="menuitem">{t('nav_track_booking')}</Link>
-                        <Link href="/profile" className="block px-3 py-2 text-[13px] hover:bg-bg-100" role="menuitem">{t('nav_profile')}</Link>
-                        <button className="w-full text-left px-3 py-2 text-[13px] hover:bg-bg-100" onClick={() => signOut()} role="menuitem">{t('nav_sign_out')}</button>
+                        <Link href="/appointments" className="block px-3 py-2 text-[13px] hover:bg-bg-100" role="menuitem">{t('nav_my_appointments', 'My appointments')}</Link>
+                        <Link href="/documents" className="block px-3 py-2 text-[13px] hover:bg-bg-100" role="menuitem">{t('nav_upload_docs', 'Upload documents')}</Link>
+                        <Link href="/track" className="block px-3 py-2 text-[13px] hover:bg-bg-100" role="menuitem">{t('nav_track_booking', 'Track booking')}</Link>
+                        <Link href="/profile" className="block px-3 py-2 text-[13px] hover:bg-bg-100" role="menuitem">{t('nav_profile', 'Profile')}</Link>
+                        <button className="w-full text-left px-3 py-2 text-[13px] hover:bg-bg-100" onClick={() => signOut()} role="menuitem">{t('nav_sign_out', 'Sign out')}</button>
                       </div>
                     )}
                   </div>
@@ -141,8 +142,8 @@ export const Header: React.FC = () => {
                     <div className="h-10 w-[172px] rounded-lg bg-bg-100 border border-border animate-pulse" aria-hidden />
                   ) : (
                     <div className="flex items-center gap-2">
-                      <Button href="/signin" variant="outline" size="md" className="h-10 px-4 rounded-lg border border-[#1A4DCC] text-[#1A4DCC] bg-white hover:bg-[#F5F8FF] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">{t('nav_sign_in')}</Button>
-                      <Button href="/signup" size="md" className="h-10 px-4 rounded-lg bg-[#1A4DCC] text-white hover:bg-[#153FA6] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">{t('nav_sign_up')}</Button>
+                      <Button href="/signin" variant="outline" size="md" className="h-10 px-4 rounded-lg border border-[#1A4DCC] text-[#1A4DCC] bg-white hover:bg-[#F5F8FF] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">{t('nav_sign_in', 'Sign in')}</Button>
+                      <Button href="/signup" size="md" className="h-10 px-4 rounded-lg bg-[#1A4DCC] text-white hover:bg-[#153FA6] focus:outline-none focus:ring-2 focus:ring-[#93B4FF]">{t('nav_sign_up', 'Sign up')}</Button>
                     </div>
                   )
                 )}
@@ -188,7 +189,7 @@ export const Header: React.FC = () => {
                   aria-current={router.pathname === item.href ? 'page' : undefined}
                   className={`whitespace-nowrap px-1 py-1.5 text-[15px] font-medium transition-colors relative ${router.pathname === item.href ? 'text-primary-700' : 'text-text-700 hover:text-primary-700'}`}
                 >
-          {t(item.name)}
+          {t(item.name, item.label)}
                   {router.pathname === item.href && (
                     <span className="absolute -bottom-0.5 left-0 right-0 h-0.5 bg-[#2D5BFF]" aria-hidden />
                   )}
@@ -210,7 +211,7 @@ export const Header: React.FC = () => {
                   className="mx-3 my-2 w-[calc(100%-1.5rem)] justify-center"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  {t('cta_book')}
+                  {t('cta_book', 'Book service')}
                 </Button>
                 <Button
                   href={user ? "/appointments" : "/signin?next=/appointments"}
@@ -218,14 +219,14 @@ export const Header: React.FC = () => {
                   className="mx-3 mb-2 w-[calc(100%-1.5rem)] justify-center"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  {t('cta_my_appointments')}
+                  {t('cta_my_appointments', 'My appointments')}
                 </Button>
                 {user && (
                   <button
                     className="mx-3 mb-3 w-[calc(100%-1.5rem)] h-10 rounded-lg border border-border text-[13px] font-medium hover:bg-bg-100"
                     onClick={() => { setMobileMenuOpen(false); signOut(); }}
                   >
-                    {t('nav_sign_out')}
+                    {t('nav_sign_out', 'Sign out')}
                   </button>
                 )}
               </div>

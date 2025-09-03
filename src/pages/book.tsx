@@ -19,6 +19,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/router';
 import { listProfileDocuments, uploadProfileDocument, type ProfileDoc } from '@/lib/documents';
 import { downloadBookingPDF } from '@/lib/pdf';
+import { sendBookingConfirmation } from '@/lib/email';
 
 type Step = 1 | 2 | 3 | 4 | 5;
 
@@ -428,6 +429,16 @@ const BookPage: React.FC = () => {
         track('booking_completed', { serviceId: effectiveServiceId, officeId, date: confirmed.dateISO, time: confirmed.time });
         setConfirmed(confirmed);
         setStep(5);
+        // Best-effort confirmation email (non-blocking)
+        try {
+          await sendBookingConfirmation({
+            to: email,
+            booking: confirmed,
+            service: { title: serviceTitle, department: serviceDepartment },
+            office: { name: office.name, city: office.city },
+            tz,
+          });
+        } catch {}
         return;
       }
       // Fallback to local-only booking if RPC not available
@@ -455,6 +466,16 @@ const BookPage: React.FC = () => {
   track('booking_completed', { serviceId: effectiveServiceId, officeId, date: localBooking.dateISO, time: localBooking.time });
       setConfirmed(localBooking);
       setStep(5);
+      // Best-effort confirmation email (non-blocking)
+      try {
+        await sendBookingConfirmation({
+          to: email,
+          booking: localBooking,
+          service: { title: serviceTitle, department: serviceDepartment },
+          office: { name: office.name, city: office.city },
+          tz,
+        });
+      } catch {}
     } finally {
       setBookingBusy(false);
     }

@@ -9,6 +9,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getMyProfile, upsertProfile, getCurrentPhotoSignedUrl } from '@/lib/profile';
 
 const ProfilePage: React.FC = () => {
+  // Prevent SSR/CSR markup mismatch by rendering a stable placeholder until hydrated
+  const [hydrated, setHydrated] = React.useState(false);
+  React.useEffect(() => {
+    setHydrated(true);
+  }, []);
+
   const { user } = useAuth();
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -20,7 +26,7 @@ const ProfilePage: React.FC = () => {
   React.useEffect(() => {
     let cancelled = false;
     async function load() {
-      if (!user) { setLoading(false); return; }
+      if (!hydrated || !user) { setLoading(false); return; }
       setLoading(true);
       setError(null);
       try {
@@ -39,7 +45,24 @@ const ProfilePage: React.FC = () => {
     }
     load();
     return () => { cancelled = true; };
-  }, [user]);
+  }, [hydrated, user]);
+
+  if (!hydrated) {
+    return (
+      <Layout>
+        <section className="bg-white">
+          <Container className="py-4">
+            <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'Profile' }]} />
+          </Container>
+        </section>
+        <section className="py-8 sm:py-12">
+          <Container>
+            <Card className="p-6">Loading…</Card>
+          </Container>
+        </section>
+      </Layout>
+    );
+  }
 
   async function onSaveBasics() {
     try {

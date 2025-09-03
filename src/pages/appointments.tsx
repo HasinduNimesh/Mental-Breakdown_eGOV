@@ -142,7 +142,7 @@ const AppointmentsPage: React.FC = () => {
         </Container>
       </section>
 
-      <section className="py-8 sm:py-12 bg-bg-50">
+  <section className={`bg-bg-50 ${list.length > 0 ? 'py-8 sm:py-12' : 'py-4 sm:py-6'}`}>
         <Container>
           <div className="grid grid-cols-1 gap-4">
             {list.map((b) => (

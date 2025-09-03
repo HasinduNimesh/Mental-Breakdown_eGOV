@@ -45,3 +45,26 @@ export const sendEmailReminder = async (booking: BookingDraft, user: any) => {
     throw err as any;
   }
 };
+
+// Fire-and-forget booking confirmation email via local API.
+export const sendBookingConfirmation = async (params: {
+  to: string;
+  booking: BookingDraft;
+  service: { title: string; department: string };
+  office: { name: string; city: string };
+  tz: string;
+}) => {
+  try {
+    const res = await fetch('/api/email/confirm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      console.warn('Booking confirmation email API failed', res.status, body);
+    }
+  } catch (e) {
+    console.warn('Booking confirmation email send error', e);
+  }
+};
