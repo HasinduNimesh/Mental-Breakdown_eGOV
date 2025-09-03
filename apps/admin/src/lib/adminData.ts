@@ -36,13 +36,16 @@ export type AppointmentDocument = {
 // Note: There is no department_id in bookings; filtering by department requires a join to services if modeled.
 // For now we provide simple date range listing utilities administrators can use.
 export async function listBookings(fromISO?: string, toISO?: string) {
-  const supabase = getSupabase();
-  let q = supabase.from('bookings').select('*').order('slot_date', { ascending: true }).order('slot_time', { ascending: true });
-  if (fromISO) q = q.gte('slot_date', fromISO);
-  if (toISO) q = q.lte('slot_date', toISO);
-  const { data, error } = await q as any;
-  if (error) throw error;
-  return (data || []) as AdminBooking[];
+  // Use server API to leverage service role for RLS-safe admin reads
+  const params = new URLSearchParams();
+  if (fromISO) params.set('from', fromISO);
+  if (toISO) params.set('to', toISO);
+  const url = `/api/bookings${params.toString() ? `?${params.toString()}` : ''}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Admin API failed: ${res.status}`);
+  const body = await res.json();
+  if (!body?.ok) throw new Error(body?.error || 'Unknown error');
+  return body.data as AdminBooking[];
 }
 
 export async function updateBookingStatusByCode(booking_code: string, status: BookingStatus) {
@@ -70,6 +73,16 @@ export async function reviewBookingDocument(docId: number, nextStatus: Appointme
     .update({ status: nextStatus, notes: notes ?? null })
     .eq('id', docId);
   if (error) throw error;
+}
+
+// Signed URL for downloading documents stored in Storage bucket 'user-docs'
+export async function getAppointmentDocSignedUrl(objectKey: string, expiresInSeconds: number = 300) {
+  const supabase = getSupabase();
+  const { data, error } = await supabase.storage
+    .from('user-docs')
+    .createSignedUrl(objectKey, expiresInSeconds);
+  if (error) throw error;
+  return data?.signedUrl || '';
 }
 
 // --- Messaging ---

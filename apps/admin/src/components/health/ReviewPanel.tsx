@@ -1,19 +1,27 @@
 import React from 'react';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
-import { reviewBookingDocument, listBookingDocuments } from '../../lib/adminData';
+import { reviewBookingDocument, listBookingDocuments, getAppointmentDocSignedUrl } from '../../lib/adminData';
 
 export function ReviewPanel({ onSendMessage }: { onSendMessage: (bookingCode: string, body: string) => Promise<void> }) {
   const [bookingCode, setBookingCode] = React.useState('');
   const [docs, setDocs] = React.useState<Array<{
-    id: number; original_name: string | null; review_status: 'Pending review' | 'Needs fix' | 'Pre-checked'; reviewer_note: string | null;
+    id: number; original_name: string | null; review_status: 'Pending review' | 'Needs fix' | 'Pre-checked'; reviewer_note: string | null; object_key?: string; signed_url?: string;
   }>>([]);
   const [note, setNote] = React.useState('');
 
   async function load() {
     if (!bookingCode) return;
     const list = await listBookingDocuments(bookingCode);
-    setDocs(list.map(d => ({ id: d.id, original_name: d.original_name, review_status: d.status, reviewer_note: d.notes })));
+    const enriched = await Promise.all(list.map(async (d) => ({
+      id: d.id,
+      original_name: d.original_name,
+      review_status: d.status,
+      reviewer_note: d.notes,
+      object_key: d.object_key,
+      signed_url: d.object_key ? await getAppointmentDocSignedUrl(d.object_key).catch(() => undefined) : undefined,
+    })));
+    setDocs(enriched);
   }
 
   async function mark(id: number, status: 'Pending review' | 'Needs fix' | 'Pre-checked') {
@@ -39,6 +47,15 @@ export function ReviewPanel({ onSendMessage }: { onSendMessage: (bookingCode: st
               <div className="min-w-0 flex-1">
                 <div className="font-medium truncate">{d.original_name || 'Document'}</div>
                 <div className="text-xs text-slate-500">Status: {d.review_status}{d.reviewer_note ? ` — Note: ${d.reviewer_note}` : ''}</div>
+                {d.signed_url && (
+                  <div className="mt-1 flex items-center gap-2 text-xs">
+                    <a href={d.signed_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">View / Download</a>
+                    <button
+                      onClick={() => navigator.clipboard?.writeText(d.signed_url || '')}
+                      className="rounded border px-2 py-0.5 hover:bg-gray-50"
+                    >Copy link</button>
+                  </div>
+                )}
               </div>
         <Button variant="soft" onClick={() => mark(d.id, 'Pre-checked')}>Pre-check</Button>
               <Button variant="outline" onClick={() => mark(d.id, 'Pending review')}>Reset</Button>
